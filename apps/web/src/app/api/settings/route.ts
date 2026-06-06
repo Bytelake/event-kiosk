@@ -12,6 +12,7 @@ export async function GET() {
     orgName: settings.orgName,
     orgLogoUrl: settings.orgLogoUrl,
     brandPrimaryColor: settings.brandPrimaryColor,
+    kioskBackgroundStyle: settings.kioskBackgroundStyle,
     breezeSubdomain: settings.breezeSubdomain,
     hasBreezeApiKey: Boolean(settings.breezeApiKey || process.env.BREEZE_API_KEY),
     breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),
@@ -41,6 +42,7 @@ export async function PATCH(request: Request) {
       orgName: data.orgName,
       orgLogoUrl: data.orgLogoUrl,
       brandPrimaryColor: data.brandPrimaryColor,
+      kioskBackgroundStyle: data.kioskBackgroundStyle,
       breezeSubdomain: data.breezeSubdomain,
       breezeApiKey: data.breezeApiKey || undefined,
       breezeCalendarIds: data.breezeCalendarIds
@@ -53,6 +55,7 @@ export async function PATCH(request: Request) {
     orgName: settings.orgName,
     orgLogoUrl: settings.orgLogoUrl,
     brandPrimaryColor: settings.brandPrimaryColor,
+    kioskBackgroundStyle: settings.kioskBackgroundStyle,
     breezeSubdomain: settings.breezeSubdomain,
     hasBreezeApiKey: Boolean(settings.breezeApiKey),
     breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),

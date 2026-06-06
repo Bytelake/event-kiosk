@@ -12,14 +12,25 @@ set -euo pipefail
 
 INSTALL_DIR="/opt/kiosk"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=kiosk-paths.sh
+source "${SCRIPT_DIR}/kiosk-paths.sh"
 
 log() { echo "[update] $*"; }
 die() { echo "[update] ERROR: $*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Run as root: sudo bash update.sh"
-[[ -d "${INSTALL_DIR}/web" ]] || die "No existing install at ${INSTALL_DIR}. Run install.sh first."
+[[ -d "${INSTALL_DIR}/web" || -d "${INSTALL_DIR}/apps/web" ]] \
+  || die "No existing install at ${INSTALL_DIR}. Run install.sh first."
 
 log "Updating Event Kiosk at ${INSTALL_DIR}..."
+
+# ---------------------------------------------------------------------------
+# 0. Migrate source-install layout (apps/web) into package layout (web/)
+# ---------------------------------------------------------------------------
+migrate_legacy_install "${INSTALL_DIR}"
+
+[[ -d "${INSTALL_DIR}/web" ]] \
+  || die "No web/ directory at ${INSTALL_DIR} after legacy migration. Run install.sh first."
 
 # ---------------------------------------------------------------------------
 # 1. Backup persistent data before touching anything
@@ -28,13 +39,17 @@ BACKUP_DIR="/var/backups/kiosk/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "${BACKUP_DIR}"
 log "Backing up persistent data to ${BACKUP_DIR}..."
 
-for item in \
-  "${INSTALL_DIR}/web/prisma/dev.db" \
-  "${INSTALL_DIR}/web/.env" \
-  "${INSTALL_DIR}/display.env"; do
-  if [[ -f "${item}" ]]; then
-    cp -a "${item}" "${BACKUP_DIR}/"
-  fi
+DB_FILE="$(resolve_database_file "${INSTALL_DIR}/web")"
+DB_REL="${DB_FILE#${INSTALL_DIR}/}"
+
+for rel in \
+  "${DB_REL}" \
+  "web/prisma/dev.db" \
+  "web/dev.db" \
+  "apps/web/prisma/dev.db" \
+  "web/.env" \
+  "display.env"; do
+  backup_persistent_file "${INSTALL_DIR}" "${BACKUP_DIR}" "${rel}"
 done
 
 UPLOADS="${INSTALL_DIR}/web/apps/web/public/uploads"
@@ -47,8 +62,14 @@ fi
 # ---------------------------------------------------------------------------
 log "Installing updated application files..."
 rsync -a --delete \
+  --filter 'P web/prisma/dev.db' \
+  --filter 'P web/prisma/dev.db-journal' \
+  --filter 'P web/dev.db' \
+  --filter 'P web/dev.db-journal' \
   --exclude web/prisma/dev.db \
   --exclude web/prisma/dev.db-journal \
+  --exclude web/dev.db \
+  --exclude web/dev.db-journal \
   --exclude web/.env \
   --exclude web/apps/web/public/uploads/ \
   --exclude display.env \
@@ -66,6 +87,11 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
   "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
 
 mkdir -p "${UPLOADS}"
+
+for rel in "${DB_REL}" "web/prisma/dev.db" "web/dev.db"; do
+  restore_persistent_file_if_missing "${INSTALL_DIR}" "${BACKUP_DIR}" "${rel}"
+done
+
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
 # ---------------------------------------------------------------------------

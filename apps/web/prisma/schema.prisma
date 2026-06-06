@@ -41,6 +41,7 @@ model Settings {
   orgName             String   @default("Our Organization")
   orgLogoUrl          String?
   brandPrimaryColor   String   @default("#2563eb")
+  kioskBackgroundStyle String  @default("clean")
   breezeSubdomain     String?
   breezeApiKey        String?
   breezeCalendarIds   String   @default("[]")

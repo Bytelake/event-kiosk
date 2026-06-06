@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc && electron .",
-    "build": "tsc && cp src/registration-chrome.html dist/",
+    "build": "tsc && cp src/registration-chrome.html src/registration-keyboard.html dist/",
     "start": "electron ."
   },
   "dependencies": {

@@ -31,13 +31,16 @@ rm -rf "${PACKAGE_ROOT}/web/node_modules/@prisma" "${PACKAGE_ROOT}/web/node_modu
 mkdir -p "${PACKAGE_ROOT}/web/apps/web/.next"
 cp -R "${ROOT}/apps/web/.next/static" "${PACKAGE_ROOT}/web/apps/web/.next/static"
 cp -R "${ROOT}/apps/web/public" "${PACKAGE_ROOT}/web/apps/web/public"
-cp -R "${ROOT}/apps/web/prisma" "${PACKAGE_ROOT}/web/prisma"
+mkdir -p "${PACKAGE_ROOT}/web/prisma"
+rsync -a --exclude dev.db --exclude dev.db-journal \
+  "${ROOT}/apps/web/prisma/" "${PACKAGE_ROOT}/web/prisma/"
 cp "${ROOT}/apps/web/.env.example" "${PACKAGE_ROOT}/web/.env.example"
 
 # Electron shell (native electron binary installed on Pi during install)
 cp -R "${ROOT}/apps/shell/dist/." "${PACKAGE_ROOT}/shell/dist/"
 cp "${ROOT}/apps/shell/package.json" "${PACKAGE_ROOT}/shell/package.json"
 cp "${ROOT}/apps/shell/src/registration-chrome.html" "${PACKAGE_ROOT}/shell/dist/registration-chrome.html"
+cp "${ROOT}/apps/shell/src/registration-keyboard.html" "${PACKAGE_ROOT}/shell/dist/registration-keyboard.html"
 
 # Helper scripts & systemd units
 cp "${ROOT}/deploy/pi-os-lite/package/bin/"*.sh "${PACKAGE_ROOT}/bin/"
@@ -50,6 +53,7 @@ cp "${ROOT}/deploy/pi-os-lite/package/diagnose.sh" "${PACKAGE_ROOT}/diagnose.sh"
 cp "${ROOT}/deploy/pi-os-lite/package/fix-prisma.sh" "${PACKAGE_ROOT}/fix-prisma.sh"
 cp "${ROOT}/deploy/pi-os-lite/package/fix-permissions.sh" "${PACKAGE_ROOT}/fix-permissions.sh"
 cp "${ROOT}/deploy/pi-os-lite/package/setup-db.sh" "${PACKAGE_ROOT}/setup-db.sh"
+cp "${ROOT}/deploy/pi-os-lite/package/kiosk-paths.sh" "${PACKAGE_ROOT}/kiosk-paths.sh"
 cp "${ROOT}/deploy/pi-os-lite/package/README.txt" "${PACKAGE_ROOT}/README.txt"
 
 chmod +x "${PACKAGE_ROOT}/install.sh" "${PACKAGE_ROOT}/update.sh" "${PACKAGE_ROOT}/uninstall.sh" "${PACKAGE_ROOT}/diagnose.sh"

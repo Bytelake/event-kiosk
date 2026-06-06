@@ -35,10 +35,7 @@ export function KioskHome() {
   const regular = events.filter((e) => !e.featured);
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-slate-100 to-white"
-      style={{ ["--brand" as string]: settings?.brandPrimaryColor ?? "#2563eb" }}
-    >
+    <div style={{ ["--brand" as string]: settings?.brandPrimaryColor ?? "#2563eb" }}>
       {offline && (
         <div className="bg-amber-100 px-6 py-3 text-center text-lg text-amber-900">
           Connection unavailable — showing last loaded events
@@ -59,7 +56,7 @@ export function KioskHome() {
           <h1 className="mt-2 text-5xl font-bold tracking-tight text-slate-900 md:text-6xl">
             Upcoming Events
           </h1>
-          <p className="mt-4 text-xl text-slate-600">Tap an event to learn more and register</p>
+          <p className="mt-4 text-xl text-slate-600">Tap an event to learn more</p>
         </header>
 
         {featured.length > 0 && (
@@ -76,7 +73,7 @@ export function KioskHome() {
         <section>
           <h2 className="mb-6 text-2xl font-semibold text-slate-800">All Events</h2>
           {events.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center">
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white/90 p-16 text-center backdrop-blur-sm">
               <p className="text-2xl text-slate-500">No upcoming events right now</p>
               <p className="mt-2 text-lg text-slate-400">Please check back soon</p>
             </div>

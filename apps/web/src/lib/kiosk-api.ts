@@ -11,10 +11,13 @@ export interface KioskEvent {
   featured: boolean;
 }
 
+export type KioskBackgroundStyle = "clean" | "brand-glow" | "dots" | "aurora";
+
 export interface KioskSettings {
   orgName: string;
   orgLogoUrl: string | null;
   brandPrimaryColor: string;
+  kioskBackgroundStyle: KioskBackgroundStyle;
 }
 
 export async function fetchKioskEvents(): Promise<KioskEvent[]> {
@@ -31,5 +34,6 @@ export async function fetchPublicSettings(): Promise<KioskSettings> {
     orgName: data.orgName,
     orgLogoUrl: data.orgLogoUrl,
     brandPrimaryColor: data.brandPrimaryColor,
+    kioskBackgroundStyle: data.kioskBackgroundStyle ?? "clean",
   };
 }

@@ -31,10 +31,13 @@ export const manualEventSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).optional(),
 });
 
+export const kioskBackgroundStyles = ["clean", "brand-glow", "dots", "aurora"] as const;
+
 export const settingsSchema = z.object({
   orgName: z.string().min(1).optional(),
   orgLogoUrl: z.string().optional().nullable(),
   brandPrimaryColor: z.string().optional(),
+  kioskBackgroundStyle: z.enum(kioskBackgroundStyles).optional(),
   breezeSubdomain: z.string().optional().nullable(),
   breezeApiKey: z.string().optional().nullable(),
   breezeCalendarIds: z.array(z.string()).optional(),

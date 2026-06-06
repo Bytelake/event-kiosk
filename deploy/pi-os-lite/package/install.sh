@@ -43,7 +43,9 @@ done
 
 [[ $EUID -eq 0 ]] || die "Run as root: sudo bash install.sh"
 
-if [[ -f "${INSTALL_DIR}/web/prisma/dev.db" ]] || [[ -f "${INSTALL_DIR}/web/.env" ]]; then
+if [[ -f "${INSTALL_DIR}/web/prisma/dev.db" ]] \
+  || [[ -f "${INSTALL_DIR}/apps/web/prisma/dev.db" ]] \
+  || [[ -f "${INSTALL_DIR}/web/.env" ]]; then
   die "Existing installation at ${INSTALL_DIR}. Use update.sh to upgrade without losing data:
   sudo bash update.sh"
 fi
@@ -90,8 +92,14 @@ loginctl enable-linger kiosk 2>/dev/null || true
 log "Copying application to ${INSTALL_DIR}..."
 mkdir -p "${INSTALL_DIR}"
 rsync -a --delete \
+  --filter 'P web/prisma/dev.db' \
+  --filter 'P web/prisma/dev.db-journal' \
+  --filter 'P web/dev.db' \
+  --filter 'P web/dev.db-journal' \
   --exclude web/prisma/dev.db \
   --exclude web/prisma/dev.db-journal \
+  --exclude web/dev.db \
+  --exclude web/dev.db-journal \
   --exclude web/.env \
   --exclude web/apps/web/public/uploads/ \
   --exclude display.env \

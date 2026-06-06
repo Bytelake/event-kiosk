@@ -7,6 +7,9 @@ WEB_DIR="${INSTALL_DIR}/web"
 TOOLS_DIR="${INSTALL_DIR}/prisma-tools"
 SCHEMA="${WEB_DIR}/prisma/schema.prisma"
 ENV_FILE="${WEB_DIR}/.env"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=kiosk-paths.sh
+source "${SCRIPT_DIR}/kiosk-paths.sh"
 
 log() { echo "[setup-db] $*"; }
 
@@ -16,6 +19,25 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   cp "${WEB_DIR}/.env.example" "${ENV_FILE}"
   log "Created ${ENV_FILE}"
 fi
+
+# Move a misplaced dev.db (file:./dev.db) into prisma/dev.db and fix .env.
+if grep -qE '^[[:space:]]*DATABASE_URL="file:./dev\.db"' "${ENV_FILE}" 2>/dev/null; then
+  if [[ -f "${WEB_DIR}/dev.db" ]]; then
+    mkdir -p "${WEB_DIR}/prisma"
+    if [[ ! -f "${WEB_DIR}/prisma/dev.db" ]]; then
+      mv "${WEB_DIR}/dev.db" "${WEB_DIR}/prisma/dev.db"
+      [[ -f "${WEB_DIR}/dev.db-journal" ]] && mv "${WEB_DIR}/dev.db-journal" "${WEB_DIR}/prisma/dev.db-journal" || true
+      log "Moved web/dev.db to web/prisma/dev.db"
+    fi
+  fi
+  sed -i 's|DATABASE_URL="file:./dev.db"|DATABASE_URL="file:./prisma/dev.db"|' "${ENV_FILE}"
+  log "Normalized DATABASE_URL to file:./prisma/dev.db"
+fi
+
+migrate_legacy_install "${INSTALL_DIR}"
+
+DB_FILE="$(resolve_database_file "${WEB_DIR}")"
+DB_REL="${DB_FILE#${WEB_DIR}/}"
 
 mkdir -p "${TOOLS_DIR}" "${WEB_DIR}/prisma"
 cat >"${TOOLS_DIR}/package.json" <<'JSON'
@@ -44,7 +66,7 @@ mkdir -p "${WEB_DIR}/node_modules"
 rm -rf "${WEB_DIR}/node_modules/@prisma" "${WEB_DIR}/node_modules/.prisma"
 cp -R "${TOOLS_DIR}/node_modules/@prisma" "${WEB_DIR}/node_modules/"
 
-log "Generating client and creating database (from ${WEB_DIR})..."
+log "Generating client and migrating database at ${DB_FILE}..."
 sudo -u kiosk bash -lc "
   set -euo pipefail
   cd '${WEB_DIR}'
@@ -64,7 +86,7 @@ sudo -u kiosk bash -lc "
   '${PRISMA_BIN}' generate --schema=prisma/schema.prisma
   '${PRISMA_BIN}' db push --schema=prisma/schema.prisma
 
-  if [[ ! -f prisma/dev.db ]]; then
+  if [[ ! -f '${DB_REL}' ]]; then
     node prisma/seed.js
     echo '[setup-db] Seeded new database'
   else
@@ -73,4 +95,4 @@ sudo -u kiosk bash -lc "
 "
 
 chown -R kiosk:kiosk "${INSTALL_DIR}"
-log "Database ready at ${WEB_DIR}/prisma/dev.db"
+log "Database ready at ${DB_FILE}"

@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
+import { kioskBackgroundStyles } from "@/lib/validators";
+import type { KioskBackgroundStyle } from "@/lib/kiosk-api";
+
 interface Calendar {
   id: number | string;
   name: string;
@@ -16,11 +19,19 @@ interface SettingsForm {
   orgName: string;
   orgLogoUrl: string;
   brandPrimaryColor: string;
+  kioskBackgroundStyle: KioskBackgroundStyle;
   breezeSubdomain: string;
   breezeApiKey: string;
   breezeCalendarIds: string[];
   hasBreezeApiKey: boolean;
 }
+
+const backgroundLabels: Record<KioskBackgroundStyle, string> = {
+  clean: "Clean — simple light gradient",
+  "brand-glow": "Brand glow — soft color wash from your brand",
+  dots: "Dots — subtle patterned texture",
+  aurora: "Aurora — flowing gradient accents",
+};
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SettingsForm | null>(null);
@@ -28,6 +39,7 @@ export default function AdminSettingsPage() {
   const [domains, setDomains] = useState<{ id: string; domain: string }[]>([]);
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -40,6 +52,7 @@ export default function AdminSettingsPage() {
         orgName: settingsData.orgName,
         orgLogoUrl: settingsData.orgLogoUrl ?? "",
         brandPrimaryColor: settingsData.brandPrimaryColor,
+        kioskBackgroundStyle: settingsData.kioskBackgroundStyle ?? "clean",
         breezeSubdomain: settingsData.breezeSubdomain ?? "",
         breezeApiKey: "",
         breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
@@ -68,6 +81,7 @@ export default function AdminSettingsPage() {
       orgName: settings.orgName,
       orgLogoUrl: settings.orgLogoUrl || null,
       brandPrimaryColor: settings.brandPrimaryColor,
+      kioskBackgroundStyle: settings.kioskBackgroundStyle,
       breezeSubdomain: settings.breezeSubdomain || null,
       breezeCalendarIds: settings.breezeCalendarIds,
     };
@@ -117,6 +131,18 @@ export default function AdminSettingsPage() {
     setDomains((d) => d.filter((item) => item.id !== id));
   }
 
+  async function handleLogoUpload(file: File) {
+    setLogoUploading(true);
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body });
+    setLogoUploading(false);
+    if (res.ok) {
+      const data = await res.json();
+      setSettings((s) => (s ? { ...s, orgLogoUrl: data.url } : s));
+    }
+  }
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-slate-50">
@@ -137,19 +163,74 @@ export default function AdminSettingsPage() {
                   value={settings.orgName}
                   onChange={(e) => setSettings({ ...settings, orgName: e.target.value })}
                 />
-                <Input
-                  placeholder="Logo URL (optional)"
-                  value={settings.orgLogoUrl}
-                  onChange={(e) => setSettings({ ...settings, orgLogoUrl: e.target.value })}
-                />
-                <Input
-                  type="color"
-                  value={settings.brandPrimaryColor}
-                  onChange={(e) =>
-                    setSettings({ ...settings, brandPrimaryColor: e.target.value })
-                  }
-                  className="h-12 w-24"
-                />
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Logo</label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                    }}
+                  />
+                  {logoUploading && <p className="mt-1 text-sm text-slate-500">Uploading...</p>}
+                  {settings.orgLogoUrl ? (
+                    <div className="mt-3 flex items-start gap-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={settings.orgLogoUrl}
+                        alt="Logo preview"
+                        className="h-20 w-auto rounded-lg border border-slate-200 bg-white object-contain p-2"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setSettings({ ...settings, orgLogoUrl: "" })}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Brand color
+                  </label>
+                  <Input
+                    type="color"
+                    value={settings.brandPrimaryColor}
+                    onChange={(e) =>
+                      setSettings({ ...settings, brandPrimaryColor: e.target.value })
+                    }
+                    className="h-12 w-24"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Kiosk background
+                  </label>
+                  <select
+                    className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                    value={settings.kioskBackgroundStyle}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        kioskBackgroundStyle: e.target.value as KioskBackgroundStyle,
+                      })
+                    }
+                  >
+                    {kioskBackgroundStyles.map((style) => (
+                      <option key={style} value={style}>
+                        {backgroundLabels[style]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </CardContent>
             </Card>
 

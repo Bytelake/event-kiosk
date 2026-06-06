@@ -10,3 +10,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   goBack: () => ipcRenderer.send("registration-go-back"),
   closeRegistration: () => ipcRenderer.send("close-registration"),
 });
+
+contextBridge.exposeInMainWorld("keyboardAPI", {
+  sendKey: (key: string) => ipcRenderer.send("keyboard-key", key),
+  backspace: () => ipcRenderer.send("keyboard-backspace"),
+  enter: () => ipcRenderer.send("keyboard-enter"),
+  hide: () => ipcRenderer.send("keyboard-hide"),
+});
