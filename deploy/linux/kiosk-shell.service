@@ -1,0 +1,18 @@
+[Unit]
+Description=Event Kiosk Electron Shell
+After=kiosk-web.service network.target
+Requires=kiosk-web.service
+
+[Service]
+Type=simple
+User=kiosk
+Environment=DISPLAY=:0
+Environment=KIOSK_URL=http://localhost:3000/kiosk
+WorkingDirectory=/opt/kiosk/apps/shell
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

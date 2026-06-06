@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Registration</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: white;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+      }
+      button {
+        min-height: 48px;
+        min-width: 120px;
+        border: none;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .back { background: #334155; color: white; }
+      .done { background: #2563eb; color: white; }
+      h1 { font-size: 20px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <button class="back" id="back">Back</button>
+    <h1>Event Registration</h1>
+    <button class="done" id="done">Done</button>
+    <script>
+      document.getElementById("back").addEventListener("click", () => {
+        window.electronAPI.goBack();
+      });
+      document.getElementById("done").addEventListener("click", () => {
+        window.electronAPI.closeRegistration();
+      });
+    </script>
+  </body>
+</html>

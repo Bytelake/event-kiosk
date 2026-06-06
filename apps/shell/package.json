@@ -1,0 +1,18 @@
+{
+  "name": "shell",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc && cp src/registration-chrome.html dist/",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^35.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

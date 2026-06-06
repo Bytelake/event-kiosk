@@ -1,0 +1,18 @@
+{
+  "name": "kiosk-project",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "dev:shell": "npm run dev --workspace=shell",
+    "build": "npm run build --workspace=web",
+    "build:shell": "npm run build --workspace=shell",
+    "start": "npm run start --workspace=web",
+    "db:generate": "npm run db:generate --workspace=web",
+    "db:migrate": "npm run db:migrate --workspace=web",
+    "db:push": "npm run db:push --workspace=web"
+  }
+}

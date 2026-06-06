@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  source           String   @default("manual")
+  breezeInstanceId String?  @unique
+  breezeEventId    String?
+  breezeCategoryId String?
+  syncStatus       String   @default("manual")
+  lastSyncedAt     DateTime?
+
+  title            String
+  startAt          DateTime
+  endAt            DateTime?
+  shortDescription String?
+  fullDescription  String?
+  location         String?
+  imageUrl         String?
+  registrationUrl  String?
+  breezeDescription String?
+
+  featured         Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  kioskVisible     Boolean  @default(true)
+  status           String   @default("draft")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Settings {
+  id                  String   @id @default("default")
+  orgName             String   @default("Our Organization")
+  orgLogoUrl          String?
+  brandPrimaryColor   String   @default("#2563eb")
+  breezeSubdomain     String?
+  breezeApiKey        String?
+  breezeCalendarIds   String   @default("[]")
+  lastBreezeSyncAt    DateTime?
+  lastBreezeSyncError String?
+  updatedAt           DateTime @updatedAt
+}
+
+model AllowedDomain {
+  id     String @id @default(cuid())
+  domain String @unique
+}
