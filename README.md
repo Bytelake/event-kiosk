@@ -14,9 +14,27 @@ A Linux kiosk application for displaying organization events synced from **Breez
 
 ## Requirements
 
-- **Node.js 20.9+** (recommended for Next.js 16)
-- Linux (Ubuntu / Raspberry Pi OS) for production kiosk deployment
+- **Node.js 20.9+**
+- Linux for production kiosk deployment — **Raspberry Pi OS Lite** is supported (see below)
 - Breeze CHMS API key and subdomain
+
+## Raspberry Pi OS Lite (recommended for kiosks)
+
+Pi OS **Lite** works **without a desktop environment**. The installer sets up **cage** (minimal Wayland) + **Electron** on autologin.
+
+**Full guide:** [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md)
+
+Quick install on the Pi:
+
+```bash
+cd ~/kiosk-project
+sudo bash deploy/pi-os-lite/install.sh
+sudo nano /opt/kiosk/apps/web/.env   # set passwords and Breeze credentials
+sudo systemctl start kiosk-web
+sudo reboot
+```
+
+Admin panel from another device: `http://<pi-ip>:3000/admin`
 
 ## Quick Start (Development)
 
@@ -74,6 +92,18 @@ Breeze-owned fields (title, date) update on each sync. Admin-enriched fields are
 
 ## Production Deployment (Linux)
 
+### Raspberry Pi OS Lite
+
+Use the dedicated installer — no desktop required:
+
+```bash
+sudo bash deploy/pi-os-lite/install.sh
+```
+
+See [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md) for the complete walkthrough.
+
+### Generic Linux (Ubuntu, Pi OS Desktop, etc.)
+
 1. Copy project to `/opt/kiosk`
 2. Install Node.js 20.9+, build the web app:
 
@@ -94,17 +124,16 @@ sudo bash /opt/kiosk/deploy/linux/lockdown.sh
 sudo systemctl start kiosk-web kiosk-shell
 ```
 
-### Optional: Cage compositor (single-app Wayland)
-
-Install `cage` and autologin the `kiosk` user into a session that runs only the Electron shell for stronger OS lockdown.
+The generic deploy uses X11 (`DISPLAY=:0`) via `kiosk-shell.service`. Pi OS Lite uses Wayland/cage instead — do not enable `kiosk-shell.service` on Lite; use the Pi OS Lite installer.
 
 ## Project Structure
 
 ```
-apps/web/          Next.js kiosk UI, admin UI, API, Breeze sync
-apps/shell/        Electron kiosk shell
-deploy/linux/      systemd units and lockdown script
-prisma/            Database schema (in apps/web)
+apps/web/                 Next.js kiosk UI, admin UI, API, Breeze sync
+apps/shell/               Electron kiosk shell
+deploy/linux/             Generic Linux systemd + lockdown
+deploy/pi-os-lite/        Pi OS Lite installer (cage + autologin)
+prisma/                   Database schema (in apps/web)
 ```
 
 ## Registration Domains

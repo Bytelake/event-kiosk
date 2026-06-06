@@ -1,0 +1,18 @@
+[Unit]
+Description=Event Kiosk Web Application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+WorkingDirectory=/opt/kiosk/apps/web
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=-/opt/kiosk/apps/web/.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
