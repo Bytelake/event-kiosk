@@ -17,6 +17,7 @@ export async function GET() {
     breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),
     lastBreezeSyncAt: settings.lastBreezeSyncAt?.toISOString() ?? null,
     lastBreezeSyncError: settings.lastBreezeSyncError,
+    kioskRefreshAt: settings.kioskRefreshAt?.toISOString() ?? null,
     allowedDomains: domains.map((d) => d.domain),
   });
 }

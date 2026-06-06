@@ -6,14 +6,10 @@ async function main() {
   await prisma.settings.upsert({
     where: { id: "default" },
     update: {},
-    create: {
-      id: "default",
-      orgName: "Our Organization",
-      brandPrimaryColor: "#2563eb",
-    },
+    create: { id: "default", orgName: "Our Organization", brandPrimaryColor: "#2563eb" },
   });
 
-  const defaultDomains = [
+  for (const domain of [
     "signupgenius.com",
     "www.signupgenius.com",
     "eventbrite.com",
@@ -21,9 +17,7 @@ async function main() {
     "breezechms.com",
     "forms.gle",
     "docs.google.com",
-  ];
-
-  for (const domain of defaultDomains) {
+  ]) {
     await prisma.allowedDomain.upsert({
       where: { domain },
       update: {},
@@ -33,11 +27,9 @@ async function main() {
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (error) => {
-    console.error(error);
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    console.error(e);
     await prisma.$disconnect();
     process.exit(1);
   });

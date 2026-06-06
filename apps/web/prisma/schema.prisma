@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -45,6 +46,7 @@ model Settings {
   breezeCalendarIds   String   @default("[]")
   lastBreezeSyncAt    DateTime?
   lastBreezeSyncError String?
+  kioskRefreshAt      DateTime?
   updatedAt           DateTime @updatedAt
 }
 

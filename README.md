@@ -1,144 +1,115 @@
 **This project generated with the use of Cursor**
 
-# Event Information & Registration Kiosk
+# Event Kiosk
 
-A Linux kiosk application for displaying organization events synced from **Breeze CHMS**, with admin-enriched details and embedded registration via external sites (SignupGenius, Eventbrite, etc.).
+Touchscreen kiosk for church events synced from **Breeze CHMS**. Admins add images, descriptions, and registration links; visitors browse events and sign up through embedded registration sites.
+
+Designed for **Raspberry Pi OS Lite** (no desktop required). Also runs on other Linux systems or locally for development.
 
 ## Features
 
-- **Breeze CHMS sync** — imports event title and date; admins add images, descriptions, and registration links
-- **Touch-optimized kiosk UI** — designed for 24–32" displays with large tap targets
-- **Admin backend** — manage events, Breeze settings, branding, and allowed registration domains
-- **Electron shell** — fullscreen lockdown with embedded registration browser and domain whitelist
-- **Linux deployment** — systemd services, autologin, and lockdown scripts
+- Breeze CHMS calendar sync
+- Touch-friendly kiosk UI for large displays
+- Admin panel for events, branding, and settings
+- Fullscreen Electron shell with registration domain whitelist
 
-## Requirements
+## Raspberry Pi (recommended)
 
-- **Node.js 20.9+**
-- Linux for production kiosk deployment — **Raspberry Pi OS Lite** is supported (see below)
-- Breeze CHMS API key and subdomain
+Build a release package on your dev machine, then install on a fresh Pi OS Lite 64-bit image with SSH enabled.
 
-## Raspberry Pi OS Lite (recommended for kiosks)
-
-Pi OS **Lite** works **without a desktop environment**. The installer sets up **cage** (minimal Wayland) + **Electron** on autologin.
-
-**Full guide:** [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md)
-
-Quick install on the Pi:
+### 1. Build the package
 
 ```bash
-cd ~/kiosk-project
-sudo bash deploy/pi-os-lite/install.sh
-sudo nano /opt/kiosk/apps/web/.env   # set passwords and Breeze credentials
-sudo systemctl start kiosk-web
-sudo reboot
+npm install
+npm run package:pi
 ```
 
-Admin panel from another device: `http://<pi-ip>:3000/admin`
+Output: `dist/event-kiosk-pi-0.0.1.tar.gz`
 
-## Quick Start (Development)
+### 2. Install on the Pi
 
 ```bash
-# Install dependencies
-npm install
-cd apps/shell && npm install && cd ../..
+scp dist/event-kiosk-pi-*.tar.gz pi@<pi-ip>:~/
+ssh pi@<pi-ip>
+tar -xzf event-kiosk-pi-*.tar.gz && cd event-kiosk-pi-*
+sudo bash install.sh --web-only    # backend only — good first test
+# or
+sudo bash install.sh               # full kiosk with touchscreen
+```
 
-# Configure environment
+Set your admin password:
+
+```bash
+sudo nano /opt/kiosk/web/.env
+sudo systemctl restart kiosk-web
+```
+
+Admin: `http://<pi-ip>:3000/admin`
+
+Portrait monitors: `sudo bash install.sh --rotation left`
+
+### Updates
+
+Build a new package, copy it to the Pi, extract, and run `sudo bash update.sh` (not `install.sh`).
+
+If something goes wrong, SSH still works — run `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
+
+More Pi details: [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md)
+
+## Development
+
+Requires Node.js 20.9+.
+
+```bash
+npm install
 cp apps/web/.env.example apps/web/.env
-# Edit apps/web/.env — set ADMIN_PASSWORD and SESSION_SECRET
-
-# Initialize database
 npm run db:push --workspace=web
 npm run db:seed --workspace=web
-
-# Start web app
 npm run dev
-
-# In another terminal, start Electron shell (optional)
-npm run dev:shell
 ```
 
-Open:
-- Kiosk: http://localhost:3000/kiosk
-- Admin: http://localhost:3000/admin/login (default password: `changeme`)
+Optional Electron shell: `npm run dev:shell`
 
-## Environment Variables
+| URL | Purpose |
+|-----|---------|
+| http://localhost:3000/kiosk | Kiosk UI |
+| http://localhost:3000/admin | Admin panel (default password: `changeme`) |
 
-Create `apps/web/.env`:
+### Environment variables
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | SQLite path, e.g. `file:./dev.db` |
-| `ADMIN_PASSWORD` | Admin login password (plain text or bcrypt hash) |
-| `SESSION_SECRET` | Random string for session JWT signing |
-| `BREEZE_SUBDOMAIN` | Optional; can also set in admin Settings |
-| `BREEZE_API_KEY` | Optional; can also set in admin Settings |
+Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Set `COOKIE_SECURE=false` when using HTTP on a Pi.
 
-Electron shell:
+Breeze credentials can go in `.env` or Admin → Settings.
 
-| Variable | Description |
-|----------|-------------|
-| `KIOSK_URL` | URL to load (default `http://localhost:3000/kiosk`) |
+## Other Linux systems
 
-## Breeze CHMS Setup
+For Ubuntu, Pi OS Desktop, or any system with X11:
 
-1. In Breeze, go to **Account → API** and copy your API key and subdomain
-2. In admin **Settings**, enter subdomain and API key
-3. Select calendars to sync (or leave all unchecked to sync everything)
-4. Click **Sync Now** on the dashboard
-5. Edit imported events — add image, description, registration URL, and publish
+1. Copy the project to `/opt/kiosk`
+2. Install Node.js 20+, run `npm install`, build the web and shell apps
+3. Configure `/opt/kiosk/apps/web/.env`
+4. Run `sudo bash deploy/linux/lockdown.sh`
+5. Start services: `sudo systemctl start kiosk-web kiosk-shell`
 
-Breeze-owned fields (title, date) update on each sync. Admin-enriched fields are never overwritten.
+This path uses X11 (`kiosk-shell.service`). Pi OS Lite uses Wayland/cage instead — use the Pi package installer above.
 
-## Production Deployment (Linux)
+## Breeze setup
 
-### Raspberry Pi OS Lite
+1. In Breeze: **Account → API** — copy subdomain and API key
+2. In admin **Settings**, enter credentials and select calendars
+3. **Sync Now**, then edit events and publish
 
-Use the dedicated installer — no desktop required:
+Breeze-owned fields (title, date) update on sync. Admin-added content is preserved.
 
-```bash
-sudo bash deploy/pi-os-lite/install.sh
-```
-
-See [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md) for the complete walkthrough.
-
-### Generic Linux (Ubuntu, Pi OS Desktop, etc.)
-
-1. Copy project to `/opt/kiosk`
-2. Install Node.js 20.9+, build the web app:
-
-```bash
-cd /opt/kiosk
-npm install
-npm run db:push --workspace=web
-npm run db:seed --workspace=web
-npm run build --workspace=web
-npm run build --workspace=shell
-```
-
-3. Configure `apps/web/.env` with production secrets
-4. Run lockdown script as root:
-
-```bash
-sudo bash /opt/kiosk/deploy/linux/lockdown.sh
-sudo systemctl start kiosk-web kiosk-shell
-```
-
-The generic deploy uses X11 (`DISPLAY=:0`) via `kiosk-shell.service`. Pi OS Lite uses Wayland/cage instead — do not enable `kiosk-shell.service` on Lite; use the Pi OS Lite installer.
-
-## Project Structure
+## Project structure
 
 ```
-apps/web/                 Next.js kiosk UI, admin UI, API, Breeze sync
-apps/shell/               Electron kiosk shell
-deploy/linux/             Generic Linux systemd + lockdown
-deploy/pi-os-lite/        Pi OS Lite installer (cage + autologin)
-prisma/                   Database schema (in apps/web)
+apps/web/           Next.js kiosk UI, admin, API, Breeze sync
+apps/shell/         Electron kiosk shell
+deploy/pi-os-lite/  Pi release packaging and installer scripts
+deploy/linux/       Generic Linux systemd setup
+scripts/            Build scripts
 ```
-
-## Registration Domains
-
-Default allowed domains include SignupGenius and Eventbrite. Add more in **Admin → Settings**. The Electron shell blocks navigation to non-whitelisted HTTPS domains.
 
 ## License
 

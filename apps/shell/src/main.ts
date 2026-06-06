@@ -33,6 +33,14 @@ function createWindow() {
 
   mainWindow.loadURL(KIOSK_URL);
 
+  if (!isDev) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      void mainWindow?.webContents.insertCSS(
+        "html, body, *, a, button, [role='button'] { cursor: none !important; }",
+      );
+    });
+  }
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedRegistrationUrl(url)) {
       openRegistrationView(url);

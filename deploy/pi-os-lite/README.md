@@ -1,181 +1,74 @@
-# Raspberry Pi OS Lite — Kiosk Setup
+# Raspberry Pi OS Lite
 
-These instructions are for **Pi OS Lite** (no desktop environment). The kiosk uses:
+Headless kiosk using **systemd**, **cage** (Wayland), and **Electron**. No desktop environment required.
 
-- **systemd** — runs the Next.js web backend headlessly
-- **cage** — minimal Wayland compositor (single fullscreen app, no desktop)
-- **Electron** — fullscreen touch UI and embedded registration browser
-
-You do **not** need Pi OS Desktop or GNOME/KDE.
+For the standard install path, see the main [README](../../README.md#raspberry-pi-recommended).
 
 ## Hardware
 
-- Raspberry Pi **4 or 5** (4 GB+ RAM recommended)
-- USB touchscreen display (24–32")
-- microSD card (32 GB+)
-- Ethernet or Wi‑Fi
+- Raspberry Pi 4 or 5 (4 GB+ RAM recommended)
+- USB touchscreen (24–32")
+- 32 GB+ microSD, Ethernet or Wi‑Fi
 
-## 1. Flash Pi OS Lite
+## Install from source (alternative)
 
-1. Download **[Raspberry Pi OS Lite (64-bit)](https://www.raspberrypi.com/software/operating-systems/)** (Bookworm or newer).
-2. Flash with [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
-3. In Imager **OS Customization** (gear icon), set:
-   - Hostname (e.g. `event-kiosk`)
-   - Username/password (for SSH maintenance — the kiosk user is created by the installer)
-   - Wi‑Fi credentials (if not using Ethernet)
-   - Enable SSH
-4. Boot the Pi and SSH in:
+If you cannot build the release package on another machine, clone this repo on the Pi and run the source installer. This compiles on the Pi and takes 5–15 minutes.
 
 ```bash
-ssh pi@event-kiosk.local
-```
-
-## 2. Copy the project to the Pi
-
-From your development machine:
-
-```bash
-rsync -av --exclude node_modules --exclude .next --exclude .git \
-  "/path/to/Kiosk Project/" pi@event-kiosk.local:~/kiosk-project/
-```
-
-Or clone from git if the project is in a repository.
-
-## 3. Run the installer
-
-On the Pi:
-
-```bash
+git clone <repo-url> ~/kiosk-project
 cd ~/kiosk-project
 sudo bash deploy/pi-os-lite/install.sh
-```
-
-The script will:
-
-- Install **cage**, **seatd**, Node.js 20, and Electron system libraries
-- Copy the app to **`/opt/kiosk`**
-- Build the web app and Electron shell
-- Create the **`kiosk`** system user
-- Enable **`kiosk-web.service`** (Next.js on port 3000)
-- Configure **tty1 autologin** → **cage** → **Electron**
-
-Build time on a Pi 4 is typically **5–15 minutes**.
-
-## 4. Configure secrets
-
-```bash
 sudo nano /opt/kiosk/apps/web/.env
-```
-
-Set at minimum:
-
-```env
-DATABASE_URL="file:./dev.db"
-ADMIN_PASSWORD="your-secure-password"
-SESSION_SECRET="long-random-string-here"
-BREEZE_SUBDOMAIN="yourchurch"
-BREEZE_API_KEY="your-breeze-api-key"
-```
-
-## 5. Start and reboot
-
-```bash
 sudo systemctl start kiosk-web
 sudo reboot
-```
-
-After reboot:
-
-- The display shows the kiosk automatically (no login prompt on the touchscreen).
-- Open admin from **another computer or phone**: `http://<pi-ip>:3000/admin`
-
-Find the Pi’s IP:
-
-```bash
-hostname -I
 ```
 
 ## How it works
 
 ```
 Boot
- ├── systemd → kiosk-web.service (Next.js on :3000)
- └── tty1 autologin (kiosk user)
-      └── cage (Wayland, one app only)
-           └── Electron shell → http://localhost:3000/kiosk
+ ├── kiosk-web.service    Next.js on :3000
+ └── kiosk-display.service → cage on tty1 → Electron
 ```
 
-No desktop environment is installed or required.
-
-## Maintenance commands
+## Maintenance
 
 | Task | Command |
 |------|---------|
-| Web app status | `sudo systemctl status kiosk-web` |
-| Web app logs | `sudo journalctl -u kiosk-web -f` |
-| Restart web app | `sudo systemctl restart kiosk-web` |
-| Re-run installer after update | `cd ~/kiosk-project && sudo bash deploy/pi-os-lite/install.sh` |
-| Test kiosk URL locally | `curl http://localhost:3000/kiosk` |
+| Status | `sudo systemctl status kiosk-web kiosk-display` |
+| Logs | `sudo journalctl -u kiosk-web -f` |
+| Restart | `sudo systemctl restart kiosk-web kiosk-display` |
+| Diagnose | `sudo bash /opt/kiosk/diagnose.sh` |
 
-## Updating the app
+Pre-built package installs place scripts under `/opt/kiosk/`. Source installs use `/opt/kiosk/deploy/pi-os-lite/`.
 
-Copy new code to the Pi, then re-run the installer (it rebuilds in `/opt/kiosk`):
+## Portrait monitors
 
 ```bash
-rsync -av --exclude node_modules --exclude .next --exclude .git \
-  "/path/to/Kiosk Project/" pi@event-kiosk.local:~/kiosk-project/
-
-ssh pi@event-kiosk.local
-cd ~/kiosk-project
-sudo bash deploy/pi-os-lite/install.sh
-sudo reboot
+sudo nano /opt/kiosk/display.env          # KIOSK_DISPLAY_ROTATION=left
+sudo /opt/kiosk/bin/set-display-rotation.sh --set left
+sudo systemctl restart kiosk-display
 ```
+
+Rotation values: `normal`, `left`, `right`, `inverted`. Applied via `wlr-randr` — not `config.txt`.
 
 ## Troubleshooting
 
-### Black screen after reboot
+**Admin login loops:** Set `COOKIE_SECURE=false` in `.env`, restart `kiosk-web`.
 
-1. Check the web backend is running:
-   ```bash
-   sudo systemctl status kiosk-web
-   curl http://localhost:3000/kiosk
-   ```
-2. Check seatd:
-   ```bash
-   sudo systemctl status seatd
-   ```
-3. Switch to tty1 (if you have a keyboard attached): **Ctrl+Alt+F1** and look for errors.
-
-### Electron does not start
-
-Run the display script manually as the kiosk user:
+**Black screen / console instead of kiosk:**
 
 ```bash
-sudo -u kiosk bash /opt/kiosk/deploy/pi-os-lite/start-kiosk-display.sh
+sudo systemctl status kiosk-display
+sudo journalctl -u kiosk-display -n 50
+sudo bash /opt/kiosk/diagnose.sh
 ```
 
-### Touchscreen not working
-
-Most USB touchscreens work out of the box. Verify input devices:
+**Database / Prisma errors on source install:**
 
 ```bash
-ls /dev/input/
+sudo bash /opt/kiosk/setup-db.sh
+sudo systemctl restart kiosk-web
 ```
 
-### Admin panel unreachable
-
-Ensure port 3000 is reachable on your network. From another device:
-
-```bash
-curl http://<pi-ip>:3000/admin/login
-```
-
-If using a firewall, allow port 3000 for your admin subnet only.
-
-## Differences from generic Linux deploy
-
-| Generic (`deploy/linux/`) | Pi OS Lite (`deploy/pi-os-lite/`) |
-|---------------------------|-----------------------------------|
-| Assumes X11 `DISPLAY=:0` | Uses **cage** on Wayland |
-| `kiosk-shell.service` for Electron | Electron via **tty1 autologin** |
-| Manual package setup | **All-in-one `install.sh`** |
+**Admin unreachable:** Confirm port 3000 is open — `curl http://<pi-ip>:3000/admin/login`

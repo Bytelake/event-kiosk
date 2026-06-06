@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { isAuthenticated } from "@/lib/auth";
+import { getUploadsDir, uploadPublicUrl } from "@/lib/uploads";
 
 export async function POST(request: NextRequest) {
   const authed = await isAuthenticated();
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "File must be an image" }, { status: 400 });
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
+  const uploadsDir = getUploadsDir();
   await mkdir(uploadsDir, { recursive: true });
 
   const ext = path.extname(file.name) || ".jpg";
@@ -28,5 +29,5 @@ export async function POST(request: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(uploadsDir, filename), buffer);
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: uploadPublicUrl(filename) });
 }

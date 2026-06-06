@@ -1,3 +1,5 @@
+Reference Material/
+
 node_modules/
 .next/
 dist/
@@ -10,4 +12,3 @@ out/
 uploads/
 .DS_Store
 *.log
-Reference Material/

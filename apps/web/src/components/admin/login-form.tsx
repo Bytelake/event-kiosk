@@ -20,12 +20,15 @@ export function LoginForm() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify({ password }),
     });
 
     setLoading(false);
+
     if (!res.ok) {
-      setError("Invalid password");
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Invalid password");
       return;
     }
 
@@ -61,18 +64,28 @@ export function LoginForm() {
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth/login")
+    fetch("/api/auth/login", { credentials: "same-origin" })
       .then((res) => res.json())
       .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
         if (!data.authenticated) {
           router.replace("/admin/login");
         } else {
           setReady(true);
         }
-      });
+      })
+      .catch(() => setError("Could not verify session. Check that the server is running."));
   }, [router]);
+
+  if (error) {
+    return <div className="p-8 text-red-600">{error}</div>;
+  }
 
   if (!ready) {
     return <div className="p-8 text-slate-500">Loading...</div>;

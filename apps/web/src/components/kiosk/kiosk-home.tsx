@@ -36,7 +36,7 @@ export function KioskHome() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-slate-50 to-white"
+      className="min-h-screen bg-gradient-to-b from-slate-100 to-white"
       style={{ ["--brand" as string]: settings?.brandPrimaryColor ?? "#2563eb" }}
     >
       {offline && (
@@ -45,7 +45,7 @@ export function KioskHome() {
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-8 py-12 md:px-12">
+      <div className="mx-auto max-w-[1400px] px-8 py-12 md:px-12">
         <header className="mb-12 text-center">
           {settings?.orgLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -63,9 +63,9 @@ export function KioskHome() {
         </header>
 
         {featured.length > 0 && (
-          <section className="mb-10">
+          <section className="mb-12">
             <h2 className="mb-6 text-2xl font-semibold text-slate-800">Featured</h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8">
               {featured.map((event) => (
                 <EventCard key={event.id} event={event} featured />
               ))}
@@ -81,7 +81,7 @@ export function KioskHome() {
               <p className="mt-2 text-lg text-slate-400">Please check back soon</p>
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               {(regular.length > 0 ? regular : events).map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
@@ -94,57 +94,74 @@ export function KioskHome() {
 }
 
 function EventCard({ event, featured = false }: { event: KioskEvent; featured?: boolean }) {
+  const hasImage = Boolean(event.imageUrl);
+
   return (
     <Link
       href={`/kiosk/events/${event.id}`}
       className={cn(
-        "group flex min-h-[140px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition active:scale-[0.99] hover:shadow-md",
-        featured && "md:min-h-[220px]",
+        "group relative flex min-h-[280px] overflow-hidden rounded-3xl border border-slate-200/70 shadow-md transition active:scale-[0.99] hover:shadow-xl",
+        featured ? "min-h-[360px]" : "min-h-[300px]",
       )}
     >
-      <div
-        className={cn(
-          "flex w-28 shrink-0 flex-col items-center justify-center bg-[var(--brand)] px-3 text-white",
-          featured && "w-36",
-        )}
-      >
-        <span className="text-sm font-semibold uppercase tracking-wide opacity-90">
+      {hasImage ? (
+        <>
+          <div
+            className="absolute inset-0 scale-100 bg-cover bg-center transition duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url(${event.imageUrl})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/25" />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)] via-[var(--brand)] to-slate-900" />
+      )}
+
+      <div className="absolute left-6 top-6 flex min-w-[5.5rem] flex-col items-center rounded-2xl bg-white/95 px-4 py-3 text-center shadow-lg backdrop-blur-sm">
+        <span className="text-xs font-bold uppercase tracking-wider text-[var(--brand)]">
           {formatEventDate(event.startAt).split(",")[0]}
         </span>
-        <span className="mt-1 text-3xl font-bold">{new Date(event.startAt).getDate()}</span>
-        <span className="mt-1 text-sm opacity-90">{formatEventTime(event.startAt)}</span>
+        <span className="text-4xl font-bold leading-none text-slate-900">
+          {new Date(event.startAt).getDate()}
+        </span>
+        <span className="mt-1 text-sm font-medium text-slate-600">
+          {formatEventTime(event.startAt)}
+        </span>
       </div>
 
-      <div className="flex flex-1 items-center gap-4 p-5">
-        {event.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={event.imageUrl}
-            alt=""
-            className="hidden h-24 w-24 rounded-2xl object-cover sm:block"
-          />
-        ) : null}
+      <div className="relative mt-auto flex w-full items-end justify-between gap-6 p-6 pt-28 md:p-8 md:pt-32">
         <div className="min-w-0 flex-1">
-          <h3 className={cn("font-bold text-slate-900", featured ? "text-2xl" : "text-xl")}>
+          <h3
+            className={cn(
+              "font-bold leading-tight text-white drop-shadow-md",
+              featured ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl",
+            )}
+          >
             {event.title}
           </h3>
           {event.shortDescription && (
-            <p className="mt-2 line-clamp-2 text-lg text-slate-600">{event.shortDescription}</p>
+            <p
+              className={cn(
+                "mt-3 line-clamp-3 text-white/90",
+                featured ? "text-xl md:text-2xl" : "text-lg md:text-xl",
+              )}
+            >
+              {event.shortDescription}
+            </p>
           )}
-          <div className="mt-3 flex flex-wrap gap-4 text-base text-slate-500">
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-base text-white/85 md:text-lg">
             <span className="inline-flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+              <Calendar className="h-5 w-5 shrink-0" />
               {formatEventDate(event.startAt)}
             </span>
             {event.location && (
               <span className="inline-flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
+                <MapPin className="h-5 w-5 shrink-0" />
                 {event.location}
               </span>
             )}
           </div>
         </div>
-        <ChevronRight className="h-8 w-8 shrink-0 text-slate-300 transition group-hover:text-[var(--brand)]" />
+        <ChevronRight className="h-10 w-10 shrink-0 text-white/70 transition group-hover:translate-x-1 group-hover:text-white md:h-12 md:w-12" />
       </div>
     </Link>
   );

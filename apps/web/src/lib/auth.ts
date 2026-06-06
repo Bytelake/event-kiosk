@@ -5,6 +5,22 @@ import bcrypt from "bcryptjs";
 const COOKIE_NAME = "kiosk_admin_session";
 const SESSION_DURATION = 60 * 60 * 24 * 7;
 
+export { COOKIE_NAME };
+
+export function sessionCookieOptions() {
+  // Default to non-secure cookies so HTTP kiosk/admin works on the Pi.
+  // Set COOKIE_SECURE=true when serving admin over HTTPS.
+  const secure = process.env.COOKIE_SECURE === "true";
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_DURATION,
+  };
+}
+
 function getSecret() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
@@ -41,13 +57,7 @@ export async function verifySession(token: string): Promise<boolean> {
 
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DURATION,
-  });
+  cookieStore.set(COOKIE_NAME, token, sessionCookieOptions());
 }
 
 export async function clearSessionCookie() {

@@ -26,6 +26,10 @@ EOF
 echo "Installing systemd services..."
 cp /opt/kiosk/deploy/linux/kiosk-web.service /etc/systemd/system/
 cp /opt/kiosk/deploy/linux/kiosk-shell.service /etc/systemd/system/
+if [[ ! -f /opt/kiosk/display.env ]]; then
+  cp /opt/kiosk/deploy/pi-os-lite/display.env.example /opt/kiosk/display.env
+fi
+chmod +x /opt/kiosk/deploy/pi-os-lite/set-display-rotation.sh
 systemctl daemon-reload
 systemctl enable kiosk-web.service kiosk-shell.service
 

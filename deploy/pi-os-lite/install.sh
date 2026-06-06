@@ -44,6 +44,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   build-essential \
   cage \
   seatd \
+  wlr-randr \
   libseat1 \
   libgtk-3-0 \
   libnotify4 \
@@ -65,7 +66,8 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   libgdk-pixbuf-2.0-0 \
   fonts-liberation \
   xdg-utils \
-  unclutter
+  unclutter \
+  kbd
 
 # ---------------------------------------------------------------------------
 # 2. Node.js 20
@@ -146,47 +148,43 @@ chown -R kiosk:kiosk "${KIOSK_INSTALL_DIR}/apps/web/public/uploads"
 # 7. Executable helper scripts
 # ---------------------------------------------------------------------------
 chmod +x "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/start-kiosk-display.sh"
+chmod +x "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/start-kiosk-wayland.sh"
 chmod +x "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/kiosk-wayland-session.sh"
+chmod +x "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/set-display-rotation.sh"
+if [[ ! -f "${KIOSK_INSTALL_DIR}/display.env" ]]; then
+  cp "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/display.env.example" "${KIOSK_INSTALL_DIR}/display.env"
+  chown kiosk:kiosk "${KIOSK_INSTALL_DIR}/display.env"
+fi
 
 # ---------------------------------------------------------------------------
-# 8. systemd — web backend only (display starts via cage on autologin)
+# 8. systemd — web backend + display
 # ---------------------------------------------------------------------------
-log "Installing systemd service for web backend..."
+log "Installing systemd services..."
 cp "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/kiosk-web.service" /etc/systemd/system/kiosk-web.service
+cp "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/kiosk-display.service" /etc/systemd/system/kiosk-display.service
 
 # Disable generic X11 shell service if previously installed
 systemctl disable kiosk-shell.service 2>/dev/null || true
 systemctl stop kiosk-shell.service 2>/dev/null || true
 
+# Free tty1 for the kiosk display (getty login prompt conflicts with cage)
+log "Disabling getty on tty1 so the display service can use the screen..."
+systemctl stop getty@tty1.service 2>/dev/null || true
+systemctl disable getty@tty1.service 2>/dev/null || true
+rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf
+
 systemctl daemon-reload
-systemctl enable kiosk-web.service
+systemctl enable kiosk-web.service kiosk-display.service
 
 # ---------------------------------------------------------------------------
-# 9. seatd (required by cage on many Pi OS Lite installs)
+# 9. seatd (required by cage on Pi OS Lite)
 # ---------------------------------------------------------------------------
 log "Enabling seatd..."
 systemctl enable seatd.service
 systemctl start seatd.service
 
 # ---------------------------------------------------------------------------
-# 10. tty1 autologin → cage → Electron
-# ---------------------------------------------------------------------------
-log "Configuring tty1 autologin for kiosk user..."
-mkdir -p /etc/systemd/system/getty@tty1.service.d
-cp "${KIOSK_INSTALL_DIR}/deploy/pi-os-lite/getty-autologin.conf" \
-  /etc/systemd/system/getty@tty1.service.d/autologin.conf
-
-KIOSK_PROFILE="/home/kiosk/.bash_profile"
-cat >"${KIOSK_PROFILE}" <<'PROFILE'
-# Event Kiosk — start Wayland session on tty1
-if [[ -f /opt/kiosk/deploy/pi-os-lite/kiosk-wayland-session.sh ]]; then
-  source /opt/kiosk/deploy/pi-os-lite/kiosk-wayland-session.sh
-fi
-PROFILE
-chown kiosk:kiosk "${KIOSK_PROFILE}"
-
-# ---------------------------------------------------------------------------
-# 11. Power / screen blanking lockdown
+# 10. Power / screen blanking lockdown
 # ---------------------------------------------------------------------------
 log "Disabling suspend and screen blanking..."
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target 2>/dev/null || true
@@ -214,13 +212,13 @@ log ""
 log "Next steps:"
 log "  1. Edit secrets:  sudo nano ${ENV_FILE}"
 log "     Set ADMIN_PASSWORD, SESSION_SECRET, and Breeze credentials."
-log "  2. Start web app: sudo systemctl start kiosk-web"
-log "  3. Reboot:        sudo reboot"
+log "  2. Start services: sudo systemctl start kiosk-web kiosk-display"
+log "  3. Reboot:         sudo reboot"
 log ""
-log "After reboot, tty1 autologins as kiosk and launches cage + Electron."
+log "After reboot, kiosk-display.service launches cage + Electron on the screen."
 log "Admin panel (from another device): http://<pi-ip-address>:3000/admin"
 log ""
 log "Useful commands:"
-log "  sudo systemctl status kiosk-web"
-log "  sudo journalctl -u kiosk-web -f"
+log "  sudo systemctl status kiosk-web kiosk-display"
+log "  sudo journalctl -u kiosk-display -f"
 log "  curl http://localhost:3000/kiosk"

@@ -1,0 +1,23 @@
+[Unit]
+Description=Event Kiosk Wayland Display (cage + Electron)
+After=kiosk-web.service seatd.service network-online.target
+Wants=kiosk-web.service seatd.service
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+Environment=HOME=/home/kiosk
+Environment=KIOSK_ROOT=/opt/kiosk
+Environment=KIOSK_URL=http://localhost:3000/kiosk
+EnvironmentFile=-/opt/kiosk/display.env
+WorkingDirectory=/opt/kiosk
+# Wait for web backend; linger provides /run/user/<uid> for kiosk
+ExecStartPre=+/opt/kiosk/deploy/pi-os-lite/set-display-rotation.sh --configure-system
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/openvt -f -s -w -c 1 -- /opt/kiosk/deploy/pi-os-lite/start-kiosk-wayland.sh
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

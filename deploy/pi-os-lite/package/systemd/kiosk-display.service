@@ -1,0 +1,22 @@
+[Unit]
+Description=Event Kiosk Wayland Display (cage + Electron)
+After=kiosk-web.service seatd.service network-online.target
+Wants=kiosk-web.service seatd.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+Environment=KIOSK_ROOT=/opt/kiosk
+Environment=KIOSK_URL=http://localhost:3000/kiosk
+EnvironmentFile=-/opt/kiosk/display.env
+WorkingDirectory=/opt/kiosk
+ExecStartPre=-/bin/systemctl stop getty@tty1.service
+ExecStartPre=+/opt/kiosk/bin/set-display-rotation.sh --configure-system
+ExecStartPre=/bin/sleep 8
+ExecStart=/opt/kiosk/bin/launch-kiosk-display.sh
+ExecStopPost=-/bin/systemctl start getty@tty1.service
+Restart=on-failure
+RestartSec=20
+
+[Install]
+WantedBy=multi-user.target
