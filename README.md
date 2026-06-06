@@ -1,3 +1,5 @@
+**This project generated with the use of Cursor**
+
 # Event Information & Registration Kiosk
 
 A Linux kiosk application for displaying organization events synced from **Breeze CHMS**, with admin-enriched details and embedded registration via external sites (SignupGenius, Eventbrite, etc.).
