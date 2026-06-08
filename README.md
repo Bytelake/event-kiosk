@@ -6,6 +6,11 @@ Touchscreen kiosk for church events synced from **Breeze CHMS**. Admins add imag
 
 Designed for **Raspberry Pi OS Lite** (no desktop required). Also runs on other Linux systems or locally for development.
 
+<p align="center">
+  <img src="screenshots/kiosk-home-20260608-174059.png" alt="Kiosk home screen listing upcoming events" width="320" />
+  <img src="screenshots/kiosk-events-cmq5tg15f00001jeomq8dliy2-20260608-174148.png" alt="Kiosk event detail screen" width="320" />
+</p>
+
 ## Features
 
 - Breeze CHMS calendar sync
@@ -74,6 +79,10 @@ This starts the Next.js dev server and Electron shell together. Admin is still a
 Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor, no idle redirect) when using `npm run dev` without the shell.
 
 Desktop mode disables hidden cursor styling and the 60-second idle redirect on event detail pages. Production kiosk behavior is unchanged when the flag is unset or `false`.
+
+#### Screenshots for docs
+
+While `dev:desktop` is running, navigate to the kiosk screen you want, then press **Cmd+Shift+S** (Mac) or **Ctrl+Shift+S** (Linux/Windows). This saves an exact **1080×1920** PNG to `screenshots/` at the repo root (e.g. `kiosk-home-20250608-143022.png`). The shortcut is ignored while a registration overlay is open.
 
 | URL | Purpose |
 |-----|---------|

@@ -5,12 +5,14 @@ import {
   globalShortcut,
   ipcMain,
 } from "electron";
+import fs from "fs/promises";
 import path from "path";
 import {
   isRegistrationUrlAllowed,
   refreshAllowedDomains,
   startAllowedDomainsPolling,
 } from "./allowed-domains";
+import { captureKioskScreenshot } from "./capture-kiosk-screenshot";
 import { injectRegistrationInputScript } from "./inject-registration-input";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
@@ -244,8 +246,95 @@ function layoutRegistrationViews() {
   }
 }
 
+function getRepoRoot(): string {
+  if (!app.isPackaged) {
+    return path.resolve(app.getAppPath(), "..", "..");
+  }
+  return process.cwd();
+}
+
+function screenshotSlugFromUrl(url: string): string {
+  try {
+    const { pathname } = new URL(url);
+    if (pathname === "/kiosk" || pathname === "/kiosk/") {
+      return "kiosk-home";
+    }
+    const match = pathname.match(/^\/kiosk\/events\/([^/]+)\/?$/);
+    if (match) {
+      return `kiosk-events-${match[1]}`;
+    }
+    const trimmed = pathname.replace(/^\/+|\/+$/g, "").replace(/\//g, "-");
+    return trimmed || "kiosk";
+  } catch {
+    return "kiosk";
+  }
+}
+
+function screenshotTimestamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return [
+    now.getFullYear(),
+    pad(now.getMonth() + 1),
+    pad(now.getDate()),
+    "-",
+    pad(now.getHours()),
+    pad(now.getMinutes()),
+    pad(now.getSeconds()),
+  ].join("");
+}
+
+async function captureCurrentKioskPage(): Promise<void> {
+  if (!mainWindow) {
+    console.warn("[screenshot] No main window available.");
+    return;
+  }
+
+  if (registrationView) {
+    console.warn(
+      "[screenshot] Skipped — close the registration overlay before capturing.",
+    );
+    return;
+  }
+
+  const url = mainWindow.webContents.getURL();
+  let pathname = "";
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    console.warn("[screenshot] Skipped — invalid current URL.");
+    return;
+  }
+
+  if (!pathname.startsWith("/kiosk")) {
+    console.warn(
+      "[screenshot] Skipped — navigate to a /kiosk page before capturing.",
+    );
+    return;
+  }
+
+  const screenshotsDir = path.join(getRepoRoot(), "screenshots");
+  await fs.mkdir(screenshotsDir, { recursive: true });
+
+  const filename = `${screenshotSlugFromUrl(url)}-${screenshotTimestamp()}.png`;
+  const outputPath = path.join(screenshotsDir, filename);
+
+  try {
+    await captureKioskScreenshot(url, outputPath, mainWindow.webContents.session);
+    console.log(`[screenshot] Saved 1080x1920 PNG: ${outputPath}`);
+  } catch (err) {
+    console.error("[screenshot] Capture failed:", err);
+  }
+}
+
 function registerShortcuts() {
-  if (desktopMode) return;
+  if (desktopMode) {
+    globalShortcut.register("CommandOrControl+Shift+S", () => {
+      void captureCurrentKioskPage();
+    });
+    return;
+  }
+
   const block = () => false;
   globalShortcut.register("Alt+Tab", block);
   globalShortcut.register("CommandOrControl+W", block);
