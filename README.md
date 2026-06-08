@@ -115,6 +115,10 @@ This path uses X11 (`kiosk-shell.service`). Pi OS Lite uses Wayland/cage instead
 
 Breeze-owned fields (title, date) update on sync. Admin-added content is preserved.
 
+## Contributing
+
+Changes go through pull requests — see [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branching, CI, merging, and releases).
+
 ## Project structure
 
 ```
