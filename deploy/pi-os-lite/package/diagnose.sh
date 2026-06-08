@@ -2,6 +2,14 @@
 set -uo pipefail
 
 INSTALL_DIR="/opt/kiosk"
+# shellcheck source=kiosk-paths.sh
+source "${INSTALL_DIR}/kiosk-paths.sh" 2>/dev/null || {
+  KIOSK_DATA_DIR="/var/lib/kiosk"
+  kiosk_env_file() { echo "${KIOSK_DATA_DIR}/.env"; }
+  kiosk_db_file() { echo "${KIOSK_DATA_DIR}/kiosk.db"; }
+  kiosk_uploads_dir() { echo "${KIOSK_DATA_DIR}/uploads"; }
+  kiosk_display_env() { echo "${KIOSK_DATA_DIR}/display.env"; }
+}
 
 echo "=== Event Kiosk Diagnostics ==="
 echo ""
@@ -22,7 +30,21 @@ echo "-- Web --"
 curl -sf http://localhost:3000/kiosk >/dev/null 2>&1 && echo "  /kiosk: OK" || echo "  /kiosk: FAILED"
 echo ""
 
-ENV_FILE="${INSTALL_DIR}/web/.env"
+echo "-- Data (${KIOSK_DATA_DIR}) --"
+if [[ -f "$(kiosk_db_file)" ]]; then
+  echo "  database: $(kiosk_db_file) ($(stat -c%s "$(kiosk_db_file)" 2>/dev/null || stat -f%z "$(kiosk_db_file)" 2>/dev/null) bytes)"
+else
+  echo "  database: missing ($(kiosk_db_file))"
+fi
+if [[ -d "$(kiosk_uploads_dir)" ]]; then
+  UPLOAD_COUNT="$(find "$(kiosk_uploads_dir)" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  echo "  uploads:  $(kiosk_uploads_dir) (${UPLOAD_COUNT} files)"
+else
+  echo "  uploads:  missing ($(kiosk_uploads_dir))"
+fi
+echo ""
+
+ENV_FILE="$(kiosk_env_file)"
 if [[ -f "${ENV_FILE}" ]]; then
   echo "-- .env --"
   grep -q '^ADMIN_PASSWORD=.\+' "${ENV_FILE}" && echo "  ADMIN_PASSWORD: set" || echo "  ADMIN_PASSWORD: missing"
@@ -31,7 +53,7 @@ if [[ -f "${ENV_FILE}" ]]; then
   echo ""
 fi
 
-DISPLAY_ENV="${INSTALL_DIR}/display.env"
+DISPLAY_ENV="$(kiosk_display_env)"
 if [[ -f "${DISPLAY_ENV}" ]]; then
   echo "-- Display --"
   # shellcheck disable=SC1090

@@ -4,15 +4,24 @@ import { isAuthenticated } from "@/lib/auth";
 import { settingsSchema } from "@/lib/validators";
 import { parseCalendarIds } from "@/lib/utils";
 
+function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
+  return {
+    orgName: settings.orgName,
+    orgLogoUrl: settings.orgLogoUrl,
+    brandPrimaryColor: settings.brandPrimaryColor,
+    brandSecondaryColor: settings.brandSecondaryColor,
+    kioskBackgroundColor: settings.kioskBackgroundColor,
+    kioskTextColor: settings.kioskTextColor,
+    kioskMutedTextColor: settings.kioskMutedTextColor,
+  };
+}
+
 export async function GET() {
   const settings = await getSettings();
   const domains = await prisma.allowedDomain.findMany({ orderBy: { domain: "asc" } });
 
   return NextResponse.json({
-    orgName: settings.orgName,
-    orgLogoUrl: settings.orgLogoUrl,
-    brandPrimaryColor: settings.brandPrimaryColor,
-    kioskBackgroundStyle: settings.kioskBackgroundStyle,
+    ...serializePublicSettings(settings),
     breezeSubdomain: settings.breezeSubdomain,
     hasBreezeApiKey: Boolean(settings.breezeApiKey || process.env.BREEZE_API_KEY),
     breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),
@@ -42,7 +51,10 @@ export async function PATCH(request: Request) {
       orgName: data.orgName,
       orgLogoUrl: data.orgLogoUrl,
       brandPrimaryColor: data.brandPrimaryColor,
-      kioskBackgroundStyle: data.kioskBackgroundStyle,
+      brandSecondaryColor: data.brandSecondaryColor,
+      kioskBackgroundColor: data.kioskBackgroundColor,
+      kioskTextColor: data.kioskTextColor,
+      kioskMutedTextColor: data.kioskMutedTextColor,
       breezeSubdomain: data.breezeSubdomain,
       breezeApiKey: data.breezeApiKey || undefined,
       breezeCalendarIds: data.breezeCalendarIds
@@ -52,10 +64,7 @@ export async function PATCH(request: Request) {
   });
 
   return NextResponse.json({
-    orgName: settings.orgName,
-    orgLogoUrl: settings.orgLogoUrl,
-    brandPrimaryColor: settings.brandPrimaryColor,
-    kioskBackgroundStyle: settings.kioskBackgroundStyle,
+    ...serializePublicSettings(settings),
     breezeSubdomain: settings.breezeSubdomain,
     hasBreezeApiKey: Boolean(settings.breezeApiKey),
     breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),

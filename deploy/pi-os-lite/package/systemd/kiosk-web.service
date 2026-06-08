@@ -10,7 +10,8 @@ WorkingDirectory=/opt/kiosk/web
 Environment=NODE_ENV=production
 Environment=HOSTNAME=0.0.0.0
 Environment=PORT=3000
-EnvironmentFile=-/opt/kiosk/web/.env
+Environment=KIOSK_DATA_DIR=/var/lib/kiosk
+EnvironmentFile=-/var/lib/kiosk/.env
 ExecStart=/usr/bin/node apps/web/server.js
 Restart=always
 RestartSec=5

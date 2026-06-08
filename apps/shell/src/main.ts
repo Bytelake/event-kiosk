@@ -6,11 +6,25 @@ import {
   ipcMain,
 } from "electron";
 import path from "path";
-import { isAllowedRegistrationUrl } from "./domain-whitelist";
+import {
+  isRegistrationUrlAllowed,
+  refreshAllowedDomains,
+  startAllowedDomainsPolling,
+} from "./allowed-domains";
 import { injectRegistrationInputScript } from "./inject-registration-input";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
-const isDev = !app.isPackaged;
+const API_BASE = new URL(KIOSK_URL).origin;
+
+function isTruthyEnv(v: string | undefined): boolean {
+  const s = (v ?? "").toLowerCase();
+  return s === "true" || s === "1" || s === "yes";
+}
+
+const desktopMode =
+  isTruthyEnv(process.env.KIOSK_DESKTOP_MODE) || !app.isPackaged;
+const DESKTOP_WIDTH = 1080;
+const DESKTOP_HEIGHT = 1920;
 const CHROME_HEIGHT = 72;
 const KEYBOARD_HEIGHT = 380;
 
@@ -22,11 +36,13 @@ let keyboardVisible = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    kiosk: !isDev,
-    fullscreen: !isDev,
-    frame: isDev,
+    width: desktopMode ? DESKTOP_WIDTH : undefined,
+    height: desktopMode ? DESKTOP_HEIGHT : undefined,
+    kiosk: !desktopMode,
+    fullscreen: !desktopMode,
+    frame: desktopMode,
     autoHideMenuBar: true,
-    alwaysOnTop: !isDev,
+    alwaysOnTop: !desktopMode,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -35,9 +51,13 @@ function createWindow() {
     },
   });
 
+  if (desktopMode) {
+    mainWindow.setAspectRatio(DESKTOP_WIDTH / DESKTOP_HEIGHT);
+  }
+
   mainWindow.loadURL(KIOSK_URL);
 
-  if (!isDev) {
+  if (!desktopMode) {
     mainWindow.webContents.on("did-finish-load", () => {
       void mainWindow?.webContents.insertCSS(
         "html, body, *, a, button, [role='button'] { cursor: none !important; }",
@@ -46,13 +66,13 @@ function createWindow() {
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isAllowedRegistrationUrl(url)) {
+    if (isRegistrationUrlAllowed(url)) {
       openRegistrationView(url);
     }
     return { action: "deny" };
   });
 
-  if (!isDev) {
+  if (!desktopMode) {
     mainWindow.webContents.on("before-input-event", (event, input) => {
       if (input.alt || input.control || input.meta) {
         event.preventDefault();
@@ -109,7 +129,7 @@ function setupRegistrationInputMonitoring(view: BrowserView) {
 
 function openRegistrationView(url: string) {
   if (!mainWindow) return;
-  if (!isAllowedRegistrationUrl(url)) {
+  if (!isRegistrationUrlAllowed(url)) {
     console.warn("Blocked registration URL:", url);
     return;
   }
@@ -142,14 +162,14 @@ function openRegistrationView(url: string) {
   chromeView.webContents.loadFile(path.join(__dirname, "registration-chrome.html"));
 
   registrationView.webContents.setWindowOpenHandler(({ url: newUrl }) => {
-    if (isAllowedRegistrationUrl(newUrl)) {
+    if (isRegistrationUrlAllowed(newUrl)) {
       registrationView?.webContents.loadURL(newUrl);
     }
     return { action: "deny" };
   });
 
   registrationView.webContents.on("will-navigate", (event, navigationUrl) => {
-    if (!isAllowedRegistrationUrl(navigationUrl)) {
+    if (!isRegistrationUrlAllowed(navigationUrl)) {
       event.preventDefault();
     }
   });
@@ -225,7 +245,7 @@ function layoutRegistrationViews() {
 }
 
 function registerShortcuts() {
-  if (isDev) return;
+  if (desktopMode) return;
   const block = () => false;
   globalShortcut.register("Alt+Tab", block);
   globalShortcut.register("CommandOrControl+W", block);
@@ -233,7 +253,9 @@ function registerShortcuts() {
   globalShortcut.register("CommandOrControl+Shift+I", block);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await refreshAllowedDomains(API_BASE);
+  startAllowedDomainsPolling(API_BASE);
   createWindow();
   registerShortcuts();
 

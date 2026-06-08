@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
+import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
 import { eventEnrichSchema, manualEventSchema } from "@/lib/validators";
 
 function serializeEvent(event: Awaited<ReturnType<typeof prisma.event.findMany>>[number]) {
@@ -17,7 +18,7 @@ function serializeEvent(event: Awaited<ReturnType<typeof prisma.event.findMany>>
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
   const source = request.nextUrl.searchParams.get("source");
-  const now = new Date();
+  const now = wallClockNow();
 
   if (kiosk) {
     const events = await prisma.event.findMany({
@@ -71,8 +72,9 @@ export async function POST(request: Request) {
       source: "manual",
       syncStatus: "manual",
       title: data.title,
-      startAt: new Date(data.startAt),
-      endAt: data.endAt ? new Date(data.endAt) : null,
+      startAt: parseWallClockDatetime(data.startAt),
+      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : null,
+      allDay: data.allDay ?? false,
       shortDescription: data.shortDescription ?? null,
       fullDescription: data.fullDescription ?? null,
       location: data.location ?? null,
@@ -123,6 +125,7 @@ export async function PATCH(request: NextRequest) {
         featured: data.featured,
         sortOrder: data.sortOrder,
         kioskVisible: data.kioskVisible,
+        allDay: data.allDay,
         status: data.status,
       },
     });
@@ -139,8 +142,8 @@ export async function PATCH(request: NextRequest) {
     where: { id },
     data: {
       title: data.title,
-      startAt: data.startAt ? new Date(data.startAt) : undefined,
-      endAt: data.endAt ? new Date(data.endAt) : data.endAt === null ? null : undefined,
+      startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
+      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
       shortDescription: data.shortDescription ?? null,
       fullDescription: data.fullDescription ?? null,
       location: data.location ?? null,
@@ -149,6 +152,7 @@ export async function PATCH(request: NextRequest) {
       featured: data.featured,
       sortOrder: data.sortOrder,
       kioskVisible: data.kioskVisible,
+      allDay: data.allDay,
       status: data.status,
     },
   });

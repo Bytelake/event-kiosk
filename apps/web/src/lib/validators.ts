@@ -13,6 +13,7 @@ export const eventEnrichSchema = z.object({
   featured: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   kioskVisible: z.boolean().optional(),
+  allDay: z.boolean().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
 });
 
@@ -20,6 +21,7 @@ export const manualEventSchema = z.object({
   title: z.string().min(1),
   startAt: z.string().min(1),
   endAt: z.string().optional().nullable(),
+  allDay: z.boolean().optional(),
   shortDescription: z.string().optional().nullable(),
   fullDescription: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
@@ -31,13 +33,16 @@ export const manualEventSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).optional(),
 });
 
-export const kioskBackgroundStyles = ["clean", "brand-glow", "dots", "aurora"] as const;
+export const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a hex color");
 
 export const settingsSchema = z.object({
   orgName: z.string().min(1).optional(),
   orgLogoUrl: z.string().optional().nullable(),
-  brandPrimaryColor: z.string().optional(),
-  kioskBackgroundStyle: z.enum(kioskBackgroundStyles).optional(),
+  brandPrimaryColor: hexColorSchema.optional(),
+  brandSecondaryColor: hexColorSchema.optional(),
+  kioskBackgroundColor: hexColorSchema.optional(),
+  kioskTextColor: hexColorSchema.optional(),
+  kioskMutedTextColor: hexColorSchema.optional(),
   breezeSubdomain: z.string().optional().nullable(),
   breezeApiKey: z.string().optional().nullable(),
   breezeCalendarIds: z.array(z.string()).optional(),

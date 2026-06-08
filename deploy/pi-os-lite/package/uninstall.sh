@@ -5,6 +5,7 @@
 set -euo pipefail
 
 INSTALL_DIR="/opt/kiosk"
+KIOSK_DATA_DIR="/var/lib/kiosk"
 
 log() { echo "[uninstall] $*"; }
 
@@ -31,6 +32,14 @@ if [[ "${REPLY}" =~ ^[Yy]$ ]]; then
   log "Removed ${INSTALL_DIR}"
 else
   log "Left ${INSTALL_DIR} in place."
+fi
+
+read -r -p "Remove persistent data in ${KIOSK_DATA_DIR} (database, uploads, config)? [y/N] " REPLY
+if [[ "${REPLY}" =~ ^[Yy]$ ]]; then
+  rm -rf "${KIOSK_DATA_DIR}"
+  log "Removed ${KIOSK_DATA_DIR}"
+else
+  log "Left ${KIOSK_DATA_DIR} in place."
 fi
 
 log "Done. Reboot recommended: sudo reboot"

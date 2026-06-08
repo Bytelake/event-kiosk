@@ -20,6 +20,8 @@ INSTALL_DIR="/opt/kiosk"
 WITH_DISPLAY=true
 DISPLAY_ROTATION="normal"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=kiosk-paths.sh
+source "${SCRIPT_DIR}/kiosk-paths.sh"
 
 log() { echo "[install] $*"; }
 die() { echo "[install] ERROR: $*" >&2; exit 1; }
@@ -43,14 +45,13 @@ done
 
 [[ $EUID -eq 0 ]] || die "Run as root: sudo bash install.sh"
 
-if [[ -f "${INSTALL_DIR}/web/prisma/dev.db" ]] \
-  || [[ -f "${INSTALL_DIR}/apps/web/prisma/dev.db" ]] \
-  || [[ -f "${INSTALL_DIR}/web/.env" ]]; then
-  die "Existing installation at ${INSTALL_DIR}. Use update.sh to upgrade without losing data:
+if [[ -d "${INSTALL_DIR}/web" ]] || [[ -f "$(kiosk_db_file)" ]]; then
+  die "Existing installation detected. Use update.sh to upgrade without losing data:
   sudo bash update.sh"
 fi
 
 log "Installing Event Kiosk to ${INSTALL_DIR}..."
+log "Persistent data will be stored in ${KIOSK_DATA_DIR}"
 
 # ---------------------------------------------------------------------------
 # 1. System packages (no build-essential — nothing is compiled on the Pi)
@@ -92,17 +93,6 @@ loginctl enable-linger kiosk 2>/dev/null || true
 log "Copying application to ${INSTALL_DIR}..."
 mkdir -p "${INSTALL_DIR}"
 rsync -a --delete \
-  --filter 'P web/prisma/dev.db' \
-  --filter 'P web/prisma/dev.db-journal' \
-  --filter 'P web/dev.db' \
-  --filter 'P web/dev.db-journal' \
-  --exclude web/prisma/dev.db \
-  --exclude web/prisma/dev.db-journal \
-  --exclude web/dev.db \
-  --exclude web/dev.db-journal \
-  --exclude web/.env \
-  --exclude web/apps/web/public/uploads/ \
-  --exclude display.env \
   --exclude prisma-tools/ \
   --exclude shell/node_modules/ \
   "${SCRIPT_DIR}/" "${INSTALL_DIR}/"
@@ -115,32 +105,25 @@ chmod +x "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/fix-prisma.sh" "${INSTALL_
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
 # ---------------------------------------------------------------------------
-# 4. Display configuration
+# 4. Persistent data directory (outside /opt/kiosk)
 # ---------------------------------------------------------------------------
-if [[ ! -f "${INSTALL_DIR}/display.env" ]]; then
-  cp "${INSTALL_DIR}/display.env.example" "${INSTALL_DIR}/display.env"
-fi
+migrate_to_data_dir "${INSTALL_DIR}"
+write_env_if_missing "${INSTALL_DIR}/web/.env.example"
+write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
+
 if [[ "${DISPLAY_ROTATION}" != "normal" ]]; then
   log "Setting display rotation to ${DISPLAY_ROTATION}..."
-  KIOSK_ROOT="${INSTALL_DIR}" bash "${INSTALL_DIR}/bin/set-display-rotation.sh" --set "${DISPLAY_ROTATION}"
+  KIOSK_DATA_DIR="${KIOSK_DATA_DIR}" bash "${INSTALL_DIR}/bin/set-display-rotation.sh" --set "${DISPLAY_ROTATION}"
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Environment file
-# ---------------------------------------------------------------------------
-if [[ ! -f "${INSTALL_DIR}/web/.env" ]]; then
-  cp "${INSTALL_DIR}/web/.env.example" "${INSTALL_DIR}/web/.env"
-  log "Created ${INSTALL_DIR}/web/.env — edit ADMIN_PASSWORD before going live."
-fi
-
-# ---------------------------------------------------------------------------
-# 6. Database init (isolated Prisma install — never npm install in web/node_modules)
+# 5. Database init (isolated Prisma install — never npm install in web/node_modules)
 # ---------------------------------------------------------------------------
 log "Initializing database..."
 bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}"
 
 # ---------------------------------------------------------------------------
-# 7. Electron shell (downloads Linux ARM Electron binary only)
+# 6. Electron shell (downloads Linux ARM Electron binary only)
 # ---------------------------------------------------------------------------
 log "Installing Electron for Pi (one-time download)..."
 sudo -u kiosk bash -lc "
@@ -149,11 +132,10 @@ sudo -u kiosk bash -lc "
   npm install --omit=dev
 "
 
-mkdir -p "${INSTALL_DIR}/web/apps/web/public/uploads"
-chown -R kiosk:kiosk "${INSTALL_DIR}"
+chown -R kiosk:kiosk "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"
 
 # ---------------------------------------------------------------------------
-# 8. systemd services
+# 7. systemd services
 # ---------------------------------------------------------------------------
 log "Installing systemd services..."
 cp "${INSTALL_DIR}/systemd/kiosk-web.service" /etc/systemd/system/
@@ -193,10 +175,10 @@ log ""
 log "  Admin:  http://${IP}:3000/admin"
 log "  Kiosk:  http://${IP}:3000/kiosk"
 log ""
-log "  Edit password:  sudo nano ${INSTALL_DIR}/web/.env"
+log "  Edit password:  sudo nano $(kiosk_env_file)"
 log "  Then restart:   sudo systemctl restart kiosk-web"
 log ""
-log "  Portrait display: sudo nano ${INSTALL_DIR}/display.env"
+log "  Portrait display: sudo nano $(kiosk_display_env)"
 log "                      sudo ${INSTALL_DIR}/bin/set-display-rotation.sh --set left"
 log "                      sudo systemctl restart kiosk-display"
 log ""

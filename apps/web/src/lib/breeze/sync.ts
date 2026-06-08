@@ -1,14 +1,18 @@
 import { addDays, format } from "date-fns";
 import { prisma, getSettings } from "@/lib/db";
-import { parseCalendarIds } from "@/lib/utils";
+import { parseCalendarIds, parseWallClockDatetime } from "@/lib/utils";
 import { getBreezeClientFromSettings } from "./client";
 import type { BreezeEvent, BreezeSyncResult } from "./types";
 
 function parseBreezeDateTime(value: string | undefined): Date | null {
   if (!value || value.startsWith("0000-00-00")) return null;
-  const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const date = new Date(normalized);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const withoutTz = value.replace(/[Zz]|[+-]\d{2}:?\d{2}$/, "").trim();
+  try {
+    const date = parseWallClockDatetime(withoutTz);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchAllBreezeEvents(

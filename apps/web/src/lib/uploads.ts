@@ -1,7 +1,18 @@
+import { existsSync } from "fs";
 import path from "path";
 
-/** Uploaded images (served at /uploads/…). Matches Next standalone cwd (apps/web). */
+/** Uploaded images (served at /uploads/…). */
 export function getUploadsDir(): string {
+  if (process.env.UPLOADS_DIR) {
+    return process.env.UPLOADS_DIR;
+  }
+
+  // Next.js standalone Pi package: cwd is .../web, static tree is apps/web/public.
+  const standalonePublic = path.join(process.cwd(), "apps", "web", "public", "uploads");
+  if (existsSync(path.dirname(standalonePublic))) {
+    return standalonePublic;
+  }
+
   return path.join(process.cwd(), "public", "uploads");
 }
 

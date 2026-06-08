@@ -1,8 +1,11 @@
+import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
+
 export interface KioskEvent {
   id: string;
   title: string;
   startAt: string;
   endAt: string | null;
+  allDay: boolean;
   shortDescription: string | null;
   fullDescription: string | null;
   location: string | null;
@@ -11,14 +14,10 @@ export interface KioskEvent {
   featured: boolean;
 }
 
-export type KioskBackgroundStyle = "clean" | "brand-glow" | "dots" | "aurora";
-
-export interface KioskSettings {
+export type KioskSettings = KioskColorScheme & {
   orgName: string;
   orgLogoUrl: string | null;
-  brandPrimaryColor: string;
-  kioskBackgroundStyle: KioskBackgroundStyle;
-}
+};
 
 export async function fetchKioskEvents(): Promise<KioskEvent[]> {
   const res = await fetch("/api/events?kiosk=true", { cache: "no-store" });
@@ -33,7 +32,11 @@ export async function fetchPublicSettings(): Promise<KioskSettings> {
   return {
     orgName: data.orgName,
     orgLogoUrl: data.orgLogoUrl,
-    brandPrimaryColor: data.brandPrimaryColor,
-    kioskBackgroundStyle: data.kioskBackgroundStyle ?? "clean",
+    ...defaultKioskColorScheme,
+    brandPrimaryColor: data.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
+    brandSecondaryColor: data.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,
+    kioskBackgroundColor: data.kioskBackgroundColor ?? defaultKioskColorScheme.kioskBackgroundColor,
+    kioskTextColor: data.kioskTextColor ?? defaultKioskColorScheme.kioskTextColor,
+    kioskMutedTextColor: data.kioskMutedTextColor ?? defaultKioskColorScheme.kioskMutedTextColor,
   };
 }

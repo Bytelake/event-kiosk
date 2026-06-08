@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=web",
     "dev:shell": "npm run dev --workspace=shell",
+    "dev:desktop": "bash scripts/dev-desktop.sh",
     "build": "npm run build --workspace=web",
     "build:shell": "npm run build --workspace=shell",
     "start": "npm run start --workspace=web",

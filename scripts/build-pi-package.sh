@@ -61,7 +61,10 @@ chmod +x "${PACKAGE_ROOT}/fix-prisma.sh" "${PACKAGE_ROOT}/fix-permissions.sh" "$
 chmod +x "${PACKAGE_ROOT}/bin/"*.sh
 
 mkdir -p "${OUT_DIR}"
-tar -czf "${ARCHIVE}" -C "${OUT_DIR}" "${PACKAGE_NAME}"
+# macOS adds xattrs (e.g. com.apple.provenance) that Linux tar warns about on extract
+xattr -cr "${PACKAGE_ROOT}" 2>/dev/null || true
+tar --no-xattrs -czf "${ARCHIVE}" -C "${OUT_DIR}" "${PACKAGE_NAME}" 2>/dev/null \
+  || tar -czf "${ARCHIVE}" -C "${OUT_DIR}" "${PACKAGE_NAME}"
 
 BYTES=$(wc -c < "${ARCHIVE}" | tr -d ' ')
 log "Done: ${ARCHIVE} ($(numfmt --to=iec-i --suffix=B "${BYTES}" 2>/dev/null || echo "${BYTES} bytes"))"

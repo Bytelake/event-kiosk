@@ -6,32 +6,84 @@ import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
-import { kioskBackgroundStyles } from "@/lib/validators";
-import type { KioskBackgroundStyle } from "@/lib/kiosk-api";
+import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
 
 interface Calendar {
   id: number | string;
   name: string;
 }
 
-interface SettingsForm {
+interface SettingsForm extends KioskColorScheme {
   orgName: string;
   orgLogoUrl: string;
-  brandPrimaryColor: string;
-  kioskBackgroundStyle: KioskBackgroundStyle;
   breezeSubdomain: string;
   breezeApiKey: string;
   breezeCalendarIds: string[];
   hasBreezeApiKey: boolean;
 }
 
-const backgroundLabels: Record<KioskBackgroundStyle, string> = {
-  clean: "Clean — simple light gradient",
-  "brand-glow": "Brand glow — soft color wash from your brand",
-  dots: "Dots — subtle patterned texture",
-  aurora: "Aurora — flowing gradient accents",
-};
+const colorFields: { key: keyof KioskColorScheme; label: string; description: string }[] = [
+  {
+    key: "brandPrimaryColor",
+    label: "Primary",
+    description: "Buttons, accents, and badge highlights",
+  },
+  {
+    key: "brandSecondaryColor",
+    label: "Secondary",
+    description: "Event card gradients when no image is set",
+  },
+  {
+    key: "kioskBackgroundColor",
+    label: "Background",
+    description: "Page background gradient start",
+  },
+  {
+    key: "kioskTextColor",
+    label: "Heading text",
+    description: "Titles and section headers",
+  },
+  {
+    key: "kioskMutedTextColor",
+    label: "Muted text",
+    description: "Subtitles and secondary labels",
+  },
+];
+
+function ColorField({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-4">
+      <div className="mb-3">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="text-xs text-slate-500">{description}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-16 shrink-0 cursor-pointer p-1"
+        />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#2563eb"
+          className="font-mono uppercase"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SettingsForm | null>(null);
@@ -51,8 +103,14 @@ export default function AdminSettingsPage() {
       setSettings({
         orgName: settingsData.orgName,
         orgLogoUrl: settingsData.orgLogoUrl ?? "",
-        brandPrimaryColor: settingsData.brandPrimaryColor,
-        kioskBackgroundStyle: settingsData.kioskBackgroundStyle ?? "clean",
+        brandPrimaryColor: settingsData.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
+        brandSecondaryColor:
+          settingsData.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,
+        kioskBackgroundColor:
+          settingsData.kioskBackgroundColor ?? defaultKioskColorScheme.kioskBackgroundColor,
+        kioskTextColor: settingsData.kioskTextColor ?? defaultKioskColorScheme.kioskTextColor,
+        kioskMutedTextColor:
+          settingsData.kioskMutedTextColor ?? defaultKioskColorScheme.kioskMutedTextColor,
         breezeSubdomain: settingsData.breezeSubdomain ?? "",
         breezeApiKey: "",
         breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
@@ -81,7 +139,10 @@ export default function AdminSettingsPage() {
       orgName: settings.orgName,
       orgLogoUrl: settings.orgLogoUrl || null,
       brandPrimaryColor: settings.brandPrimaryColor,
-      kioskBackgroundStyle: settings.kioskBackgroundStyle,
+      brandSecondaryColor: settings.brandSecondaryColor,
+      kioskBackgroundColor: settings.kioskBackgroundColor,
+      kioskTextColor: settings.kioskTextColor,
+      kioskMutedTextColor: settings.kioskMutedTextColor,
       breezeSubdomain: settings.breezeSubdomain || null,
       breezeCalendarIds: settings.breezeCalendarIds,
     };
@@ -197,39 +258,55 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Brand color
+                  <label className="mb-3 block text-sm font-medium text-slate-700">
+                    Kiosk color scheme
                   </label>
-                  <Input
-                    type="color"
-                    value={settings.brandPrimaryColor}
-                    onChange={(e) =>
-                      setSettings({ ...settings, brandPrimaryColor: e.target.value })
-                    }
-                    className="h-12 w-24"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Kiosk background
-                  </label>
-                  <select
-                    className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
-                    value={settings.kioskBackgroundStyle}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        kioskBackgroundStyle: e.target.value as KioskBackgroundStyle,
-                      })
-                    }
-                  >
-                    {kioskBackgroundStyles.map((style) => (
-                      <option key={style} value={style}>
-                        {backgroundLabels[style]}
-                      </option>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {colorFields.map((field) => (
+                      <ColorField
+                        key={field.key}
+                        label={field.label}
+                        description={field.description}
+                        value={settings[field.key]}
+                        onChange={(value) =>
+                          setSettings({ ...settings, [field.key]: value })
+                        }
+                      />
                     ))}
-                  </select>
+                  </div>
+                  <div
+                    className="mt-4 overflow-hidden rounded-2xl border border-slate-200"
+                    style={{
+                      background: `linear-gradient(to bottom, ${settings.kioskBackgroundColor}, #ffffff)`,
+                    }}
+                  >
+                    <div className="p-6">
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: settings.kioskMutedTextColor }}
+                      >
+                        {settings.orgName || "Organization name"}
+                      </p>
+                      <p
+                        className="mt-1 text-2xl font-bold"
+                        style={{ color: settings.kioskTextColor }}
+                      >
+                        Upcoming Events
+                      </p>
+                      <div
+                        className="mt-4 inline-flex rounded-xl px-4 py-2 text-sm font-semibold text-white"
+                        style={{ backgroundColor: settings.brandPrimaryColor }}
+                      >
+                        Register
+                      </div>
+                      <div
+                        className="mt-4 h-16 max-w-xs rounded-2xl"
+                        style={{
+                          background: `linear-gradient(to bottom right, ${settings.brandPrimaryColor}, ${settings.brandSecondaryColor})`,
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

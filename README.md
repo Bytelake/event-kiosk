@@ -15,46 +15,37 @@ Designed for **Raspberry Pi OS Lite** (no desktop required). Also runs on other 
 
 ## Raspberry Pi (recommended)
 
-Build a release package on your dev machine, then install on a fresh Pi OS Lite 64-bit image with SSH enabled.
+Install from a **pre-built release package** on a fresh Pi OS Lite 64-bit image
 
-### 1. Build the package
+### 1. Get the release package
 
-```bash
-npm install
-npm run package:pi
-```
-
-Output: `dist/event-kiosk-pi-0.0.1.tar.gz`
+Download the latest `event-kiosk-pi-*.tar.gz` from [GitHub Releases](https://github.com/Bytelake/Kiosk-Project/releases).
 
 ### 2. Install on the Pi
 
+Extract and run the installer:
+
 ```bash
-scp dist/event-kiosk-pi-*.tar.gz pi@<pi-ip>:~/
-ssh pi@<pi-ip>
 tar -xzf event-kiosk-pi-*.tar.gz && cd event-kiosk-pi-*
-sudo bash install.sh --web-only    # backend only — good first test
-# or
-sudo bash install.sh               # full kiosk with touchscreen
+sudo bash install.sh
 ```
 
 Set your admin password:
 
 ```bash
-sudo nano /opt/kiosk/web/.env
+sudo nano /var/lib/kiosk/.env
 sudo systemctl restart kiosk-web
 ```
 
-Admin: `http://<pi-ip>:3000/admin`
+Admin webpage: `http://<ip-of-kiosk>:3000/admin`
 
-Portrait monitors: `sudo bash install.sh --rotation left`
+For rotated monitors: `sudo bash install.sh --rotation left`
 
 ### Updates
 
-Build a new package, copy it to the Pi, extract, and run `sudo bash update.sh` (not `install.sh`).
+Download a newer release package, copy it to the Pi, extract, and run `sudo bash update.sh` (not `install.sh`). Application code lives in `/opt/kiosk`; your database, uploads, and config live in `/var/lib/kiosk`. 
 
-If something goes wrong, SSH still works — run `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
-
-More Pi details: [deploy/pi-os-lite/README.md](deploy/pi-os-lite/README.md)
+To uninstall, run `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
 
 ## Development
 
@@ -70,14 +61,28 @@ npm run dev
 
 Optional Electron shell: `npm run dev:shell`
 
+### Desktop dev mode
+
+For local development with a normal mouse, keyboard, visible cursor, and a portrait 9:16 Electron window (matching vertical kiosk orientation):
+
+```bash
+npm run dev:desktop
+```
+
+This starts the Next.js dev server and Electron shell together. Admin is still available in your browser at http://localhost:3000/admin.
+
+Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor, no idle redirect) when using `npm run dev` without the shell.
+
+Desktop mode disables hidden cursor styling and the 60-second idle redirect on event detail pages. Production kiosk behavior is unchanged when the flag is unset or `false`.
+
 | URL | Purpose |
 |-----|---------|
-| http://localhost:3000/kiosk | Kiosk UI |
+| http://localhost:3000/kiosk | Preview Kiosk UI |
 | http://localhost:3000/admin | Admin panel (default password: `changeme`) |
 
 ### Environment variables
 
-Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Set `COOKIE_SECURE=false` when using HTTP on a Pi.
+Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Set `COOKIE_SECURE=false` when using HTTP on a Pi. Set `KIOSK_DESKTOP_MODE=true` for local desktop dev (see above).
 
 Breeze credentials can go in `.env` or Admin → Settings.
 

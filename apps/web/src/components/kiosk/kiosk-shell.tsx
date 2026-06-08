@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useKioskRefresh } from "@/components/kiosk/use-kiosk-refresh";
 import { KioskBackground } from "@/components/kiosk/kiosk-background";
 import { fetchPublicSettings, type KioskSettings } from "@/lib/kiosk-api";
+import { defaultKioskColorScheme } from "@/lib/kiosk-colors";
+import { isDesktopMode } from "@/lib/kiosk-mode";
+import { cn } from "@/lib/utils";
 
 export function KioskShell({ children }: { children: React.ReactNode }) {
   useKioskRefresh();
@@ -24,11 +27,13 @@ export function KioskShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="kiosk-root min-h-screen cursor-none [&_*]:cursor-none">
-      <KioskBackground
-        style={settings?.kioskBackgroundStyle ?? "clean"}
-        brandColor={settings?.brandPrimaryColor ?? "#2563eb"}
-      >
+    <div
+      className={cn(
+        "kiosk-root min-h-screen",
+        !isDesktopMode() && "cursor-none [&_*]:cursor-none",
+      )}
+    >
+      <KioskBackground colors={settings ?? defaultKioskColorScheme}>
         {children}
       </KioskBackground>
     </div>

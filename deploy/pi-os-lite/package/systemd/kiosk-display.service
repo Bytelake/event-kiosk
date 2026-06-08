@@ -1,22 +1,20 @@
 [Unit]
-Description=Event Kiosk Wayland Display (cage + Electron)
-After=kiosk-web.service seatd.service network-online.target
-Wants=kiosk-web.service seatd.service
-Conflicts=getty@tty1.service
+Description=Event Kiosk Fullscreen Display (Wayland/cage)
+After=kiosk-web.service
+Wants=kiosk-web.service
 
 [Service]
 Type=simple
+User=kiosk
 Environment=KIOSK_ROOT=/opt/kiosk
-Environment=KIOSK_URL=http://localhost:3000/kiosk
-EnvironmentFile=-/opt/kiosk/display.env
+Environment=KIOSK_DATA_DIR=/var/lib/kiosk
+Environment=KIOSK_URL=http://127.0.0.1:3000/kiosk
+EnvironmentFile=-/var/lib/kiosk/display.env
 WorkingDirectory=/opt/kiosk
-ExecStartPre=-/bin/systemctl stop getty@tty1.service
 ExecStartPre=+/opt/kiosk/bin/set-display-rotation.sh --configure-system
-ExecStartPre=/bin/sleep 8
 ExecStart=/opt/kiosk/bin/launch-kiosk-display.sh
-ExecStopPost=-/bin/systemctl start getty@tty1.service
-Restart=on-failure
-RestartSec=20
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

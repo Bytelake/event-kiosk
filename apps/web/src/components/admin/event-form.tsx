@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
 import { format } from "date-fns";
+import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 
 interface EventFormProps {
   initial?: Record<string, unknown>;
@@ -30,15 +31,18 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
     status: "draft",
     sortOrder: 0,
     breezeDescription: "",
+    allDay: false,
   });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!initial) return;
+    const startAt = initial.startAt ? toDatetimeLocalValue(String(initial.startAt)) : "";
+    const endAt = initial.endAt ? toDatetimeLocalValue(String(initial.endAt)) : "";
     setForm({
       title: String(initial.title ?? ""),
-      startAt: initial.startAt ? String(initial.startAt).slice(0, 16) : "",
-      endAt: initial.endAt ? String(initial.endAt).slice(0, 16) : "",
+      startAt,
+      endAt,
       shortDescription: String(initial.shortDescription ?? ""),
       fullDescription: String(initial.fullDescription ?? ""),
       location: String(initial.location ?? ""),
@@ -49,6 +53,11 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       status: String(initial.status ?? "draft"),
       sortOrder: Number(initial.sortOrder ?? 0),
       breezeDescription: String(initial.breezeDescription ?? ""),
+      allDay: eventIsAllDay(
+        initial.allDay as boolean | undefined,
+        startAt || String(initial.startAt ?? ""),
+        endAt || (initial.endAt ? String(initial.endAt) : null),
+      ),
     });
   }, [initial]);
 
@@ -62,6 +71,45 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       const data = await res.json();
       setForm((f) => ({ ...f, imageUrl: data.url }));
     }
+  }
+
+  function handleAllDayChange(checked: boolean) {
+    if (isBreeze) {
+      setForm((f) => ({ ...f, allDay: checked }));
+      return;
+    }
+
+    setForm((f) => {
+      if (checked) {
+        return {
+          ...f,
+          allDay: true,
+          startAt: f.startAt ? `${f.startAt.slice(0, 10)}T00:00` : f.startAt,
+          endAt: f.endAt ? `${f.endAt.slice(0, 10)}T00:00` : f.endAt,
+        };
+      }
+
+      return {
+        ...f,
+        allDay: false,
+        startAt: f.startAt ? `${f.startAt.slice(0, 10)}T09:00` : f.startAt,
+        endAt: f.endAt ? `${f.endAt.slice(0, 10)}T17:00` : f.endAt,
+      };
+    });
+  }
+
+  function handleStartChange(value: string) {
+    setForm((f) => ({
+      ...f,
+      startAt: f.allDay ? `${value}T00:00` : value,
+    }));
+  }
+
+  function handleEndChange(value: string) {
+    setForm((f) => ({
+      ...f,
+      endAt: f.allDay ? `${value}T00:00` : value,
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -97,23 +145,32 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
             )}
           </div>
 
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={form.allDay}
+              onChange={(e) => handleAllDayChange(e.target.checked)}
+            />
+            <span>All day</span>
+          </label>
+
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium">Start</label>
               <Input
-                type="datetime-local"
-                value={form.startAt}
+                type={form.allDay ? "date" : "datetime-local"}
+                value={form.allDay ? toDateLocalValue(form.startAt) : form.startAt}
                 disabled={isBreeze}
-                onChange={(e) => setForm({ ...form, startAt: e.target.value })}
+                onChange={(e) => handleStartChange(e.target.value)}
               />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">End</label>
               <Input
-                type="datetime-local"
-                value={form.endAt}
+                type={form.allDay ? "date" : "datetime-local"}
+                value={form.allDay ? toDateLocalValue(form.endAt) : form.endAt}
                 disabled={isBreeze}
-                onChange={(e) => setForm({ ...form, endAt: e.target.value })}
+                onChange={(e) => handleEndChange(e.target.value)}
               />
             </div>
           </div>

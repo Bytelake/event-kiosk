@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { formatWallClockDateTime } from "@/lib/utils";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ export default function AdminEventsPage() {
                       {event.syncStatus === "stale" && <Badge variant="warning">Stale</Badge>}
                     </div>
                     <p className="text-sm text-slate-500">
-                      {format(new Date(event.startAt), "MMM d, yyyy h:mm a")}
+                      {formatWallClockDateTime(event.startAt)}
                     </p>
                   </div>
                   <Badge variant={event.status === "published" ? "success" : "default"}>
