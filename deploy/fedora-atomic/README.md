@@ -16,8 +16,14 @@ Install Event Kiosk on **Fedora Atomic Desktop** (Silverblue, Kinoite, etc.) or 
 From a clone of this repo on the Atomic host:
 
 ```bash
+git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
+cd ~/event-kiosk
 sudo bash deploy/fedora-atomic/install.sh
 ```
+
+If the installer layers OS packages, it exits and asks you to **reboot and re-run the same command** before the build continues.
+
+Clone path does not matter (including `~/event-kiosk` on Atomic); the installer builds as root so it can read your home directory.
 
 Options:
 

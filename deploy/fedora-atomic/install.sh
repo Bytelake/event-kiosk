@@ -93,12 +93,14 @@ done
 loginctl enable-linger kiosk 2>/dev/null || true
 
 log "Building Electron shell from source..."
-sudo -u kiosk bash -lc "
+# Build as root: the repo is usually in the installing user's home directory
+# (/var/home/<user> on Atomic), which the kiosk system user cannot read.
+(
   set -euo pipefail
-  cd '${REPO_ROOT}'
+  cd "${REPO_ROOT}"
   npm install --legacy-peer-deps
   npm run build --workspace=shell
-"
+)
 
 log "Staging host files to ${INSTALL_DIR}..."
 mkdir -p "${INSTALL_DIR}/shell/dist" "${INSTALL_DIR}/bin" "${INSTALL_DIR}/systemd" "${INSTALL_DIR}/web/prisma"

@@ -41,8 +41,24 @@ if ((${#MISSING[@]} == 0)); then
   exit 0
 fi
 
+# A prior install may have layered packages that are not active until reboot.
+if rpm-ostree status 2>/dev/null | grep -q "Pending"; then
+  log "rpm-ostree has a pending deployment. Reboot before continuing."
+  echo "REBOOT_REQUIRED=1"
+  exit 0
+fi
+
 log "Layering packages: ${MISSING[*]}"
 log "A reboot is required after layering completes."
 
-rpm-ostree install -y "${MISSING[@]}"
+if ! LAYER_ERR="$(rpm-ostree install -y "${MISSING[@]}" 2>&1)"; then
+  if echo "${LAYER_ERR}" | grep -qiE 'already requested'; then
+    log "Packages are already layered but pending reboot."
+    echo "REBOOT_REQUIRED=1"
+    exit 0
+  fi
+  echo "${LAYER_ERR}" >&2
+  exit 1
+fi
+
 echo "REBOOT_REQUIRED=1"
