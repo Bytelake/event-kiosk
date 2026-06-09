@@ -21,9 +21,22 @@ cd ~/event-kiosk
 sudo bash deploy/fedora-atomic/install.sh
 ```
 
-If the installer layers OS packages, it exits and asks you to **reboot and re-run the same command** before the build continues.
+If the installer layers OS packages, it exits and asks you to **reboot once**, then re-run the same command. You should only see that message **once** per fresh install; if it repeats after every reboot, pull the latest repo (an older script requested a non-existent `npm` RPM on Fedora).
+
+Persistent data lives at **`/var/lib/kiosk`** (not in your home directory). That folder is created on the install run *after* OS packages are active — it is normal for it to be missing while the installer is still waiting on a reboot.
 
 Clone path does not matter (including `~/event-kiosk` on Atomic); the installer builds as root so it can read your home directory.
+
+### Stuck in a reboot loop?
+
+```bash
+rpm-ostree status
+command -v node npm
+rpm -q nodejs nodejs-npm
+sudo bash deploy/fedora-atomic/layer-packages.sh
+```
+
+If `node` and `npm` work but the installer still asks for a reboot, update the repo and re-run install.
 
 Options:
 

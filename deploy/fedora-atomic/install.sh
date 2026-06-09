@@ -74,12 +74,21 @@ if has_existing_install; then
   die "Existing installation detected. Remove /opt/kiosk and /var/lib/kiosk first, or run uninstall.sh."
 fi
 
-LAYER_OUT="$(bash "${SCRIPT_DIR}/layer-packages.sh" "${DISPLAY_MODE}" "${VARIANT}" || true)"
+LAYER_OUT="$(bash "${SCRIPT_DIR}/layer-packages.sh" "${DISPLAY_MODE}" "${VARIANT}")"
+printf '%s\n' "${LAYER_OUT}"
+
 if echo "${LAYER_OUT}" | grep -q "REBOOT_REQUIRED=1"; then
   log ""
-  log "New packages were layered. Reboot, then re-run this installer:"
+  if echo "${LAYER_OUT}" | grep -qiE 'staged deployment|pending reboot|already layered'; then
+    log "OS packages are staged but not active yet. Reboot, then re-run this installer:"
+  else
+    log "New OS packages were layered. Reboot, then re-run this installer:"
+  fi
   log "  sudo systemctl reboot"
+  log "  cd '${REPO_ROOT}'"
   log "  sudo bash deploy/fedora-atomic/install.sh"
+  log ""
+  log "Data directories (/var/lib/kiosk) are created on the next run after packages are active."
   exit 0
 fi
 
