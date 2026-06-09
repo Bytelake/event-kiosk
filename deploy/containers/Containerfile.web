@@ -1,10 +1,11 @@
-# Build stage — Next.js standalone + Prisma for linux-x64
+# Build stage — Next.js standalone + Prisma for linux-amd64
 FROM node:20-bookworm-slim AS builder
 
 WORKDIR /build
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
-RUN npm ci --workspace=web
+COPY apps/web/prisma apps/web/prisma
+RUN npm ci --workspace=web --ignore-scripts
 
 COPY apps/web apps/web
 WORKDIR /build/apps/web
