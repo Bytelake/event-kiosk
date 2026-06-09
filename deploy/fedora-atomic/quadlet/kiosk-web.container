@@ -8,7 +8,7 @@ ContainerName=event-kiosk-web
 Image=ghcr.io/bytelake/event-kiosk-web:latest
 PublishPort=3000:3000
 Volume=/var/lib/kiosk:/app/data:Z
-EnvironmentFile=/var/lib/kiosk/.env
+Volume=/var/lib/kiosk/.env:/app/.env:ro,Z
 Environment=NODE_ENV=production
 Environment=HOSTNAME=0.0.0.0
 Environment=PORT=3000

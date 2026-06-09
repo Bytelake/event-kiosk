@@ -74,6 +74,16 @@ migrate_to_data_dir() {
   chown -R kiosk:kiosk "${KIOSK_DATA_DIR}"
 }
 
+# Podman --env-file treats quotes literally; production .env files use bare values.
+normalize_env_file_quotes() {
+  local env_file="$1"
+  [[ -f "${env_file}" ]] || return 0
+  sed -i -E \
+    -e 's/^([A-Za-z_][A-Za-z0-9_]*)="([^"]*)"$/\1=\2/' \
+    -e "s/^([A-Za-z_][A-Za-z0-9_]*)='([^']*)'$/\1=\2/" \
+    "${env_file}"
+}
+
 write_env_if_missing() {
   local template="${1:-}"
   local env_file
@@ -85,28 +95,30 @@ write_env_if_missing() {
     cp "${template}" "${env_file}"
   else
     cat >"${env_file}" <<EOF
-DATABASE_URL="file:$(kiosk_db_file)"
-UPLOADS_DIR="$(kiosk_uploads_dir)"
-ADMIN_PASSWORD="changeme"
-SESSION_SECRET="change-this-to-a-long-random-string"
-COOKIE_SECURE="false"
-BREEZE_SUBDOMAIN=""
-BREEZE_API_KEY=""
+DATABASE_URL=file:$(kiosk_db_file)
+UPLOADS_DIR=$(kiosk_uploads_dir)
+ADMIN_PASSWORD=changeme
+SESSION_SECRET=change-this-to-a-long-random-string
+COOKIE_SECURE=false
+BREEZE_SUBDOMAIN=
+BREEZE_API_KEY=
 EOF
   fi
 
   # Always use absolute paths for production data.
   if grep -q '^DATABASE_URL=' "${env_file}"; then
-    sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"file:$(kiosk_db_file)\"|" "${env_file}"
+    sed -i "s|^DATABASE_URL=.*|DATABASE_URL=file:$(kiosk_db_file)|" "${env_file}"
   else
-    echo "DATABASE_URL=\"file:$(kiosk_db_file)\"" >>"${env_file}"
+    echo "DATABASE_URL=file:$(kiosk_db_file)" >>"${env_file}"
   fi
 
   if grep -q '^UPLOADS_DIR=' "${env_file}"; then
-    sed -i "s|^UPLOADS_DIR=.*|UPLOADS_DIR=\"$(kiosk_uploads_dir)\"|" "${env_file}"
+    sed -i "s|^UPLOADS_DIR=.*|UPLOADS_DIR=$(kiosk_uploads_dir)|" "${env_file}"
   else
-    echo "UPLOADS_DIR=\"$(kiosk_uploads_dir)\"" >>"${env_file}"
+    echo "UPLOADS_DIR=$(kiosk_uploads_dir)" >>"${env_file}"
   fi
+
+  normalize_env_file_quotes "${env_file}"
 
   chown kiosk:kiosk "${env_file}"
   chmod 640 "${env_file}"

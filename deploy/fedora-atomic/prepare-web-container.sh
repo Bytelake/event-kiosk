@@ -27,6 +27,8 @@ if [[ ! -f "$(kiosk_env_file)" ]]; then
   die "Missing $(kiosk_env_file). Run setup-db or create .env first."
 fi
 
+normalize_env_file_quotes "$(kiosk_env_file)"
+
 chown -R kiosk:kiosk "${DATA_DIR}"
 chmod 750 "${DATA_DIR}"
 chmod 640 "$(kiosk_env_file)"

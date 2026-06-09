@@ -63,7 +63,20 @@ sudo nano /var/lib/kiosk/.env
 sudo systemctl restart kiosk-web
 ```
 
-Set at least `ADMIN_PASSWORD` and `SESSION_SECRET` in `.env`. The container overrides `DATABASE_URL` and `UPLOADS_DIR` with in-container paths; leave those as the host paths in `.env` for `setup-db.sh` on the host.
+Set at least `ADMIN_PASSWORD` and `SESSION_SECRET` in `.env`. Use **unquoted** values (e.g. `ADMIN_PASSWORD=changeme`, not `ADMIN_PASSWORD="changeme"`). The container overrides `DATABASE_URL` and `UPLOADS_DIR` with in-container paths; leave those as the host paths in `.env` for `setup-db.sh` on the host.
+
+### Admin login says "Invalid password" with `changeme`
+
+Quoted values in `.env` break Podman env loading. Fix and restart:
+
+```bash
+sudo sed -i -E \
+  -e 's/^([A-Za-z_][A-Za-z0-9_]*)="([^"]*)"$/\1=\2/' \
+  /var/lib/kiosk/.env
+sudo cp deploy/fedora-atomic/quadlet/kiosk-web.container /etc/containers/systemd/
+sudo systemctl daemon-reload
+sudo systemctl restart kiosk-web
+```
 
 ### Web container won't start (exit code 125)
 

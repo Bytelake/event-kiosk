@@ -21,21 +21,33 @@ export function sessionCookieOptions() {
   };
 }
 
+function normalizeEnvValue(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
 function getSecret() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET is not configured");
   }
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(normalizeEnvValue(secret));
 }
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
-  if (adminPassword.startsWith("$2")) {
-    return bcrypt.compare(password, adminPassword);
+  const normalized = normalizeEnvValue(adminPassword);
+  if (normalized.startsWith("$2")) {
+    return bcrypt.compare(password, normalized);
   }
-  return password === adminPassword;
+  return password === normalized;
 }
 
 export async function createSession(): Promise<string> {
