@@ -70,8 +70,14 @@ fi
 
 log "Fedora Atomic variant: ${VARIANT}, display mode: ${DISPLAY_MODE}"
 
+RESUME=false
 if has_existing_install; then
-  die "Existing installation detected. Remove /opt/kiosk and /var/lib/kiosk first, or run uninstall.sh."
+  if [[ -x "${INSTALL_DIR}/setup-db.sh" ]] && [[ ! -f "$(kiosk_db_file)" ]]; then
+    RESUME=true
+    log "Resuming partial install (application staged, database not initialized)..."
+  else
+    die "Existing installation detected. Remove /opt/kiosk and /var/lib/kiosk first, or run uninstall.sh."
+  fi
 fi
 
 LAYER_OUT="$(bash "${SCRIPT_DIR}/layer-packages.sh" "${DISPLAY_MODE}" "${VARIANT}")"
@@ -101,41 +107,51 @@ for g in render seat; do
 done
 loginctl enable-linger kiosk 2>/dev/null || true
 
-log "Building Electron shell from source..."
-# Build as root: the repo is usually in the installing user's home directory
-# (/var/home/<user> on Atomic), which the kiosk system user cannot read.
-(
-  set -euo pipefail
-  cd "${REPO_ROOT}"
-  npm install --legacy-peer-deps
-  npm run build --workspace=shell
-)
+if [[ "${RESUME}" == "true" ]]; then
+  log "Refreshing install scripts from repo..."
+  cp "${REPO_ROOT}/deploy/common/setup-db.sh" "${INSTALL_DIR}/setup-db.sh"
+  cp "${REPO_ROOT}/deploy/common/kiosk-paths.sh" "${INSTALL_DIR}/kiosk-paths.sh"
+  chmod +x "${INSTALL_DIR}/setup-db.sh"
+  chown -R kiosk:kiosk "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"
+  migrate_to_data_dir "${INSTALL_DIR}"
+  write_env_if_missing "${INSTALL_DIR}/web/.env.example"
+else
+  log "Building Electron shell from source..."
+  # Build as root: the repo is usually in the installing user's home directory
+  # (/var/home/<user> on Atomic), which the kiosk system user cannot read.
+  (
+    set -euo pipefail
+    cd "${REPO_ROOT}"
+    npm install --legacy-peer-deps
+    npm run build --workspace=shell
+  )
 
-log "Staging host files to ${INSTALL_DIR}..."
-mkdir -p "${INSTALL_DIR}/shell/dist" "${INSTALL_DIR}/bin" "${INSTALL_DIR}/systemd" "${INSTALL_DIR}/web/prisma"
-cp -R "${REPO_ROOT}/apps/shell/dist/." "${INSTALL_DIR}/shell/dist/"
-cp "${REPO_ROOT}/apps/shell/package.json" "${INSTALL_DIR}/shell/package.json"
-cp "${REPO_ROOT}/apps/shell/src/registration-chrome.html" "${INSTALL_DIR}/shell/dist/registration-chrome.html"
-cp "${REPO_ROOT}/apps/shell/src/registration-keyboard.html" "${INSTALL_DIR}/shell/dist/registration-keyboard.html"
-rsync -a --exclude dev.db --exclude dev.db-journal \
-  "${REPO_ROOT}/apps/web/prisma/" "${INSTALL_DIR}/web/prisma/"
-cp "${REPO_ROOT}/apps/web/.env.example" "${INSTALL_DIR}/web/.env.example"
-cp "${REPO_ROOT}/deploy/common/bin/"*.sh "${INSTALL_DIR}/bin/"
-cp "${REPO_ROOT}/deploy/common/systemd/kiosk-display.service" "${INSTALL_DIR}/systemd/"
-cp "${REPO_ROOT}/deploy/common/systemd/kiosk-shell.service" "${INSTALL_DIR}/systemd/"
-cp "${REPO_ROOT}/deploy/common/kiosk-paths.sh" "${INSTALL_DIR}/kiosk-paths.sh"
-cp "${REPO_ROOT}/deploy/common/setup-db.sh" "${INSTALL_DIR}/setup-db.sh"
-cp "${REPO_ROOT}/deploy/common/diagnose.sh" "${INSTALL_DIR}/diagnose.sh"
-cp "${REPO_ROOT}/deploy/common/display.env.example" "${INSTALL_DIR}/display.env.example"
-chmod +x "${INSTALL_DIR}/bin/"*.sh "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/diagnose.sh"
+  log "Staging host files to ${INSTALL_DIR}..."
+  mkdir -p "${INSTALL_DIR}/shell/dist" "${INSTALL_DIR}/bin" "${INSTALL_DIR}/systemd" "${INSTALL_DIR}/web/prisma"
+  cp -R "${REPO_ROOT}/apps/shell/dist/." "${INSTALL_DIR}/shell/dist/"
+  cp "${REPO_ROOT}/apps/shell/package.json" "${INSTALL_DIR}/shell/package.json"
+  cp "${REPO_ROOT}/apps/shell/src/registration-chrome.html" "${INSTALL_DIR}/shell/dist/registration-chrome.html"
+  cp "${REPO_ROOT}/apps/shell/src/registration-keyboard.html" "${INSTALL_DIR}/shell/dist/registration-keyboard.html"
+  rsync -a --exclude dev.db --exclude dev.db-journal \
+    "${REPO_ROOT}/apps/web/prisma/" "${INSTALL_DIR}/web/prisma/"
+  cp "${REPO_ROOT}/apps/web/.env.example" "${INSTALL_DIR}/web/.env.example"
+  cp "${REPO_ROOT}/deploy/common/bin/"*.sh "${INSTALL_DIR}/bin/"
+  cp "${REPO_ROOT}/deploy/common/systemd/kiosk-display.service" "${INSTALL_DIR}/systemd/"
+  cp "${REPO_ROOT}/deploy/common/systemd/kiosk-shell.service" "${INSTALL_DIR}/systemd/"
+  cp "${REPO_ROOT}/deploy/common/kiosk-paths.sh" "${INSTALL_DIR}/kiosk-paths.sh"
+  cp "${REPO_ROOT}/deploy/common/setup-db.sh" "${INSTALL_DIR}/setup-db.sh"
+  cp "${REPO_ROOT}/deploy/common/diagnose.sh" "${INSTALL_DIR}/diagnose.sh"
+  cp "${REPO_ROOT}/deploy/common/display.env.example" "${INSTALL_DIR}/display.env.example"
+  chmod +x "${INSTALL_DIR}/bin/"*.sh "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/diagnose.sh"
 
-chown -R kiosk:kiosk "${INSTALL_DIR}"
-migrate_to_data_dir "${INSTALL_DIR}"
-write_env_if_missing "${INSTALL_DIR}/web/.env.example"
-write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
+  chown -R kiosk:kiosk "${INSTALL_DIR}"
+  migrate_to_data_dir "${INSTALL_DIR}"
+  write_env_if_missing "${INSTALL_DIR}/web/.env.example"
+  write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
 
-if [[ "${DISPLAY_ROTATION}" != "normal" ]]; then
-  KIOSK_DATA_DIR="${KIOSK_DATA_DIR}" bash "${INSTALL_DIR}/bin/set-display-rotation.sh" --set "${DISPLAY_ROTATION}"
+  if [[ "${DISPLAY_ROTATION}" != "normal" ]]; then
+    KIOSK_DATA_DIR="${KIOSK_DATA_DIR}" bash "${INSTALL_DIR}/bin/set-display-rotation.sh" --set "${DISPLAY_ROTATION}"
+  fi
 fi
 
 bash "${SCRIPT_DIR}/selinux-contexts.sh" "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"

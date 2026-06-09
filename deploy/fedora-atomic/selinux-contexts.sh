@@ -27,7 +27,7 @@ if command -v semanage >/dev/null 2>&1; then
 fi
 
 if command -v restorecon >/dev/null 2>&1; then
-  restorecon -RF "${DATA_DIR}" "${INSTALL_DIR}/bin" 2>/dev/null || true
+  restorecon -RF "${DATA_DIR}" "${INSTALL_DIR}" 2>/dev/null || true
 fi
 
-log "SELinux contexts applied for ${DATA_DIR} and ${INSTALL_DIR}/bin"
+log "SELinux contexts applied for ${DATA_DIR} and ${INSTALL_DIR}"
