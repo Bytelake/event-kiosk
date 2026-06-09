@@ -76,7 +76,10 @@ cp -R "${STANDALONE}/." "${KIOSK_INSTALL_DIR}/web/"
 rm -rf "${KIOSK_INSTALL_DIR}/web/node_modules/@prisma" "${KIOSK_INSTALL_DIR}/web/node_modules/.prisma" 2>/dev/null || true
 mkdir -p "${KIOSK_INSTALL_DIR}/web/apps/web/.next"
 cp -R "${REPO_ROOT}/apps/web/.next/static" "${KIOSK_INSTALL_DIR}/web/apps/web/.next/static"
-cp -R "${REPO_ROOT}/apps/web/public" "${KIOSK_INSTALL_DIR}/web/apps/web/public"
+mkdir -p "${KIOSK_INSTALL_DIR}/web/apps/web/public/uploads"
+if [[ -d "${REPO_ROOT}/apps/web/public" ]]; then
+  cp -R "${REPO_ROOT}/apps/web/public/." "${KIOSK_INSTALL_DIR}/web/apps/web/public/"
+fi
 mkdir -p "${KIOSK_INSTALL_DIR}/web/prisma"
 rsync -a --exclude dev.db --exclude dev.db-journal \
   "${REPO_ROOT}/apps/web/prisma/" "${KIOSK_INSTALL_DIR}/web/prisma/"
