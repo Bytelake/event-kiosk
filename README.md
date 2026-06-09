@@ -163,4 +163,4 @@ scripts/               Build scripts
 
 ## License
 
-Private — for organization use.
+[MIT](LICENSE) — free to use, modify, and distribute.
