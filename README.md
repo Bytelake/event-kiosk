@@ -2,7 +2,7 @@
 
 # Event Kiosk
 
-Touchscreen kiosk for churches, with the option to sync events from **Breeze CHMS**. Admins add images, descriptions, and registration links; visitors browse events and sign up through embedded registration sites.
+Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links; optional sync from **Breeze CHMS**.
 
 Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Fedora Atomic** (Desktop and IoT). Also runs locally for development on macOS, Linux, or Windows.
 
@@ -31,7 +31,7 @@ Install from a **pre-built release package** or from source. See [deploy/debian/
 
 ### 1. Get the release package
 
-Download the latest tarball from [GitHub Releases](https://github.com/Bytelake/Kiosk-Project/releases):
+Download the latest tarball from [GitHub Releases](https://github.com/Bytelake/event-kiosk/releases):
 
 - `event-kiosk-debian-amd64-*.tar.gz` — x86_64 PCs, Ubuntu Server, etc.
 - `event-kiosk-debian-arm64-*.tar.gz` — Raspberry Pi 4/5, ARM SBCs
@@ -60,8 +60,8 @@ For Ubuntu Desktop with an existing X session: `sudo bash install.sh --display=x
 ### Install from source
 
 ```bash
-git clone <repo-url> ~/kiosk-project
-cd ~/kiosk-project
+git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
+cd ~/event-kiosk
 sudo bash deploy/debian/install.sh
 ```
 
@@ -76,8 +76,8 @@ To uninstall: `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
 For Fedora Atomic Desktop (Silverblue, Kinoite) or Fedora Atomic IoT. See [deploy/fedora-atomic/README.md](deploy/fedora-atomic/README.md).
 
 ```bash
-git clone <repo-url> ~/kiosk-project
-cd ~/kiosk-project
+git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
+cd ~/event-kiosk
 sudo bash deploy/fedora-atomic/install.sh
 ```
 

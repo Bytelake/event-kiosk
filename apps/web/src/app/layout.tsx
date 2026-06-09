@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Event Kiosk",
-  description: "Organization event information and registration kiosk",
+  description: "Free, self-hosted event kiosk with registration on any allowed site",
 };
 
 export default function RootLayout({

@@ -4,7 +4,7 @@ Install Event Kiosk on **Debian 12+**, **Ubuntu 22.04+**, or **Raspberry Pi OS**
 
 ## Release package (recommended)
 
-Download `event-kiosk-debian-<arch>-*.tar.gz` from [GitHub Releases](https://github.com/Bytelake/Kiosk-Project/releases). The legacy name `event-kiosk-pi-*` is an alias for the arm64 package.
+Download `event-kiosk-debian-<arch>-*.tar.gz` from [GitHub Releases](https://github.com/Bytelake/event-kiosk/releases). The legacy name `event-kiosk-pi-*` is an alias for the arm64 package.
 
 ```bash
 tar -xzf event-kiosk-debian-amd64-*.tar.gz && cd event-kiosk-debian-*
@@ -25,8 +25,8 @@ sudo systemctl restart kiosk-web
 ## Install from source
 
 ```bash
-git clone <repo-url> ~/kiosk-project
-cd ~/kiosk-project
+git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
+cd ~/event-kiosk
 sudo bash deploy/debian/install.sh
 ```
 
