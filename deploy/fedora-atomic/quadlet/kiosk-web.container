@@ -7,9 +7,8 @@ Wants=network-online.target
 ContainerName=event-kiosk-web
 Image=ghcr.io/bytelake/event-kiosk-web:latest
 PublishPort=3000:3000
-Volume=/var/lib/kiosk/.env:/app/.env:ro,Z
-Volume=/var/lib/kiosk/kiosk.db:/app/data/kiosk.db:Z
-Volume=/var/lib/kiosk/uploads:/app/data/uploads:Z
+Volume=/var/lib/kiosk:/app/data:Z
+EnvironmentFile=/var/lib/kiosk/.env
 Environment=NODE_ENV=production
 Environment=HOSTNAME=0.0.0.0
 Environment=PORT=3000

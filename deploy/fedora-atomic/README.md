@@ -63,6 +63,22 @@ sudo nano /var/lib/kiosk/.env
 sudo systemctl restart kiosk-web
 ```
 
+Set at least `ADMIN_PASSWORD` and `SESSION_SECRET` in `.env`. The container overrides `DATABASE_URL` and `UPLOADS_DIR` with in-container paths; leave those as the host paths in `.env` for `setup-db.sh` on the host.
+
+### Web container won't start (exit code 125)
+
+Usually the image is missing or host data files were not ready:
+
+```bash
+sudo bash deploy/fedora-atomic/prepare-web-container.sh ghcr.io/bytelake/event-kiosk-web:latest ~/event-kiosk
+sudo cp deploy/fedora-atomic/quadlet/kiosk-web.container /etc/containers/systemd/kiosk-web.container
+sudo bash deploy/fedora-atomic/enable-quadlet.sh
+sudo systemctl restart kiosk-web
+journalctl -xeu kiosk-web.service
+```
+
+`systemctl enable kiosk-web.service` may print *transient or generated* for Quadlet units; use `enable-quadlet.sh` instead.
+
 ## Updates
 
 - **Web app:** `sudo podman pull <image>` then `sudo systemctl restart kiosk-web`

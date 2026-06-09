@@ -168,6 +168,9 @@ sudo -u kiosk bash -lc "
 
 chown -R kiosk:kiosk "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"
 
+log "Preparing web container data and image..."
+bash "${SCRIPT_DIR}/prepare-web-container.sh" "${WEB_IMAGE}" "${REPO_ROOT}"
+
 log "Installing Podman Quadlet for web backend..."
 mkdir -p /etc/containers/systemd
 sed "s|ghcr.io/bytelake/event-kiosk-web:latest|${WEB_IMAGE}|g" \
@@ -176,8 +179,7 @@ sed "s|ghcr.io/bytelake/event-kiosk-web:latest|${WEB_IMAGE}|g" \
 systemctl disable kiosk-web.service 2>/dev/null || true
 rm -f /etc/systemd/system/kiosk-web.service
 
-systemctl daemon-reload
-systemctl enable kiosk-web.service
+bash "${SCRIPT_DIR}/enable-quadlet.sh" kiosk-web.service /etc/containers/systemd/kiosk-web.container
 
 if [[ "${WITH_DISPLAY}" == "true" ]]; then
   if [[ "${DISPLAY_MODE}" == "wayland" ]]; then
@@ -195,7 +197,9 @@ if [[ "${WITH_DISPLAY}" == "true" ]]; then
   fi
 fi
 
-systemctl start kiosk-web.service || log "Web container starting (pull may take a minute)..."
+if ! systemctl start kiosk-web.service; then
+  die "kiosk-web.service failed to start. Check: journalctl -xeu kiosk-web.service"
+fi
 if [[ "${WITH_DISPLAY}" == "true" ]]; then
   if [[ "${DISPLAY_MODE}" == "wayland" ]]; then
     systemctl restart kiosk-display.service || true
