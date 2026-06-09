@@ -2,8 +2,9 @@
 set -uo pipefail
 
 INSTALL_DIR="/opt/kiosk"
+COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=kiosk-paths.sh
-source "${INSTALL_DIR}/kiosk-paths.sh" 2>/dev/null || {
+source "${COMMON_DIR}/kiosk-paths.sh" 2>/dev/null || source "${INSTALL_DIR}/kiosk-paths.sh" 2>/dev/null || {
   KIOSK_DATA_DIR="/var/lib/kiosk"
   kiosk_env_file() { echo "${KIOSK_DATA_DIR}/.env"; }
   kiosk_db_file() { echo "${KIOSK_DATA_DIR}/kiosk.db"; }
@@ -14,8 +15,18 @@ source "${INSTALL_DIR}/kiosk-paths.sh" 2>/dev/null || {
 echo "=== Event Kiosk Diagnostics ==="
 echo ""
 
+if [[ -f /run/ostree-booted ]]; then
+  echo "-- Platform: Fedora Atomic (ostree) --"
+  if [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    echo "  VARIANT_ID: ${VARIANT_ID:-unknown}"
+  fi
+  echo ""
+fi
+
 echo "-- Services --"
-for svc in kiosk-web kiosk-display seatd getty@tty1; do
+for svc in kiosk-web kiosk-display kiosk-shell seatd getty@tty1; do
   if systemctl is-active --quiet "${svc}" 2>/dev/null; then
     echo "  ${svc}: running"
   elif systemctl is-enabled --quiet "${svc}" 2>/dev/null; then
@@ -59,7 +70,7 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
   # shellcheck disable=SC1090
   source "${DISPLAY_ENV}"
   echo "  KIOSK_DISPLAY_ROTATION: ${KIOSK_DISPLAY_ROTATION:-normal}"
-  command -v wlr-randr >/dev/null && echo "  wlr-randr: installed" || echo "  wlr-randr: NOT installed (required for Pi rotation)"
+  command -v wlr-randr >/dev/null && echo "  wlr-randr: installed" || echo "  wlr-randr: not installed"
   if [[ -f /etc/udev/rules.d/99-kiosk-touch-rotation.rules ]]; then
     echo "  touch udev rule: present"
   else
@@ -69,7 +80,7 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
 fi
 
 echo "-- Logs (last 10 lines) --"
-for svc in kiosk-web kiosk-display; do
+for svc in kiosk-web kiosk-display kiosk-shell; do
   echo ">> ${svc}"
   journalctl -u "${svc}" -n 10 --no-pager 2>/dev/null || true
   echo ""

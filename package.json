@@ -15,6 +15,7 @@
     "db:generate": "npm run db:generate --workspace=web",
     "db:migrate": "npm run db:migrate --workspace=web",
     "db:push": "npm run db:push --workspace=web",
+    "package:debian": "bash scripts/build-debian-package.sh",
     "package:pi": "bash scripts/build-pi-package.sh"
   }
 }

@@ -79,12 +79,16 @@ Direct pushes to `main` should only be used for rare hotfixes by admins, and eve
 
 ## Releases
 
-`main` should always be buildable. To ship a Pi update:
+`main` should always be buildable. To ship a kiosk update:
 
 1. Merge PRs into `main`
 2. Bump version in root `package.json` if needed
-3. Run `npm run package:pi` locally
-4. Create a [GitHub Release](https://github.com/Bytelake/Kiosk-Project/releases) and attach the `event-kiosk-pi-*.tar.gz` artifact
+3. Build release packages locally:
+   - `npm run package:debian amd64` — x86_64 Debian/Ubuntu
+   - `npm run package:debian arm64` — Raspberry Pi OS / arm64 (also creates `event-kiosk-pi-*` alias)
+4. Create a [GitHub Release](https://github.com/Bytelake/Kiosk-Project/releases) and attach the tarball(s)
+
+Fedora Atomic hosts pull the web backend from `ghcr.io/<org>/event-kiosk-web` (built by CI on push to `main`).
 
 ## Local development
 

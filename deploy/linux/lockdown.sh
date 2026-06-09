@@ -1,37 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Run as root on Ubuntu / Raspberry Pi OS after installing the kiosk app to /opt/kiosk
-
-if [[ $EUID -ne 0 ]]; then
-  echo "Run as root: sudo ./lockdown.sh"
-  exit 1
-fi
-
-echo "Creating kiosk user..."
-id kiosk &>/dev/null || useradd -m -s /bin/bash kiosk
-
-echo "Disabling screen blanking and suspend..."
-systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target || true
-
-mkdir -p /etc/X11/xorg.conf.d
-cat >/etc/X11/xorg.conf.d/10-blanking.conf <<'EOF'
-Section "ServerFlags"
-    Option "BlankTime" "0"
-    Option "StandbyTime" "0"
-    Option "SuspendTime" "0"
-    Option "OffTime" "0"
-EOF
-
-echo "Installing systemd services..."
-cp /opt/kiosk/deploy/linux/kiosk-web.service /etc/systemd/system/
-cp /opt/kiosk/deploy/linux/kiosk-shell.service /etc/systemd/system/
-if [[ ! -f /opt/kiosk/display.env ]]; then
-  cp /opt/kiosk/deploy/pi-os-lite/display.env.example /opt/kiosk/display.env
-fi
-chmod +x /opt/kiosk/deploy/pi-os-lite/set-display-rotation.sh
-systemctl daemon-reload
-systemctl enable kiosk-web.service kiosk-shell.service
-
-echo "Lockdown complete."
-echo "Configure /opt/kiosk/apps/web/.env then run: systemctl start kiosk-web kiosk-shell"
+# Deprecated: use deploy/debian/install.sh
+echo "deploy/linux/lockdown.sh is deprecated."
+echo "Run: sudo bash deploy/debian/install.sh"
+exec "$(dirname "$0")/../debian/install.sh" "$@"

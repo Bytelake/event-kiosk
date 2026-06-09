@@ -6,7 +6,7 @@ const nextConfig = {
       process.env.KIOSK_DESKTOP_MODE === "true" ? "true" : "false",
   },
   experimental: {
-    // Don't bundle Prisma — install native ARM binaries on the Pi during setup
+    // Don't bundle Prisma — install native binaries on the target host during setup
     serverComponentsExternalPackages: ["@prisma/client"],
   },
 };

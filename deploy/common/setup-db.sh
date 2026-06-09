@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Prisma 5 + ARM64 client. Initialize or migrate the SQLite database.
+# Install Prisma 5 + native client for host arch. Initialize or migrate the SQLite database.
 #
 # Usage:
 #   setup-db.sh [INSTALL_DIR]           — full init (generate + db push + seed if new)
