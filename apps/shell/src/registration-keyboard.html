@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Keyboard</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      body {
+        font-family: system-ui, sans-serif;
+        background: #1e293b;
+        color: white;
+        height: 100vh;
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .key {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        border: none;
+        border-radius: 12px;
+        background: #334155;
+        color: white;
+        font-size: 24px;
+        font-weight: 600;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: background 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .key svg {
+        width: 28px;
+        height: 28px;
+        fill: currentColor;
+      }
+
+      .key:active {
+        background: #475569;
+      }
+
+      .key-wide {
+        flex: 1.6;
+      }
+
+      .key-space {
+        flex: 4;
+      }
+
+      .key-action {
+        background: #2563eb;
+        font-size: 20px;
+      }
+
+      .key-action:active {
+        background: #1d4ed8;
+      }
+
+      .key-secondary {
+        background: #475569;
+        font-size: 18px;
+      }
+
+      .key-secondary:active {
+        background: #64748b;
+      }
+
+      .key.shift-active {
+        background: #2563eb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row" id="row-numbers"></div>
+    <div class="row" id="row-top"></div>
+    <div class="row" id="row-mid"></div>
+    <div class="row" id="row-bot"></div>
+    <div class="row" id="row-actions"></div>
+
+    <script>
+      var shifted = false;
+
+      var numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+      var row1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
+      var row2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
+      var row3 = ["z", "x", "c", "v", "b", "n", "m"];
+
+      var backspaceIcon =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>';
+
+      var shiftIcon =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 13h4v8h8v-8h4L12 3z"/></svg>';
+
+      function label(char) {
+        return shifted && /[a-z]/.test(char) ? char.toUpperCase() : char;
+      }
+
+      function makeKey(text, className, onPress) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "key" + (className ? " " + className : "");
+        btn.textContent = text;
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          onPress();
+        });
+        return btn;
+      }
+
+      function makeIconKey(html, className, ariaLabel, onPress) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "key" + (className ? " " + className : "");
+        btn.innerHTML = html;
+        btn.setAttribute("aria-label", ariaLabel);
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          onPress();
+        });
+        return btn;
+      }
+
+      function renderRow(containerId, keys, extra) {
+        var container = document.getElementById(containerId);
+        container.innerHTML = "";
+        keys.forEach(function (key) {
+          container.appendChild(
+            makeKey(label(key), "", function () {
+              window.keyboardAPI.sendKey(label(key));
+            }),
+          );
+        });
+        if (extra) extra(container);
+      }
+
+      function render() {
+        renderRow("row-numbers", numbers, function (container) {
+          container.appendChild(
+            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
+              window.keyboardAPI.backspace();
+            }),
+          );
+        });
+
+        renderRow("row-top", row1);
+
+        var mid = document.getElementById("row-mid");
+        mid.innerHTML = "";
+        var shiftBtn = makeIconKey(shiftIcon, "key-wide key-secondary", "Shift", function () {
+          shifted = !shifted;
+          shiftBtn.classList.toggle("shift-active", shifted);
+          render();
+        });
+        mid.appendChild(shiftBtn);
+        row2.forEach(function (key) {
+          mid.appendChild(
+            makeKey(label(key), "", function () {
+              window.keyboardAPI.sendKey(label(key));
+              if (shifted) {
+                shifted = false;
+                shiftBtn.classList.remove("shift-active");
+                render();
+              }
+            }),
+          );
+        });
+        mid.appendChild(
+          makeKey("@", "key-secondary", function () {
+            window.keyboardAPI.sendKey("@");
+          }),
+        );
+
+        var bot = document.getElementById("row-bot");
+        bot.innerHTML = "";
+        [".", "-", "_"].forEach(function (sym) {
+          bot.appendChild(
+            makeKey(sym, "key-secondary", function () {
+              window.keyboardAPI.sendKey(sym);
+            }),
+          );
+        });
+        row3.forEach(function (key) {
+          bot.appendChild(
+            makeKey(label(key), "", function () {
+              window.keyboardAPI.sendKey(label(key));
+              if (shifted) {
+                shifted = false;
+                shiftBtn.classList.remove("shift-active");
+                render();
+              }
+            }),
+          );
+        });
+
+        var actions = document.getElementById("row-actions");
+        actions.innerHTML = "";
+        actions.appendChild(
+          makeKey("Hide", "key-wide key-secondary", function () {
+            window.keyboardAPI.hide();
+          }),
+        );
+        actions.appendChild(
+          makeKey("Space", "key-space", function () {
+            window.keyboardAPI.sendKey(" ");
+          }),
+        );
+        actions.appendChild(
+          makeKey("Enter", "key-wide key-action", function () {
+            window.keyboardAPI.enter();
+          }),
+        );
+      }
+
+      render();
+    </script>
+  </body>
+</html>

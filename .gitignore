@@ -1,0 +1,14 @@
+Reference Material/
+screenshots/
+node_modules/
+.next/
+dist/
+out/
+*.db
+*.db-journal
+.env
+.env.local
+.env*.local
+uploads/
+.DS_Store
+*.log

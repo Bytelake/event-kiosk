@@ -1,0 +1,20 @@
+[Unit]
+Description=Event Kiosk Web Application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+WorkingDirectory=/opt/kiosk/web
+Environment=NODE_ENV=production
+Environment=HOSTNAME=0.0.0.0
+Environment=PORT=3000
+Environment=KIOSK_DATA_DIR=/var/lib/kiosk
+EnvironmentFile=-/var/lib/kiosk/.env
+ExecStart=/usr/bin/node apps/web/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+# Configure or apply kiosk display rotation for portrait/landscape monitors.
+set -euo pipefail
+
+KIOSK_ROOT="${KIOSK_ROOT:-/opt/kiosk}"
+DISPLAY_ENV="${KIOSK_ROOT}/display.env"
+UDEV_RULE="/etc/udev/rules.d/99-kiosk-touch-rotation.rules"
+
+log() { echo "[display-rotation] $*"; }
+warn() { echo "[display-rotation] WARNING: $*" >&2; }
+
+load_rotation() {
+  if [[ -f "${DISPLAY_ENV}" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${DISPLAY_ENV}"
+    set +a
+  fi
+  echo "${KIOSK_DISPLAY_ROTATION:-normal}"
+}
+
+normalize_rotation() {
+  case "${1,,}" in
+    normal | 0 | 0deg) echo "normal" ;;
+    left | 270 | 270deg | counterclockwise | ccw) echo "left" ;;
+    right | 90 | 90deg | clockwise | cw) echo "right" ;;
+    inverted | 180 | 180deg | upside-down | upsidedown) echo "inverted" ;;
+    *)
+      warn "Unknown rotation '${1}'; using normal."
+      echo "normal"
+      ;;
+  esac
+}
+
+wlr_transform_value() {
+  case "$1" in
+    normal) echo "normal" ;;
+    right) echo "90" ;;
+    inverted) echo "180" ;;
+    left) echo "270" ;;
+  esac
+}
+
+touch_calibration_matrix() {
+  case "$1" in
+    normal) echo "1 0 0 0 1 0" ;;
+    right) echo "0 -1 1 1 0 0" ;;
+    inverted) echo "-1 0 1 0 -1 1" ;;
+    left) echo "0 1 0 -1 0 1" ;;
+  esac
+}
+
+find_boot_config() {
+  for path in /boot/firmware/config.txt /boot/config.txt; do
+    if [[ -f "${path}" ]]; then
+      echo "${path}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+is_raspberry_pi() {
+  [[ -f /proc/device-tree/model ]] && grep -qi raspberry /proc/device-tree/model 2>/dev/null
+}
+
+remove_config_key() {
+  local file="$1"
+  local key="$2"
+  sed -i "/^${key}=/d" "${file}"
+}
+
+cleanup_legacy_boot_rotation() {
+  local config_file
+
+  if ! config_file="$(find_boot_config)"; then
+    return 0
+  fi
+
+  if grep -qE '^display_(hdmi|lcd)_rotate=' "${config_file}"; then
+    remove_config_key "${config_file}" display_hdmi_rotate
+    remove_config_key "${config_file}" display_lcd_rotate
+    log "Removed legacy config.txt rotation keys (ignored by Wayland/cage)."
+  fi
+}
+
+configure_touch_udev() {
+  local rotation="$1"
+  local matrix
+
+  matrix="$(touch_calibration_matrix "${rotation}")"
+
+  if [[ "${rotation}" == "normal" ]]; then
+    if [[ -f "${UDEV_RULE}" ]]; then
+      rm -f "${UDEV_RULE}"
+      log "Removed touch rotation udev rule."
+    fi
+  else
+    cat > "${UDEV_RULE}" <<EOF
+# Event Kiosk — touch alignment for ${rotation} display rotation
+SUBSYSTEM=="input", ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="${matrix}"
+EOF
+    log "Wrote touch calibration for ${rotation} to ${UDEV_RULE}"
+  fi
+
+  if command -v udevadm >/dev/null 2>&1; then
+    udevadm control --reload-rules 2>/dev/null || true
+    udevadm trigger --subsystem-match=input 2>/dev/null || true
+  fi
+}
+
+configure_system() {
+  local rotation="$1"
+
+  cleanup_legacy_boot_rotation
+  configure_touch_udev "${rotation}"
+
+  if is_raspberry_pi; then
+    log "Pi Wayland rotation is applied when kiosk-display starts (wlr-randr inside cage)."
+    log "Restart the display service: sudo systemctl restart kiosk-display"
+  fi
+}
+
+list_wayland_outputs() {
+  wlr-randr 2>/dev/null | awk '/^[A-Za-z0-9-]+ / {print $1}'
+}
+
+apply_wayland_rotation() {
+  local rotation="$1"
+  local transform output attempt
+  local -a outputs=()
+
+  if [[ "${rotation}" == "normal" ]]; then
+    transform="normal"
+  else
+    transform="$(wlr_transform_value "${rotation}")"
+  fi
+
+  if ! command -v wlr-randr >/dev/null 2>&1; then
+    warn "wlr-randr not installed; skipping Wayland rotation."
+    return 1
+  fi
+
+  if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+    warn "WAYLAND_DISPLAY is not set; skipping Wayland rotation."
+    return 1
+  fi
+
+  for attempt in $(seq 1 50); do
+    mapfile -t outputs < <(list_wayland_outputs)
+    if ((${#outputs[@]} > 0)); then
+      for output in "${outputs[@]}"; do
+        wlr-randr --output "${output}" --transform "${transform}"
+        log "Wayland output ${output} transform set to ${transform} (${rotation})"
+      done
+      return 0
+    fi
+    sleep 0.1
+  done
+
+  warn "No Wayland outputs found for rotation."
+  return 1
+}
+
+apply_x11_rotation() {
+  local rotation="$1"
+
+  if [[ -z "${DISPLAY:-}" ]]; then
+    warn "DISPLAY is not set; skipping X11 rotation."
+    return 1
+  fi
+
+  if ! command -v xrandr >/dev/null 2>&1; then
+    warn "xrandr not installed; skipping X11 rotation."
+    return 1
+  fi
+
+  local output
+  output="$(xrandr --query | awk '/ connected/{print $1; exit}')"
+  if [[ -z "${output}" ]]; then
+    warn "No connected X11 output found."
+    return 1
+  fi
+
+  xrandr --output "${output}" --rotate "${rotation}"
+  log "X11 output ${output} rotated to ${rotation}"
+}
+
+write_display_env() {
+  local rotation="$1"
+  local target="${KIOSK_ROOT}/display.env"
+
+  mkdir -p "${KIOSK_ROOT}"
+  cat > "${target}" <<EOF
+# Generated by set-display-rotation.sh — edit and restart kiosk-display / kiosk-shell.
+KIOSK_DISPLAY_ROTATION=${rotation}
+EOF
+  chmod 644 "${target}"
+}
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [--configure-system | --apply-wayland | --apply-x11 | --set ROTATION]
+
+  --configure-system  Touch udev rules + cleanup legacy config.txt (run as root)
+  --configure-pi      Alias for --configure-system
+  --apply-wayland     Apply rotation with wlr-randr (requires WAYLAND_DISPLAY, runs in cage)
+  --apply-x11         Apply rotation with xrandr (requires DISPLAY)
+  --set ROTATION      Write display.env and run --configure-system
+
+Rotation values: normal, left, right, inverted
+EOF
+}
+
+main() {
+  local mode="configure-system"
+  local rotation=""
+
+  case "${1:-}" in
+    --configure-system | --configure-pi) mode="configure-system" ;;
+    --apply-wayland) mode="apply-wayland" ;;
+    --apply-x11) mode="apply-x11" ;;
+    --set)
+      mode="set"
+      rotation="${2:-}"
+      [[ -n "${rotation}" ]] || { usage; exit 1; }
+      ;;
+    -h | --help) usage; exit 0 ;;
+    "") mode="configure-system" ;;
+    *) usage; exit 1 ;;
+  esac
+
+  if [[ "${mode}" == "set" ]]; then
+    rotation="$(normalize_rotation "${rotation}")"
+    write_display_env "${rotation}"
+    log "Wrote ${KIOSK_ROOT}/display.env (${rotation})"
+    configure_system "${rotation}"
+    exit 0
+  fi
+
+  rotation="$(normalize_rotation "$(load_rotation)")"
+
+  case "${mode}" in
+    configure-system)
+      configure_system "${rotation}"
+      ;;
+    apply-wayland)
+      apply_wayland_rotation "${rotation}" || true
+      ;;
+    apply-x11)
+      if [[ "${rotation}" == "normal" ]]; then
+        apply_x11_rotation "normal" || true
+      else
+        apply_x11_rotation "${rotation}" || true
+      fi
+      ;;
+  esac
+}
+
+main "$@"

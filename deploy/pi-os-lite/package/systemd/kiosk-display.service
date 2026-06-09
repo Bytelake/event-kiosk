@@ -1,0 +1,20 @@
+[Unit]
+Description=Event Kiosk Fullscreen Display (Wayland/cage)
+After=kiosk-web.service
+Wants=kiosk-web.service
+
+[Service]
+Type=simple
+User=kiosk
+Environment=KIOSK_ROOT=/opt/kiosk
+Environment=KIOSK_DATA_DIR=/var/lib/kiosk
+Environment=KIOSK_URL=http://127.0.0.1:3000/kiosk
+EnvironmentFile=-/var/lib/kiosk/display.env
+WorkingDirectory=/opt/kiosk
+ExecStartPre=+/opt/kiosk/bin/set-display-rotation.sh --configure-system
+ExecStart=/opt/kiosk/bin/launch-kiosk-display.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

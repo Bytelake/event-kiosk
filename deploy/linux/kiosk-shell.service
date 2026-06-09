@@ -1,0 +1,20 @@
+[Unit]
+Description=Event Kiosk Electron Shell
+After=kiosk-web.service network.target
+Requires=kiosk-web.service
+
+[Service]
+Type=simple
+User=kiosk
+Environment=DISPLAY=:0
+Environment=KIOSK_URL=http://localhost:3000/kiosk
+EnvironmentFile=-/opt/kiosk/display.env
+WorkingDirectory=/opt/kiosk/apps/shell
+ExecStartPre=/bin/sleep 5
+ExecStartPre=/opt/kiosk/deploy/pi-os-lite/set-display-rotation.sh --apply-x11
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
