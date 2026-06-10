@@ -27,7 +27,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
     imageUrl: "",
     registrationUrl: "",
     featured: false,
-    kioskVisible: true,
     status: "draft",
     sortOrder: 0,
     breezeDescription: "",
@@ -49,7 +48,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       imageUrl: String(initial.imageUrl ?? ""),
       registrationUrl: String(initial.registrationUrl ?? ""),
       featured: Boolean(initial.featured),
-      kioskVisible: Boolean(initial.kioskVisible ?? true),
       status: String(initial.status ?? "draft"),
       sortOrder: Number(initial.sortOrder ?? 0),
       breezeDescription: String(initial.breezeDescription ?? ""),
@@ -118,6 +116,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       ...form,
       endAt: form.endAt || null,
       registrationUrl: form.registrationUrl || null,
+      kioskVisible: form.status === "published",
     });
   }
 
@@ -262,15 +261,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
               onChange={(e) => setForm({ ...form, featured: e.target.checked })}
             />
             <span>Featured on kiosk home</span>
-          </label>
-
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.kioskVisible}
-              onChange={(e) => setForm({ ...form, kioskVisible: e.target.checked })}
-            />
-            <span>Visible on kiosk</span>
           </label>
 
           {initial?.lastSyncedAt ? (

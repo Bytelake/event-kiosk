@@ -5,8 +5,7 @@ Wants=kiosk-web.service seatd.service
 
 [Service]
 Type=simple
-User=kiosk
-Group=kiosk
+# Must run as root: openvt needs console access to take over tty1.
 Environment=HOME=/home/kiosk
 Environment=KIOSK_ROOT=/opt/kiosk
 Environment=KIOSK_URL=http://localhost:3000/kiosk

@@ -5,7 +5,7 @@ Wants=kiosk-web.service
 
 [Service]
 Type=simple
-User=kiosk
+# Must run as root: launch-kiosk-display.sh uses openvt to take over tty1.
 Environment=KIOSK_ROOT=/opt/kiosk
 Environment=KIOSK_DATA_DIR=/var/lib/kiosk
 Environment=KIOSK_URL=http://127.0.0.1:3000/kiosk
