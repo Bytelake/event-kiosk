@@ -136,6 +136,12 @@ npm run package:debian amd64    # explicit arch label
 npm run package:debian arm64
 ```
 
+Copy tarball to kiosk machine for testing, deployment:
+
+```bash
+scp dist/event-kiosk-debian-arm64-*.tar.gz user@<IP-ADDRESS>
+```
+
 ## Breeze setup
 
 1. In Breeze: **Account → API** — copy subdomain and API key
@@ -144,9 +150,6 @@ npm run package:debian arm64
 
 Breeze-owned fields (title, date) update on sync. Admin-added content is preserved.
 
-## Contributing
-
-Changes go through pull requests — see [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branching, CI, merging, and releases).
 
 ## Project structure
 

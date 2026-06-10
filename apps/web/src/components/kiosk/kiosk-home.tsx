@@ -134,7 +134,7 @@ function EventCard({ event, featured = false }: { event: KioskEvent; featured?: 
         ) : null}
       </div>
 
-      <div className="relative mt-auto flex w-full items-end justify-between gap-6 p-6 pt-28 md:p-8 md:pt-32">
+      <div className="relative flex w-full items-start justify-between gap-6 p-6 pt-28 md:p-8 md:pt-32">
         <div className="min-w-0 flex-1">
           <h3
             className={cn(

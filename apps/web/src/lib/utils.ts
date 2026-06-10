@@ -316,8 +316,14 @@ export function formatEventCardDateBadge(
   const schedule = formatKioskEventSchedule(startAt, endAt, allDay);
 
   if (!endAt || isSameWallClockDay(startAt, endAt)) {
+    const start = wallClockParts(startAt);
+    const now = wallClockParts(wallClockNow());
+    const isCurrentMonth = start.year === now.year && start.month === now.month;
+
     return {
-      label: formatEventDate(startAt).split(",")[0],
+      label: isCurrentMonth
+        ? formatEventDate(startAt).split(",")[0]
+        : format(start.date, "MMMM"),
       day: String(getWallClockDay(startAt)),
       time: formatBadgeTime(schedule.times),
     };
