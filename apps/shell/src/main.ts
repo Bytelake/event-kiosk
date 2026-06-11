@@ -84,7 +84,7 @@ function createWindow() {
 }
 
 function showKeyboard() {
-  if (!mainWindow || !registrationView || keyboardVisible) return;
+  if (!mainWindow || !registrationView) return;
 
   keyboardVisible = true;
 
@@ -110,6 +110,10 @@ function hideKeyboard() {
   if (!keyboardVisible) return;
   keyboardVisible = false;
   layoutRegistrationViews();
+  void registrationView?.webContents.executeJavaScript(
+    "window.__kioskDismissTyping && window.__kioskDismissTyping()",
+    true,
+  );
 }
 
 function sendToRegistrationTyping(method: string, arg?: string) {

@@ -38,6 +38,10 @@
     <h1>Event Registration</h1>
     <button class="done" id="done">Done</button>
     <script>
+      document.body.addEventListener("pointerdown", function () {
+        window.electronAPI.hideKeyboard();
+      });
+
       document.getElementById("done").addEventListener("click", () => {
         window.electronAPI.closeRegistration();
       });

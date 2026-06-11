@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("kioskShell", {
 contextBridge.exposeInMainWorld("electronAPI", {
   goBack: () => ipcRenderer.send("registration-go-back"),
   closeRegistration: () => ipcRenderer.send("close-registration"),
+  hideKeyboard: () => ipcRenderer.send("keyboard-hide"),
 });
 
 contextBridge.exposeInMainWorld("keyboardAPI", {

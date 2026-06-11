@@ -59,17 +59,78 @@ export const REGISTRATION_INPUT_SCRIPT = `
     },
   };
 
+  function isInputTarget(el) {
+    if (!el || !el.closest) return false;
+    if (el.closest(INPUT_SEL)) return true;
+    var label = el.closest("label");
+    if (label && label.control && label.control.matches(INPUT_SEL)) return true;
+    return false;
+  }
+
+  function isSupportedInput(el) {
+    return el && el.matches && el.matches(INPUT_SEL);
+  }
+
+  function setActiveInput(el) {
+    window.__kioskActiveInput = el;
+    window.__kioskInput && window.__kioskInput.notifyFocus();
+  }
+
+  function blurActiveInput() {
+    var el = window.__kioskActiveInput;
+    if (el && document.activeElement === el) {
+      el.blur();
+    }
+    window.__kioskActiveInput = null;
+  }
+
+  function dismissKeyboard() {
+    blurActiveInput();
+    window.__kioskInput && window.__kioskInput.notifyDismiss();
+  }
+
+  window.__kioskDismissTyping = blurActiveInput;
+
+  function syncFocusedInput() {
+    var active = document.activeElement;
+    if (isSupportedInput(active)) {
+      setActiveInput(active);
+    }
+  }
+
   document.addEventListener(
     "focusin",
     function (e) {
       var target = e.target;
-      if (target && target.matches && target.matches(INPUT_SEL)) {
-        window.__kioskActiveInput = target;
-        window.__kioskInput && window.__kioskInput.notifyFocus();
+      if (isSupportedInput(target)) {
+        setActiveInput(target);
       }
     },
     true,
   );
+
+  document.addEventListener(
+    "focusout",
+    function () {
+      requestAnimationFrame(function () {
+        if (isSupportedInput(document.activeElement)) return;
+        window.__kioskActiveInput = null;
+        window.__kioskInput && window.__kioskInput.notifyDismiss();
+      });
+    },
+    true,
+  );
+
+  document.addEventListener(
+    "pointerdown",
+    function (e) {
+      if (isInputTarget(e.target)) return;
+      dismissKeyboard();
+    },
+    true,
+  );
+
+  syncFocusedInput();
 })();
 `;
 
