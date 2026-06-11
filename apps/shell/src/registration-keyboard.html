@@ -30,6 +30,10 @@
         min-height: 0;
       }
 
+      .row.hidden {
+        display: none;
+      }
+
       .key {
         flex: 1;
         min-width: 0;
@@ -98,11 +102,15 @@
 
     <script>
       var shifted = false;
+      var keyboardMode = "letters";
 
-      var numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
       var row1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
       var row2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
       var row3 = ["z", "x", "c", "v", "b", "n", "m"];
+
+      var symbolRow1 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+      var symbolRow2 = ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'];
+      var symbolRow3 = [".", ",", "?", "!", "'", "#", "+", "=", "*"];
 
       var backspaceIcon =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>';
@@ -152,14 +160,26 @@
         if (extra) extra(container);
       }
 
-      function render() {
-        renderRow("row-numbers", numbers, function (container) {
-          container.appendChild(
-            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
-              window.keyboardAPI.backspace();
-            }),
-          );
-        });
+      function renderActionRow(modeToggleLabel, modeToggleAction) {
+        var actions = document.getElementById("row-actions");
+        actions.innerHTML = "";
+        actions.appendChild(
+          makeKey(modeToggleLabel, "key-wide key-secondary", modeToggleAction),
+        );
+        actions.appendChild(
+          makeKey("Space", "key-space", function () {
+            window.keyboardAPI.sendKey(" ");
+          }),
+        );
+        actions.appendChild(
+          makeKey("Done", "key-wide key-action", function () {
+            window.keyboardAPI.hide();
+          }),
+        );
+      }
+
+      function renderLetters() {
+        document.getElementById("row-numbers").classList.add("hidden");
 
         renderRow("row-top", row1);
 
@@ -211,23 +231,38 @@
           );
         });
 
-        var actions = document.getElementById("row-actions");
-        actions.innerHTML = "";
-        actions.appendChild(
-          makeKey("Hide", "key-wide key-secondary", function () {
-            window.keyboardAPI.hide();
-          }),
-        );
-        actions.appendChild(
-          makeKey("Space", "key-space", function () {
-            window.keyboardAPI.sendKey(" ");
-          }),
-        );
-        actions.appendChild(
-          makeKey("Enter", "key-wide key-action", function () {
-            window.keyboardAPI.enter();
-          }),
-        );
+        renderActionRow("123", function () {
+          keyboardMode = "symbols";
+          shifted = false;
+          render();
+        });
+      }
+
+      function renderSymbols() {
+        document.getElementById("row-numbers").classList.add("hidden");
+
+        renderRow("row-top", symbolRow1);
+        renderRow("row-mid", symbolRow2);
+        renderRow("row-bot", symbolRow3, function (container) {
+          container.appendChild(
+            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
+              window.keyboardAPI.backspace();
+            }),
+          );
+        });
+
+        renderActionRow("ABC", function () {
+          keyboardMode = "letters";
+          render();
+        });
+      }
+
+      function render() {
+        if (keyboardMode === "symbols") {
+          renderSymbols();
+        } else {
+          renderLetters();
+        }
       }
 
       render();

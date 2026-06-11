@@ -136,6 +136,15 @@ npm run package:debian amd64    # explicit arch label
 npm run package:debian arm64
 ```
 
+For local testing (not an official release), add `--pre-release` so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-arm64-0.0.2-prerelease.abc1234.tar.gz`):
+
+```bash
+npm run package:debian -- arm64 --pre-release
+npm run package:debian:prerelease -- amd64
+npm run package:debian -- amd64 --pre-release=test
+KIOSK_PRERELEASE=1 npm run package:debian -- arm64
+```
+
 Copy tarball to kiosk machine for testing, deployment:
 
 ```bash

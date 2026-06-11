@@ -1,23 +1,68 @@
 #!/usr/bin/env bash
-# Build Debian/Ubuntu release package: npm run package:debian [-- amd64|arm64]
+# Build Debian/Ubuntu release package:
+#   npm run package:debian [-- amd64|arm64] [--pre-release[=label]]
+#   KIOSK_PRERELEASE=1 npm run package:debian -- amd64
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('${ROOT}/package.json').version")"
 OUT_DIR="${ROOT}/dist"
 
-ARCH="${1:-$(uname -m)}"
+PRERELEASE=""
+ARCH=""
+for arg in "$@"; do
+  case "${arg}" in
+    --pre-release | --prerelease)
+      PRERELEASE="prerelease"
+      ;;
+    --pre-release=* | --prerelease=*)
+      PRERELEASE="${arg#*=}"
+      ;;
+    amd64 | arm64 | x86_64 | aarch64)
+      ARCH="${arg}"
+      ;;
+    *)
+      echo "Unknown argument: ${arg}" >&2
+      echo "Usage: $0 [amd64|arm64] [--pre-release[=label]]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "${PRERELEASE}" && -n "${KIOSK_PRERELEASE:-}" ]]; then
+  case "${KIOSK_PRERELEASE}" in
+    1 | true | yes) PRERELEASE="prerelease" ;;
+    *) PRERELEASE="${KIOSK_PRERELEASE}" ;;
+  esac
+fi
+
+ARCH="${ARCH:-$(uname -m)}"
 case "${ARCH}" in
   x86_64 | amd64) ARCH_LABEL="amd64" ;;
   aarch64 | arm64) ARCH_LABEL="arm64" ;;
   *) echo "Unsupported arch: ${ARCH}" >&2; exit 1 ;;
 esac
 
-PACKAGE_NAME="event-kiosk-debian-${ARCH_LABEL}-${VERSION}"
+VERSION_LABEL="${VERSION}"
+if [[ -n "${PRERELEASE}" ]]; then
+  if git -C "${ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    GIT_SHA="$(git -C "${ROOT}" rev-parse --short HEAD 2>/dev/null || true)"
+    if [[ -n "${GIT_SHA}" ]]; then
+      PRERELEASE="${PRERELEASE}.${GIT_SHA}"
+    fi
+  fi
+  VERSION_LABEL="${VERSION}-${PRERELEASE}"
+fi
+
+PACKAGE_NAME="event-kiosk-debian-${ARCH_LABEL}-${VERSION_LABEL}"
 ARCHIVE="${OUT_DIR}/${PACKAGE_NAME}.tar.gz"
-PI_ALIAS="${OUT_DIR}/event-kiosk-pi-${VERSION}.tar.gz"
+PI_ALIAS="${OUT_DIR}/event-kiosk-pi-${VERSION_LABEL}.tar.gz"
 
 log() { echo "[package:debian] $*"; }
+
+if [[ -n "${PRERELEASE}" ]]; then
+  log "Pre-release build (version label: ${VERSION_LABEL})"
+fi
 
 log "Building web app (standalone)..."
 cd "${ROOT}/apps/web"
