@@ -13,7 +13,10 @@ import {
   startAllowedDomainsPolling,
 } from "./allowed-domains";
 import { captureKioskScreenshot } from "./capture-kiosk-screenshot";
-import { injectRegistrationInputScript } from "./inject-registration-input";
+import {
+  injectRegistrationInputScript,
+  REGISTRATION_KEYBOARD_CSS,
+} from "./inject-registration-input";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
 const API_BASE = new URL(KIOSK_URL).origin;
@@ -104,14 +107,24 @@ function showKeyboard() {
   }
 
   layoutRegistrationViews();
+  setRegistrationKeyboardOpen(true);
 }
 
 function hideKeyboard() {
   if (!keyboardVisible) return;
   keyboardVisible = false;
   layoutRegistrationViews();
+  setRegistrationKeyboardOpen(false);
   void registrationView?.webContents.executeJavaScript(
-    "window.__kioskDismissTyping && window.__kioskDismissTyping()",
+    "window.__kioskEndEditing && window.__kioskEndEditing()",
+    true,
+  );
+}
+
+function setRegistrationKeyboardOpen(open: boolean) {
+  if (!registrationView) return;
+  void registrationView.webContents.executeJavaScript(
+    `document.documentElement.classList.toggle("kiosk-keyboard-open", ${open})`,
     true,
   );
 }
@@ -126,6 +139,7 @@ function sendToRegistrationTyping(method: string, arg?: string) {
 
 function setupRegistrationInputMonitoring(view: BrowserView) {
   const inject = () => {
+    void view.webContents.insertCSS(REGISTRATION_KEYBOARD_CSS);
     void injectRegistrationInputScript(view.webContents);
   };
 
