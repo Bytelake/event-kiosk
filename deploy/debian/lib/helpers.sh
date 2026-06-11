@@ -44,6 +44,26 @@ debian_install_node() {
   echo "[debian] Node $(node -v)"
 }
 
+debian_apt_package_candidate() {
+  apt-cache policy "${1}" 2>/dev/null | awk '/^  Candidate:/ { print $2; exit }'
+}
+
+debian_resolve_apt_package() {
+  local pkg="$1"
+  local candidate
+  candidate="$(debian_apt_package_candidate "${pkg}")"
+  if [[ -n "${candidate}" && "${candidate}" != "(none)" ]]; then
+    echo "${pkg}"
+    return 0
+  fi
+  candidate="$(debian_apt_package_candidate "${pkg}t64")"
+  if [[ -n "${candidate}" && "${candidate}" != "(none)" ]]; then
+    echo "${pkg}t64"
+    return 0
+  fi
+  echo "${pkg}"
+}
+
 debian_install_packages() {
   local from_source="${1:-false}"
   echo "[debian] Installing system packages..."
@@ -52,7 +72,16 @@ debian_install_packages() {
   if [[ "${from_source}" == "true" ]]; then
     pkgs+=("${DEBIAN_APT_PACKAGES_SOURCE[@]}")
   fi
-  DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkgs[@]}"
+  local -a resolved=()
+  local pkg resolved_pkg
+  for pkg in "${pkgs[@]}"; do
+    resolved_pkg="$(debian_resolve_apt_package "${pkg}")"
+    if [[ "${resolved_pkg}" != "${pkg}" ]]; then
+      echo "[debian] Using ${resolved_pkg} (Debian t64 transition)"
+    fi
+    resolved+=("${resolved_pkg}")
+  done
+  DEBIAN_FRONTEND=noninteractive apt-get install -y "${resolved[@]}"
 }
 
 debian_setup_kiosk_user() {
