@@ -20,6 +20,7 @@ interface SettingsForm extends KioskColorScheme {
   breezeApiKey: string;
   breezeCalendarIds: string[];
   hasBreezeApiKey: boolean;
+  kioskIdleTimeoutSeconds: number;
 }
 
 const colorFields: { key: keyof KioskColorScheme; label: string; description: string }[] = [
@@ -115,6 +116,7 @@ export default function AdminSettingsPage() {
         breezeApiKey: "",
         breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
         hasBreezeApiKey: settingsData.hasBreezeApiKey,
+        kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
       });
       setCalendars(calendarData);
       setDomains(domainData);
@@ -145,6 +147,7 @@ export default function AdminSettingsPage() {
       kioskMutedTextColor: settings.kioskMutedTextColor,
       breezeSubdomain: settings.breezeSubdomain || null,
       breezeCalendarIds: settings.breezeCalendarIds,
+      kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
     };
     if (settings.breezeApiKey) {
       payload.breezeApiKey = settings.breezeApiKey;
@@ -307,6 +310,35 @@ export default function AdminSettingsPage() {
                       />
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <h2 className="font-semibold">Kiosk Behavior</h2>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Idle timeout (seconds)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={3600}
+                    value={settings.kioskIdleTimeoutSeconds}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        kioskIdleTimeoutSeconds: Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Return to the events home screen after this many seconds without touch or
+                    scroll input. Set to 0 to disable.
+                  </p>
                 </div>
               </CardContent>
             </Card>

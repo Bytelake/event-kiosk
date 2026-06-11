@@ -30,6 +30,10 @@
         min-height: 0;
       }
 
+      .row.hidden {
+        display: none;
+      }
+
       .key {
         flex: 1;
         min-width: 0;
@@ -51,7 +55,22 @@
       .key svg {
         width: 28px;
         height: 28px;
+      }
+
+      .key svg path:not(.shift-caps-line) {
         fill: currentColor;
+      }
+
+      .key svg .shift-caps-line {
+        opacity: 0;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: butt;
+      }
+
+      .key.caps-active svg .shift-caps-line {
+        opacity: 1;
       }
 
       .key:active {
@@ -84,8 +103,21 @@
         background: #64748b;
       }
 
-      .key.shift-active {
+      .key.shift-active,
+      .key.caps-active {
         background: #2563eb;
+      }
+
+      .row-bot-layout {
+        justify-content: center;
+      }
+
+      .key-square {
+        flex: 0 0 auto;
+        height: 100%;
+        aspect-ratio: 1;
+        width: auto;
+        min-width: 0;
       }
     </style>
   </head>
@@ -98,20 +130,73 @@
 
     <script>
       var shifted = false;
+      var capsLock = false;
+      var keyboardMode = "letters";
+      var lastShiftPressAt = 0;
+      var DOUBLE_TAP_MS = 400;
 
-      var numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
       var row1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
       var row2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
       var row3 = ["z", "x", "c", "v", "b", "n", "m"];
+
+      var symbolRow1 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+      var symbolRow2 = ["_", "/", ":", ";", "(", ")", "$", "&", "@", '"'];
+      var symbolRow3 = [".", ",", "?", "!", "'", "#", "+", "=", "*"];
 
       var backspaceIcon =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>';
 
       var shiftIcon =
-        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 13h4v8h8v-8h4L12 3z"/></svg>';
+        '<svg viewBox="0 0 24 28" aria-hidden="true">' +
+        '<path d="M12 3 4 13h4v8h8v-8h4L12 3z"/>' +
+        '<path class="shift-caps-line" d="M8 25h8"/>' +
+        "</svg>";
 
       function label(char) {
-        return shifted && /[a-z]/.test(char) ? char.toUpperCase() : char;
+        if (/[a-z]/.test(char) && (capsLock || shifted)) {
+          return char.toUpperCase();
+        }
+        return char;
+      }
+
+      function updateShiftBtn(btn) {
+        btn.classList.toggle("shift-active", shifted && !capsLock);
+        btn.classList.toggle("caps-active", capsLock);
+      }
+
+      function afterLetterTyped(shiftBtn) {
+        if (shifted && !capsLock) {
+          shifted = false;
+          updateShiftBtn(shiftBtn);
+          render();
+        }
+      }
+
+      function onShiftPress(shiftBtn) {
+        var now = Date.now();
+
+        if (capsLock) {
+          capsLock = false;
+          shifted = false;
+          lastShiftPressAt = 0;
+          updateShiftBtn(shiftBtn);
+          render();
+          return;
+        }
+
+        if (lastShiftPressAt && now - lastShiftPressAt < DOUBLE_TAP_MS) {
+          capsLock = true;
+          shifted = false;
+          lastShiftPressAt = 0;
+          updateShiftBtn(shiftBtn);
+          render();
+          return;
+        }
+
+        shifted = !shifted;
+        lastShiftPressAt = now;
+        updateShiftBtn(shiftBtn);
+        render();
       }
 
       function makeKey(text, className, onPress) {
@@ -139,47 +224,66 @@
         return btn;
       }
 
-      function renderRow(containerId, keys, extra) {
+      function renderRow(containerId, keys, extra, afterKeyPress) {
         var container = document.getElementById(containerId);
         container.innerHTML = "";
         keys.forEach(function (key) {
           container.appendChild(
             makeKey(label(key), "", function () {
               window.keyboardAPI.sendKey(label(key));
+              if (afterKeyPress) afterKeyPress();
             }),
           );
         });
         if (extra) extra(container);
       }
 
-      function render() {
-        renderRow("row-numbers", numbers, function (container) {
+      function renderActionRow(modeToggleLabel, modeToggleAction) {
+        var actions = document.getElementById("row-actions");
+        actions.innerHTML = "";
+        actions.appendChild(
+          makeKey(modeToggleLabel, "key-wide key-secondary", modeToggleAction),
+        );
+        actions.appendChild(
+          makeKey("Space", "key-space", function () {
+            window.keyboardAPI.sendKey(" ");
+          }),
+        );
+        actions.appendChild(
+          makeKey("Done", "key-wide key-action", function () {
+            window.keyboardAPI.hide();
+          }),
+        );
+      }
+
+      function renderLetters() {
+        document.getElementById("row-numbers").classList.add("hidden");
+
+        var shiftBtn = makeIconKey(shiftIcon, "key-wide key-secondary", "Shift", function () {
+          onShiftPress(shiftBtn);
+        });
+        updateShiftBtn(shiftBtn);
+
+        var afterKey = function () {
+          afterLetterTyped(shiftBtn);
+        };
+
+        renderRow("row-top", row1, function (container) {
           container.appendChild(
             makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
               window.keyboardAPI.backspace();
             }),
           );
-        });
-
-        renderRow("row-top", row1);
+        }, afterKey);
 
         var mid = document.getElementById("row-mid");
         mid.innerHTML = "";
-        var shiftBtn = makeIconKey(shiftIcon, "key-wide key-secondary", "Shift", function () {
-          shifted = !shifted;
-          shiftBtn.classList.toggle("shift-active", shifted);
-          render();
-        });
         mid.appendChild(shiftBtn);
         row2.forEach(function (key) {
           mid.appendChild(
             makeKey(label(key), "", function () {
               window.keyboardAPI.sendKey(label(key));
-              if (shifted) {
-                shifted = false;
-                shiftBtn.classList.remove("shift-active");
-                render();
-              }
+              afterKey();
             }),
           );
         });
@@ -191,44 +295,90 @@
 
         var bot = document.getElementById("row-bot");
         bot.innerHTML = "";
-        [".", "-", "_"].forEach(function (sym) {
-          bot.appendChild(
-            makeKey(sym, "key-secondary", function () {
-              window.keyboardAPI.sendKey(sym);
-            }),
-          );
-        });
+        bot.className = "row row-bot-layout";
+
+        bot.appendChild(
+          makeKey("-", "key-square key-secondary", function () {
+            window.keyboardAPI.sendKey("-");
+          }),
+        );
+
         row3.forEach(function (key) {
           bot.appendChild(
-            makeKey(label(key), "", function () {
+            makeKey(label(key), "key-square", function () {
               window.keyboardAPI.sendKey(label(key));
-              if (shifted) {
-                shifted = false;
-                shiftBtn.classList.remove("shift-active");
-                render();
-              }
+              afterKey();
             }),
           );
         });
 
-        var actions = document.getElementById("row-actions");
-        actions.innerHTML = "";
-        actions.appendChild(
-          makeKey("Hide", "key-wide key-secondary", function () {
-            window.keyboardAPI.hide();
+        bot.appendChild(
+          makeKey(".", "key-square key-secondary", function () {
+            window.keyboardAPI.sendKey(".");
           }),
         );
-        actions.appendChild(
-          makeKey("Space", "key-space", function () {
-            window.keyboardAPI.sendKey(" ");
-          }),
-        );
-        actions.appendChild(
-          makeKey("Enter", "key-wide key-action", function () {
-            window.keyboardAPI.enter();
-          }),
-        );
+
+        renderActionRow("123", function () {
+          keyboardMode = "symbols";
+          shifted = false;
+          capsLock = false;
+          lastShiftPressAt = 0;
+          render();
+        });
       }
+
+      function renderSymbols() {
+        document.getElementById("row-numbers").classList.add("hidden");
+
+        renderRow("row-top", symbolRow1);
+        renderRow("row-mid", symbolRow2);
+        document.getElementById("row-bot").className = "row";
+        renderRow("row-bot", symbolRow3, function (container) {
+          container.appendChild(
+            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
+              window.keyboardAPI.backspace();
+            }),
+          );
+        });
+
+        renderActionRow("ABC", function () {
+          keyboardMode = "letters";
+          render();
+        });
+      }
+
+      function syncBotKeySize() {
+        var mid = document.getElementById("row-mid");
+        var bot = document.getElementById("row-bot");
+        if (!mid || !bot.classList.contains("row-bot-layout")) return;
+
+        var sample = mid.querySelector(".key:not(.key-wide)");
+        if (!sample) return;
+
+        var size = sample.offsetHeight;
+        if (size < 1) return;
+
+        bot.querySelectorAll(".key-square").forEach(function (btn) {
+          btn.style.width = size + "px";
+          btn.style.height = size + "px";
+          btn.style.flex = "0 0 " + size + "px";
+        });
+      }
+
+      function render() {
+        if (keyboardMode === "symbols") {
+          renderSymbols();
+        } else {
+          renderLetters();
+          requestAnimationFrame(syncBotKeySize);
+        }
+      }
+
+      window.addEventListener("resize", function () {
+        if (keyboardMode === "letters") {
+          requestAnimationFrame(syncBotKeySize);
+        }
+      });
 
       render();
     </script>

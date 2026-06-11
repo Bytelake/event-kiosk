@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+export const KIOSK_USER_ACTIVITY_EVENT = "kiosk-user-activity";
+
+const ACTIVITY_EVENTS = [
+  "touchstart",
+  "mousedown",
+  "keydown",
+  "scroll",
+  KIOSK_USER_ACTIVITY_EVENT,
+];
 
 export function useIdleTimeout(onTimeout: () => void, ms: number | null) {
-  const router = useRouter();
-
   useEffect(() => {
     if (ms === null) return;
 
@@ -17,13 +24,16 @@ export function useIdleTimeout(onTimeout: () => void, ms: number | null) {
       timer = setTimeout(onTimeout, timeoutMs);
     }
 
-    const events = ["touchstart", "mousedown", "keydown", "scroll"];
-    events.forEach((event) => window.addEventListener(event, reset, { passive: true }));
+    ACTIVITY_EVENTS.forEach((event) =>
+      window.addEventListener(event, reset, { passive: true }),
+    );
     reset();
 
     return () => {
       clearTimeout(timer);
-      events.forEach((event) => window.removeEventListener(event, reset));
+      ACTIVITY_EVENTS.forEach((event) =>
+        window.removeEventListener(event, reset),
+      );
     };
-  }, [ms, onTimeout, router]);
+  }, [ms, onTimeout]);
 }

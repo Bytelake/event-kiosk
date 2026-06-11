@@ -13,7 +13,10 @@ import {
   startAllowedDomainsPolling,
 } from "./allowed-domains";
 import { captureKioskScreenshot } from "./capture-kiosk-screenshot";
-import { injectRegistrationInputScript } from "./inject-registration-input";
+import {
+  injectRegistrationInputScript,
+  REGISTRATION_KEYBOARD_CSS,
+} from "./inject-registration-input";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
 const API_BASE = new URL(KIOSK_URL).origin;
@@ -84,7 +87,7 @@ function createWindow() {
 }
 
 function showKeyboard() {
-  if (!mainWindow || !registrationView || keyboardVisible) return;
+  if (!mainWindow || !registrationView) return;
 
   keyboardVisible = true;
 
@@ -104,12 +107,26 @@ function showKeyboard() {
   }
 
   layoutRegistrationViews();
+  setRegistrationKeyboardOpen(true);
 }
 
 function hideKeyboard() {
   if (!keyboardVisible) return;
   keyboardVisible = false;
   layoutRegistrationViews();
+  setRegistrationKeyboardOpen(false);
+  void registrationView?.webContents.executeJavaScript(
+    "window.__kioskEndEditing && window.__kioskEndEditing()",
+    true,
+  );
+}
+
+function setRegistrationKeyboardOpen(open: boolean) {
+  if (!registrationView) return;
+  void registrationView.webContents.executeJavaScript(
+    `document.documentElement.classList.toggle("kiosk-keyboard-open", ${open})`,
+    true,
+  );
 }
 
 function sendToRegistrationTyping(method: string, arg?: string) {
@@ -120,8 +137,19 @@ function sendToRegistrationTyping(method: string, arg?: string) {
   void registrationView.webContents.executeJavaScript(script, true);
 }
 
+const KIOSK_USER_ACTIVITY_EVENT = "kiosk-user-activity";
+
+function notifyMainWindowUserActivity() {
+  if (!mainWindow) return;
+  void mainWindow.webContents.executeJavaScript(
+    `window.dispatchEvent(new Event(${JSON.stringify(KIOSK_USER_ACTIVITY_EVENT)}))`,
+    true,
+  );
+}
+
 function setupRegistrationInputMonitoring(view: BrowserView) {
   const inject = () => {
+    void view.webContents.insertCSS(REGISTRATION_KEYBOARD_CSS);
     void injectRegistrationInputScript(view.webContents);
   };
 
@@ -368,15 +396,22 @@ app.whenReady().then(async () => {
     showKeyboard();
   });
 
+  ipcMain.on("kiosk-user-activity", () => {
+    notifyMainWindowUserActivity();
+  });
+
   ipcMain.on("keyboard-key", (_event, key: string) => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("insertText", key);
   });
 
   ipcMain.on("keyboard-backspace", () => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("backspace");
   });
 
   ipcMain.on("keyboard-enter", () => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("enter");
   });
 

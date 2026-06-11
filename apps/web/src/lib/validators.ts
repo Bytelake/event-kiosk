@@ -46,6 +46,7 @@ export const settingsSchema = z.object({
   breezeSubdomain: z.string().optional().nullable(),
   breezeApiKey: z.string().optional().nullable(),
   breezeCalendarIds: z.array(z.string()).optional(),
+  kioskIdleTimeoutSeconds: z.number().int().min(0).max(3600).optional(),
 });
 
 export const allowedDomainSchema = z.object({

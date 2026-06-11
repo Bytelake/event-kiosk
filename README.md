@@ -107,9 +107,9 @@ npm run dev:desktop
 
 This starts the Next.js dev server and Electron shell together. Admin is still available in your browser at http://localhost:3000/admin.
 
-Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor, no idle redirect) when using `npm run dev` without the shell.
+Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor) when using `npm run dev` without the shell.
 
-Desktop mode disables hidden cursor styling and the 60-second idle redirect on event detail pages. Production kiosk behavior is unchanged when the flag is unset or `false`.
+Desktop mode disables hidden cursor styling. The idle timeout still follows the value in Admin → Settings (set to `0` to disable during local dev). Production kiosk behavior is unchanged when the flag is unset or `false`.
 
 #### Screenshots for docs
 
@@ -134,6 +134,15 @@ Build a Debian/Ubuntu tarball on a dev machine:
 npm run package:debian          # host arch
 npm run package:debian amd64    # explicit arch label
 npm run package:debian arm64
+```
+
+For local testing (not an official release), add `--pre-release` so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-arm64-0.0.2-prerelease.abc1234.tar.gz`):
+
+```bash
+npm run package:debian -- arm64 --pre-release
+npm run package:debian:prerelease -- amd64
+npm run package:debian -- amd64 --pre-release=test
+KIOSK_PRERELEASE=1 npm run package:debian -- arm64
 ```
 
 Copy tarball to kiosk machine for testing, deployment:
