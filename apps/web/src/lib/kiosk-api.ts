@@ -26,13 +26,19 @@ export async function fetchKioskEvents(): Promise<KioskEvent[]> {
   return res.json();
 }
 
-export async function fetchPublicSettings(): Promise<KioskSettings> {
-  const res = await fetch("/api/settings", { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load settings");
-  const data = await res.json();
+export function parsePublicSettings(data: {
+  orgName: string;
+  orgLogoUrl?: string | null;
+  brandPrimaryColor?: string;
+  brandSecondaryColor?: string;
+  kioskBackgroundColor?: string;
+  kioskTextColor?: string;
+  kioskMutedTextColor?: string;
+  kioskIdleTimeoutSeconds?: number;
+}): KioskSettings {
   return {
     orgName: data.orgName,
-    orgLogoUrl: data.orgLogoUrl,
+    orgLogoUrl: data.orgLogoUrl ?? null,
     ...defaultKioskColorScheme,
     brandPrimaryColor: data.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
     brandSecondaryColor: data.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,
@@ -41,4 +47,10 @@ export async function fetchPublicSettings(): Promise<KioskSettings> {
     kioskMutedTextColor: data.kioskMutedTextColor ?? defaultKioskColorScheme.kioskMutedTextColor,
     kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds ?? 60,
   };
+}
+
+export async function fetchPublicSettings(): Promise<KioskSettings> {
+  const res = await fetch("/api/settings", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load settings");
+  return parsePublicSettings(await res.json());
 }

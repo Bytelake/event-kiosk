@@ -51,8 +51,9 @@ model Settings {
   breezeCalendarIds   String   @default("[]")
   lastBreezeSyncAt    DateTime?
   lastBreezeSyncError String?
-  kioskRefreshAt         DateTime?
-  kioskIdleTimeoutSeconds Int     @default(60)
+  kioskRefreshAt          DateTime?
+  settingsUpdatedAt       DateTime?
+  kioskIdleTimeoutSeconds Int      @default(60)
   updatedAt              DateTime @updatedAt
 }
 

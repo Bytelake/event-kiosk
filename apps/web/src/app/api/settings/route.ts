@@ -62,6 +62,7 @@ export async function PATCH(request: Request) {
         ? JSON.stringify(data.breezeCalendarIds)
         : undefined,
       kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
+      settingsUpdatedAt: new Date(),
     },
   });
 
