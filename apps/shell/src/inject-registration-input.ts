@@ -366,6 +366,14 @@ export const REGISTRATION_INPUT_SCRIPT = `
 
   document.addEventListener("pointerdown", onPointerDown, true);
 
+  function notifyActivity() {
+    window.__kioskInput && window.__kioskInput.notifyActivity();
+  }
+
+  ["touchstart", "mousedown", "keydown", "scroll", "pointerdown"].forEach(function (event) {
+    document.addEventListener(event, notifyActivity, { passive: true, capture: true });
+  });
+
   var active = document.activeElement;
   if (isTextInput(active)) {
     startEditing(active);

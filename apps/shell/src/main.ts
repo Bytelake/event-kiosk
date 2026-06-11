@@ -137,6 +137,16 @@ function sendToRegistrationTyping(method: string, arg?: string) {
   void registrationView.webContents.executeJavaScript(script, true);
 }
 
+const KIOSK_USER_ACTIVITY_EVENT = "kiosk-user-activity";
+
+function notifyMainWindowUserActivity() {
+  if (!mainWindow) return;
+  void mainWindow.webContents.executeJavaScript(
+    `window.dispatchEvent(new Event(${JSON.stringify(KIOSK_USER_ACTIVITY_EVENT)}))`,
+    true,
+  );
+}
+
 function setupRegistrationInputMonitoring(view: BrowserView) {
   const inject = () => {
     void view.webContents.insertCSS(REGISTRATION_KEYBOARD_CSS);
@@ -386,15 +396,22 @@ app.whenReady().then(async () => {
     showKeyboard();
   });
 
+  ipcMain.on("kiosk-user-activity", () => {
+    notifyMainWindowUserActivity();
+  });
+
   ipcMain.on("keyboard-key", (_event, key: string) => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("insertText", key);
   });
 
   ipcMain.on("keyboard-backspace", () => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("backspace");
   });
 
   ipcMain.on("keyboard-enter", () => {
+    notifyMainWindowUserActivity();
     sendToRegistrationTyping("enter");
   });
 

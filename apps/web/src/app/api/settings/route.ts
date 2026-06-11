@@ -13,6 +13,7 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskBackgroundColor: settings.kioskBackgroundColor,
     kioskTextColor: settings.kioskTextColor,
     kioskMutedTextColor: settings.kioskMutedTextColor,
+    kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
   };
 }
 
@@ -60,6 +61,7 @@ export async function PATCH(request: Request) {
       breezeCalendarIds: data.breezeCalendarIds
         ? JSON.stringify(data.breezeCalendarIds)
         : undefined,
+      kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
     },
   });
 
