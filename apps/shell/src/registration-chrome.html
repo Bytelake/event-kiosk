@@ -39,6 +39,7 @@
     <button class="done" id="done">Done</button>
     <script>
       document.body.addEventListener("pointerdown", function () {
+        window.electronAPI.notifyActivity();
         window.electronAPI.hideKeyboard();
       });
 

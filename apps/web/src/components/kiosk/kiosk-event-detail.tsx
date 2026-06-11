@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchKioskEvents, type KioskEvent } from "@/lib/kiosk-api";
 import { openRegistration } from "@/lib/kiosk-shell";
-import { isDesktopMode } from "@/lib/kiosk-mode";
 import { formatKioskEventScheduleDisplay } from "@/lib/utils";
-import { useIdleTimeout } from "@/components/kiosk/use-idle-timeout";
 
 export function KioskEventDetail() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const [event, setEvent] = useState<KioskEvent | null>(null);
-
-  useIdleTimeout(() => router.push("/kiosk"), isDesktopMode() ? null : 60000);
 
   useEffect(() => {
     fetchKioskEvents().then((events) => {
