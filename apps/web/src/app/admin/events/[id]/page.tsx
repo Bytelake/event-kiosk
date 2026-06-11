@@ -14,12 +14,9 @@ export default function EditEventPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/events`)
-      .then((res) => res.json())
-      .then((events) => {
-        const found = events.find((e: { id: string }) => e.id === params.id);
-        setEvent(found ?? null);
-      });
+    fetch(`/api/events/${params.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(setEvent);
   }, [params.id]);
 
   async function handleSave(data: Record<string, unknown>) {

@@ -6,6 +6,7 @@ import {
   removeTempDatabaseFile,
   writeTempDatabaseFile,
 } from "@/lib/database-backup";
+import { DatabaseUnavailableError } from "@/lib/database-maintenance";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,12 @@ export async function POST(request: Request) {
       ok: true,
       eventCount: result.eventCount,
       domainCount: result.domainCount,
-      backupPath: result.backupPath,
     });
   } catch (error) {
+    if (error instanceof DatabaseUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+
     if (error instanceof DatabaseBackupError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

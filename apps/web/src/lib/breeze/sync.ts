@@ -61,20 +61,37 @@ export async function syncBreezeEvents(): Promise<BreezeSyncResult> {
   }
 
   const syncedAt = new Date();
-  let created = 0;
-  let updated = 0;
-  const seenIds = new Set<string>();
+  const parsedEvents: Array<{
+    breezeEvent: BreezeEvent;
+    startAt: Date;
+    endAt: Date | null;
+  }> = [];
 
   for (const breezeEvent of breezeEvents) {
-    seenIds.add(breezeEvent.id);
     const startAt = parseBreezeDateTime(breezeEvent.start_datetime);
     if (!startAt) continue;
 
-    const endAt = parseBreezeDateTime(breezeEvent.end_datetime);
-    const existing = await prisma.event.findUnique({
-      where: { breezeInstanceId: breezeEvent.id },
+    parsedEvents.push({
+      breezeEvent,
+      startAt,
+      endAt: parseBreezeDateTime(breezeEvent.end_datetime),
     });
+  }
 
+  const seenIds = new Set(parsedEvents.map((entry) => entry.breezeEvent.id));
+  const existingEvents = await prisma.event.findMany({
+    where: { breezeInstanceId: { in: Array.from(seenIds) } },
+  });
+  const existingByBreezeId = new Map(
+    existingEvents.map((event) => [event.breezeInstanceId!, event]),
+  );
+
+  const writes: Array<ReturnType<typeof prisma.event.update> | ReturnType<typeof prisma.event.create>> =
+    [];
+  let created = 0;
+  let updated = 0;
+
+  for (const { breezeEvent, startAt, endAt } of parsedEvents) {
     const breezeOwned = {
       title: breezeEvent.name,
       startAt,
@@ -87,23 +104,32 @@ export async function syncBreezeEvents(): Promise<BreezeSyncResult> {
       source: "breeze" as const,
     };
 
+    const existing = existingByBreezeId.get(breezeEvent.id);
     if (existing) {
-      await prisma.event.update({
-        where: { id: existing.id },
-        data: breezeOwned,
-      });
+      writes.push(
+        prisma.event.update({
+          where: { id: existing.id },
+          data: breezeOwned,
+        }),
+      );
       updated += 1;
     } else {
-      await prisma.event.create({
-        data: {
-          ...breezeOwned,
-          breezeInstanceId: breezeEvent.id,
-          status: "draft",
-          kioskVisible: false,
-        },
-      });
+      writes.push(
+        prisma.event.create({
+          data: {
+            ...breezeOwned,
+            breezeInstanceId: breezeEvent.id,
+            status: "draft",
+            kioskVisible: false,
+          },
+        }),
+      );
       created += 1;
     }
+  }
+
+  if (writes.length > 0) {
+    await prisma.$transaction(writes);
   }
 
   const staleResult = await prisma.event.updateMany({

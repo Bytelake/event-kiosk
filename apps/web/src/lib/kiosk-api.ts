@@ -26,6 +26,13 @@ export async function fetchKioskEvents(): Promise<KioskEvent[]> {
   return res.json();
 }
 
+export async function fetchKioskEvent(id: string): Promise<KioskEvent | null> {
+  const res = await fetch(`/api/events/${id}?kiosk=true`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to load event");
+  return res.json();
+}
+
 export function parsePublicSettings(data: {
   orgName: string;
   orgLogoUrl?: string | null;

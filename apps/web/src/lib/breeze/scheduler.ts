@@ -1,4 +1,5 @@
 import cron from "node-cron";
+import { isDatabaseMaintenanceMode } from "@/lib/database-maintenance";
 import { syncBreezeEvents } from "./sync";
 
 let started = false;
@@ -8,6 +9,10 @@ export function startBreezeSyncScheduler() {
   started = true;
 
   cron.schedule("*/20 * * * *", async () => {
+    if (isDatabaseMaintenanceMode()) {
+      return;
+    }
+
     try {
       await syncBreezeEvents();
       console.log("[breeze-sync] Scheduled sync completed");

@@ -3,6 +3,7 @@ import { copyFile, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/db";
 import { backupFilename, getDatabaseFilePath } from "@/lib/database-path";
+import { withDatabaseMaintenance } from "@/lib/database-maintenance";
 
 const SQLITE_MAGIC = "SQLite format 3\u0000";
 const REQUIRED_TABLES = ["Event", "Settings", "AllowedDomain"] as const;
@@ -64,40 +65,47 @@ async function removeSqliteSidecars(dbPath: string) {
 export async function importDatabaseFile(sourcePath: string): Promise<{
   eventCount: number;
   domainCount: number;
-  backupPath: string | null;
 }> {
   const stats = await validateKioskDatabaseFile(sourcePath);
-  const dbPath = getDatabaseFilePath();
-  let backupPath: string | null = null;
 
-  await prisma.$disconnect();
+  return withDatabaseMaintenance(async () => {
+    const dbPath = getDatabaseFilePath();
+    let backupPath: string | null = null;
 
-  const preImportName = backupFilename();
+    await prisma.$disconnect();
 
-  try {
+    const preImportName = backupFilename();
+
     try {
-      backupPath = `${dbPath}.pre-import-${preImportName}`;
-      await copyFile(dbPath, backupPath);
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") {
-        throw error;
+      try {
+        backupPath = `${dbPath}.pre-import-${preImportName}`;
+        await copyFile(dbPath, backupPath);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") {
+          throw error;
+        }
       }
-    }
 
-    await removeSqliteSidecars(dbPath);
-    await copyFile(sourcePath, dbPath);
-    await removeSqliteSidecars(dbPath);
-
-    await validateKioskDatabaseFile(dbPath);
-    return { ...stats, backupPath };
-  } catch (error) {
-    if (backupPath) {
-      await copyFile(backupPath, dbPath).catch(() => undefined);
       await removeSqliteSidecars(dbPath);
+      await copyFile(sourcePath, dbPath);
+      await removeSqliteSidecars(dbPath);
+
+      await validateKioskDatabaseFile(dbPath);
+
+      if (backupPath) {
+        console.log(`[database/import] Pre-import backup saved at ${backupPath}`);
+      }
+
+      return stats;
+    } catch (error) {
+      if (backupPath) {
+        await copyFile(backupPath, dbPath).catch(() => undefined);
+        await removeSqliteSidecars(dbPath);
+      }
+      throw error;
     }
-    throw error;
-  }
+  });
 }
 
 export async function writeTempDatabaseFile(buffer: Buffer): Promise<string> {
