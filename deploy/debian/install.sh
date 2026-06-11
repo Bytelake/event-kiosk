@@ -76,10 +76,6 @@ cp -R "${STANDALONE}/." "${KIOSK_INSTALL_DIR}/web/"
 rm -rf "${KIOSK_INSTALL_DIR}/web/node_modules/@prisma" "${KIOSK_INSTALL_DIR}/web/node_modules/.prisma" 2>/dev/null || true
 mkdir -p "${KIOSK_INSTALL_DIR}/web/apps/web/.next"
 cp -R "${REPO_ROOT}/apps/web/.next/static" "${KIOSK_INSTALL_DIR}/web/apps/web/.next/static"
-mkdir -p "${KIOSK_INSTALL_DIR}/web/apps/web/public/uploads"
-if [[ -d "${REPO_ROOT}/apps/web/public" ]]; then
-  cp -R "${REPO_ROOT}/apps/web/public/." "${KIOSK_INSTALL_DIR}/web/apps/web/public/"
-fi
 mkdir -p "${KIOSK_INSTALL_DIR}/web/prisma"
 rsync -a --exclude dev.db --exclude dev.db-journal \
   "${REPO_ROOT}/apps/web/prisma/" "${KIOSK_INSTALL_DIR}/web/prisma/"
@@ -94,7 +90,7 @@ debian_stage_common_files "${REPO_ROOT}" "${KIOSK_INSTALL_DIR}"
 
 chown -R kiosk:kiosk "${KIOSK_INSTALL_DIR}"
 
-migrate_to_data_dir "${KIOSK_INSTALL_DIR}"
+ensure_data_dir
 write_env_if_missing "${KIOSK_INSTALL_DIR}/web/.env.example"
 write_display_env_if_missing "${KIOSK_INSTALL_DIR}/display.env.example"
 

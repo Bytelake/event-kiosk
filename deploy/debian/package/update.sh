@@ -18,7 +18,7 @@ has_existing_install || die "No existing install found. Run install.sh first."
 log "Updating Event Kiosk at ${INSTALL_DIR}..."
 log "Data directory ${KIOSK_DATA_DIR} will not be modified."
 
-migrate_to_data_dir "${INSTALL_DIR}"
+ensure_data_dir
 
 log "Installing updated application files..."
 rsync -a --delete \
