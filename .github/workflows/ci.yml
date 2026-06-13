@@ -58,34 +58,3 @@ jobs:
         with:
           name: event-kiosk-debian-amd64
           path: dist/event-kiosk-debian-amd64-*.tar.gz
-
-  container-web:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set container image name
-        id: image
-        run: echo "name=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/event-kiosk-web" >> "$GITHUB_OUTPUT"
-
-      - name: Build web container image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: deploy/containers/Containerfile.web
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: |
-            ${{ steps.image.outputs.name }}:latest
-            ${{ steps.image.outputs.name }}:${{ github.sha }}

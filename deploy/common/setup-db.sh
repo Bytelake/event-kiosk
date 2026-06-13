@@ -53,7 +53,6 @@ install -d -o kiosk -g kiosk "${WEB_DIR}/node_modules"
 rm -rf "${WEB_DIR}/node_modules/@prisma" "${WEB_DIR}/node_modules/.prisma"
 cp -R "${TOOLS_DIR}/node_modules/@prisma" "${WEB_DIR}/node_modules/"
 # cp runs as root; kiosk must own node_modules before prisma generate writes .prisma
-# (on Fedora Atomic /opt/kiosk resolves under /var/opt/kiosk).
 chown -R kiosk:kiosk "${WEB_DIR}/node_modules" "${TOOLS_DIR}"
 
 if [[ "${MODE}" == "--generate-only" ]]; then

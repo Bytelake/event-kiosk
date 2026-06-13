@@ -15,16 +15,6 @@ source "${COMMON_DIR}/kiosk-paths.sh" 2>/dev/null || source "${INSTALL_DIR}/kios
 echo "=== Event Kiosk Diagnostics ==="
 echo ""
 
-if [[ -f /run/ostree-booted ]]; then
-  echo "-- Platform: Fedora Atomic (ostree) --"
-  if [[ -f /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    source /etc/os-release
-    echo "  VARIANT_ID: ${VARIANT_ID:-unknown}"
-  fi
-  echo ""
-fi
-
 echo "-- Services --"
 for svc in kiosk-web kiosk-display kiosk-shell seatd getty@tty1; do
   if systemctl is-active --quiet "${svc}" 2>/dev/null; then
