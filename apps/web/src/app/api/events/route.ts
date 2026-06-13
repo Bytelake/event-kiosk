@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { serializeEvent } from "@/lib/event-serialize";
+import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
 import { eventEnrichSchema, manualEventSchema } from "@/lib/validators";
 
@@ -97,6 +98,8 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
+  const previousImageUrl = existing.imageUrl;
+  let event;
 
   if (existing.source === "breeze") {
     const parsed = eventEnrichSchema.safeParse(body);
@@ -104,7 +107,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
     const data = parsed.data;
-    const event = await prisma.event.update({
+    event = await prisma.event.update({
       where: { id },
       data: {
         shortDescription: data.shortDescription ?? null,
@@ -119,33 +122,36 @@ export async function PATCH(request: NextRequest) {
         status: data.status,
       },
     });
-    return NextResponse.json(serializeEvent(event));
+  } else {
+    const parsed = manualEventSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const data = parsed.data;
+    event = await prisma.event.update({
+      where: { id },
+      data: {
+        title: data.title,
+        startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
+        endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
+        shortDescription: data.shortDescription ?? null,
+        fullDescription: data.fullDescription ?? null,
+        location: data.location ?? null,
+        imageUrl: data.imageUrl ?? null,
+        registrationUrl: data.registrationUrl || null,
+        featured: data.featured,
+        sortOrder: data.sortOrder,
+        kioskVisible: data.kioskVisible,
+        allDay: data.allDay,
+        status: data.status,
+      },
+    });
   }
 
-  const parsed = manualEventSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  if (previousImageUrl !== event.imageUrl) {
+    await deleteUploadIfUnreferenced(previousImageUrl);
   }
-
-  const data = parsed.data;
-  const event = await prisma.event.update({
-    where: { id },
-    data: {
-      title: data.title,
-      startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
-      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
-      shortDescription: data.shortDescription ?? null,
-      fullDescription: data.fullDescription ?? null,
-      location: data.location ?? null,
-      imageUrl: data.imageUrl ?? null,
-      registrationUrl: data.registrationUrl || null,
-      featured: data.featured,
-      sortOrder: data.sortOrder,
-      kioskVisible: data.kioskVisible,
-      allDay: data.allDay,
-      status: data.status,
-    },
-  });
 
   return NextResponse.json(serializeEvent(event));
 }
@@ -161,6 +167,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
+  const existing = await prisma.event.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   await prisma.event.delete({ where: { id } });
+  await deleteUploadIfUnreferenced(existing.imageUrl);
+
   return NextResponse.json({ ok: true });
 }
