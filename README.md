@@ -41,6 +41,11 @@ Download the latest tarball from [GitHub Releases](https://github.com/Bytelake/e
 ```bash
 tar -xzf event-kiosk-debian-*.tar.gz && cd event-kiosk-debian-*
 sudo bash install.sh
+
+# For rotated monitors:
+# sudo bash install.sh --rotation left
+# For a desktop with an existing X session:
+# sudo bash install.sh --display=x11
 ```
 
 Set your admin password:
@@ -52,10 +57,6 @@ sudo systemctl restart kiosk-web
 
 Admin webpage: `http://<ip-of-kiosk>:3000/admin`
 
-For portrait monitors: `sudo bash install.sh --rotation left`
-
-For Ubuntu Desktop with an existing X session: `sudo bash install.sh --display=x11`
-
 ### Install from source
 
 ```bash
@@ -66,7 +67,7 @@ sudo bash deploy/debian/install.sh
 
 ### Updates
 
-Download a newer release package, extract, and run `sudo bash update.sh` (not `install.sh`). Application code lives in `/opt/kiosk`; your database, uploads, and config live in `/var/lib/kiosk`.
+Download a newer release package, extract, and run `sudo bash update.sh`. Application code lives in `/opt/kiosk`; the database, uploads, and config live in `/var/lib/kiosk`.
 
 To uninstall: `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
 
