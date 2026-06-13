@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSettings, prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
+import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { settingsSchema } from "@/lib/validators";
 import { parseCalendarIds } from "@/lib/utils";
 
@@ -46,6 +47,8 @@ export async function PATCH(request: Request) {
   }
 
   const data = parsed.data;
+  const existing = await getSettings();
+  const previousLogoUrl = existing.orgLogoUrl;
   const settings = await prisma.settings.update({
     where: { id: "default" },
     data: {
@@ -65,6 +68,10 @@ export async function PATCH(request: Request) {
       settingsUpdatedAt: new Date(),
     },
   });
+
+  if (previousLogoUrl !== settings.orgLogoUrl) {
+    await deleteUploadIfUnreferenced(previousLogoUrl);
+  }
 
   return NextResponse.json({
     ...serializePublicSettings(settings),

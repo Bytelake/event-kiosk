@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
 import { format } from "date-fns";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
+import { uploadImageFile } from "@/lib/upload-client";
 
 interface EventFormProps {
   initial?: Record<string, unknown>;
@@ -33,6 +34,16 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
     allDay: false,
   });
   const [uploading, setUploading] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   useEffect(() => {
     if (!initial) return;
@@ -57,19 +68,50 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
         endAt || (initial.endAt ? String(initial.endAt) : null),
       ),
     });
+    setPendingImageFile(null);
+    setImagePreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   }, [initial]);
 
-  async function handleUpload(file: File) {
-    setUploading(true);
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body });
-    setUploading(false);
-    if (res.ok) {
-      const data = await res.json();
-      setForm((f) => ({ ...f, imageUrl: data.url }));
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    let imageUrl = form.imageUrl || null;
+    if (pendingImageFile) {
+      setUploading(true);
+      const url = await uploadImageFile(pendingImageFile);
+      setUploading(false);
+      if (!url) return;
+
+      imageUrl = url;
+      setPendingImageFile(null);
+      setImagePreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setForm((f) => ({ ...f, imageUrl: url }));
     }
+
+    await onSave({
+      ...form,
+      imageUrl,
+      endAt: form.endAt || null,
+      registrationUrl: form.registrationUrl || null,
+      kioskVisible: form.status === "published",
+    });
   }
+
+  function handleImagePick(file: File) {
+    setPendingImageFile(file);
+    setImagePreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  const displayImageUrl = imagePreviewUrl ?? (form.imageUrl || null);
 
   function handleAllDayChange(checked: boolean) {
     if (isBreeze) {
@@ -108,16 +150,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       ...f,
       endAt: f.allDay ? `${value}T00:00` : value,
     }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    await onSave({
-      ...form,
-      endAt: form.endAt || null,
-      registrationUrl: form.registrationUrl || null,
-      kioskVisible: form.status === "published",
-    });
   }
 
   return (
@@ -221,13 +253,13 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleUpload(file);
+                if (file) handleImagePick(file);
               }}
             />
             {uploading && <p className="mt-1 text-sm text-slate-500">Uploading...</p>}
-            {form.imageUrl && (
+            {displayImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.imageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
+              <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
             )}
           </div>
 
@@ -269,8 +301,8 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
             </p>
           ) : null}
 
-          <Button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Event"}
+          <Button type="submit" disabled={saving || uploading}>
+            {saving || uploading ? "Saving..." : "Save Event"}
           </Button>
         </CardContent>
       </Card>

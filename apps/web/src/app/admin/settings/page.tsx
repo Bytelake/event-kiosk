@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
+import { uploadImageFile } from "@/lib/upload-client";
 
 interface Calendar {
   id: number | string;
@@ -92,11 +93,20 @@ export default function AdminSettingsPage() {
   const [domains, setDomains] = useState<{ id: string; domain: string }[]>([]);
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoPreviewUrl]);
 
   useEffect(() => {
     Promise.all([
@@ -134,15 +144,34 @@ export default function AdminSettingsPage() {
     );
   }
 
+  const displayLogoUrl = logoPreviewUrl ?? (settings.orgLogoUrl || null);
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!settings) return;
     setSaving(true);
     setMessage("");
 
+    let orgLogoUrl = settings.orgLogoUrl || null;
+    if (pendingLogoFile) {
+      const url = await uploadImageFile(pendingLogoFile);
+      if (!url) {
+        setSaving(false);
+        setMessage("Logo upload failed");
+        return;
+      }
+
+      orgLogoUrl = url;
+      setPendingLogoFile(null);
+      setLogoPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    }
+
     const payload: Record<string, unknown> = {
       orgName: settings.orgName,
-      orgLogoUrl: settings.orgLogoUrl || null,
+      orgLogoUrl,
       brandPrimaryColor: settings.brandPrimaryColor,
       brandSecondaryColor: settings.brandSecondaryColor,
       kioskBackgroundColor: settings.kioskBackgroundColor,
@@ -165,7 +194,12 @@ export default function AdminSettingsPage() {
     setSaving(false);
     if (res.ok) {
       setMessage("Settings saved");
-      setSettings((s) => ({ ...s!, breezeApiKey: "", hasBreezeApiKey: true }));
+      setSettings((s) => ({
+        ...s!,
+        orgLogoUrl: orgLogoUrl ?? "",
+        breezeApiKey: "",
+        hasBreezeApiKey: true,
+      }));
     }
   }
 
@@ -198,16 +232,21 @@ export default function AdminSettingsPage() {
     setDomains((d) => d.filter((item) => item.id !== id));
   }
 
-  async function handleLogoUpload(file: File) {
-    setLogoUploading(true);
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body });
-    setLogoUploading(false);
-    if (res.ok) {
-      const data = await res.json();
-      setSettings((s) => (s ? { ...s, orgLogoUrl: data.url } : s));
-    }
+  function handleLogoPick(file: File) {
+    setPendingLogoFile(file);
+    setLogoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function handleRemoveLogo() {
+    setPendingLogoFile(null);
+    setLogoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setSettings((s) => (s ? { ...s, orgLogoUrl: "" } : s));
   }
 
   async function handleExportDatabase() {
@@ -264,8 +303,15 @@ export default function AdminSettingsPage() {
       }
 
       setBackupMessage(
-        `Imported ${data.eventCount} events and ${data.domainCount} registration domains`,
+        `Imported ${data.eventCount} events and ${data.domainCount} registration domains` +
+          (data.prunedUploadCount ? `; removed ${data.prunedUploadCount} unused uploads` : ""),
       );
+
+      setPendingLogoFile(null);
+      setLogoPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
 
       const [settingsRes, domainRes] = await Promise.all([
         fetch("/api/settings"),
@@ -336,23 +382,18 @@ export default function AdminSettingsPage() {
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleLogoUpload(file);
+                      if (file) handleLogoPick(file);
                     }}
                   />
-                  {logoUploading && <p className="mt-1 text-sm text-slate-500">Uploading...</p>}
-                  {settings.orgLogoUrl ? (
+                  {displayLogoUrl ? (
                     <div className="mt-3 flex items-start gap-4">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={settings.orgLogoUrl}
+                        src={displayLogoUrl}
                         alt="Logo preview"
                         className="h-20 w-auto rounded-lg border border-slate-200 bg-white object-contain p-2"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setSettings({ ...settings, orgLogoUrl: "" })}
-                      >
+                      <Button type="button" variant="ghost" onClick={handleRemoveLogo}>
                         Remove
                       </Button>
                     </div>

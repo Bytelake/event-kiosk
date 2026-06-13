@@ -7,6 +7,7 @@ import {
   writeTempDatabaseFile,
 } from "@/lib/database-backup";
 import { DatabaseUnavailableError } from "@/lib/database-maintenance";
+import { pruneUnreferencedUploads } from "@/lib/upload-cleanup";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,13 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     tempPath = await writeTempDatabaseFile(buffer);
     const result = await importDatabaseFile(tempPath);
+    const prunedUploadCount = await pruneUnreferencedUploads();
 
     return NextResponse.json({
       ok: true,
       eventCount: result.eventCount,
       domainCount: result.domainCount,
+      prunedUploadCount,
     });
   } catch (error) {
     if (error instanceof DatabaseUnavailableError) {
