@@ -44,6 +44,8 @@ model Settings {
   id                  String   @id @default("default")
   orgName             String   @default("Our Organization")
   orgLogoUrl          String?
+  kioskShowLogo       Boolean  @default(true)
+  kioskShowOrgName    Boolean  @default(true)
   brandPrimaryColor   String   @default("#2563eb")
   brandSecondaryColor String   @default("#0f172a")
   kioskBackgroundColor String  @default("#f1f5f9")

@@ -17,6 +17,8 @@ export interface KioskEvent {
 export type KioskSettings = KioskColorScheme & {
   orgName: string;
   orgLogoUrl: string | null;
+  kioskShowLogo: boolean;
+  kioskShowOrgName: boolean;
   kioskIdleTimeoutSeconds: number;
 };
 
@@ -36,6 +38,8 @@ export async function fetchKioskEvent(id: string): Promise<KioskEvent | null> {
 export function parsePublicSettings(data: {
   orgName: string;
   orgLogoUrl?: string | null;
+  kioskShowLogo?: boolean;
+  kioskShowOrgName?: boolean;
   brandPrimaryColor?: string;
   brandSecondaryColor?: string;
   kioskBackgroundColor?: string;
@@ -46,6 +50,8 @@ export function parsePublicSettings(data: {
   return {
     orgName: data.orgName,
     orgLogoUrl: data.orgLogoUrl ?? null,
+    kioskShowLogo: data.kioskShowLogo ?? true,
+    kioskShowOrgName: data.kioskShowOrgName ?? true,
     ...defaultKioskColorScheme,
     brandPrimaryColor: data.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
     brandSecondaryColor: data.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,

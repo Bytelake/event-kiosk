@@ -17,6 +17,8 @@ interface Calendar {
 interface SettingsForm extends KioskColorScheme {
   orgName: string;
   orgLogoUrl: string;
+  kioskShowLogo: boolean;
+  kioskShowOrgName: boolean;
   breezeSubdomain: string;
   breezeApiKey: string;
   breezeCalendarIds: string[];
@@ -117,6 +119,8 @@ export default function AdminSettingsPage() {
       setSettings({
         orgName: settingsData.orgName,
         orgLogoUrl: settingsData.orgLogoUrl ?? "",
+        kioskShowLogo: settingsData.kioskShowLogo ?? true,
+        kioskShowOrgName: settingsData.kioskShowOrgName ?? true,
         brandPrimaryColor: settingsData.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
         brandSecondaryColor:
           settingsData.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,
@@ -172,6 +176,8 @@ export default function AdminSettingsPage() {
     const payload: Record<string, unknown> = {
       orgName: settings.orgName,
       orgLogoUrl,
+      kioskShowLogo: settings.kioskShowLogo,
+      kioskShowOrgName: settings.kioskShowOrgName,
       brandPrimaryColor: settings.brandPrimaryColor,
       brandSecondaryColor: settings.brandSecondaryColor,
       kioskBackgroundColor: settings.kioskBackgroundColor,
@@ -326,6 +332,8 @@ export default function AdminSettingsPage() {
               ...current,
               orgName: settingsData.orgName,
               orgLogoUrl: settingsData.orgLogoUrl ?? "",
+              kioskShowLogo: settingsData.kioskShowLogo ?? true,
+              kioskShowOrgName: settingsData.kioskShowOrgName ?? true,
               brandPrimaryColor:
                 settingsData.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
               brandSecondaryColor:
@@ -374,6 +382,16 @@ export default function AdminSettingsPage() {
                   value={settings.orgName}
                   onChange={(e) => setSettings({ ...settings, orgName: e.target.value })}
                 />
+                <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+                  <input
+                    type="checkbox"
+                    checked={settings.kioskShowOrgName}
+                    onChange={(e) =>
+                      setSettings({ ...settings, kioskShowOrgName: e.target.checked })
+                    }
+                  />
+                  <span className="text-sm text-slate-700">Show organization name on kiosk</span>
+                </label>
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Logo</label>
@@ -400,6 +418,16 @@ export default function AdminSettingsPage() {
                   ) : (
                     <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended</p>
                   )}
+                  <label className="mt-3 flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.kioskShowLogo}
+                      onChange={(e) =>
+                        setSettings({ ...settings, kioskShowLogo: e.target.checked })
+                      }
+                    />
+                    <span className="text-sm text-slate-700">Show logo on kiosk</span>
+                  </label>
                 </div>
 
                 <div>
@@ -426,12 +454,22 @@ export default function AdminSettingsPage() {
                     }}
                   >
                     <div className="p-6">
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: settings.kioskMutedTextColor }}
-                      >
-                        {settings.orgName || "Organization name"}
-                      </p>
+                      {settings.kioskShowLogo && displayLogoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={displayLogoUrl}
+                          alt=""
+                          className="mb-3 h-10 w-auto object-contain"
+                        />
+                      )}
+                      {settings.kioskShowOrgName && (
+                        <p
+                          className="text-sm font-medium"
+                          style={{ color: settings.kioskMutedTextColor }}
+                        >
+                          {settings.orgName || "Organization name"}
+                        </p>
+                      )}
                       <p
                         className="mt-1 text-2xl font-bold"
                         style={{ color: settings.kioskTextColor }}

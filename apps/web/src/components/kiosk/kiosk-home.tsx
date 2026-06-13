@@ -48,7 +48,7 @@ export function KioskHome() {
 
       <div className="mx-auto max-w-[1400px] px-8 py-12 md:px-12">
         <header className="mb-12 text-center">
-          {settings?.orgLogoUrl ? (
+          {settings?.kioskShowLogo && settings.orgLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={settings.orgLogoUrl}
@@ -56,7 +56,11 @@ export function KioskHome() {
               className="mx-auto mb-6 h-24 w-auto object-contain"
             />
           ) : null}
-          <p className="text-xl font-medium text-[var(--kiosk-muted)]">{settings?.orgName ?? "Welcome"}</p>
+          {settings?.kioskShowOrgName && (
+            <p className="text-xl font-medium text-[var(--kiosk-muted)]">
+              {settings.orgName ?? "Welcome"}
+            </p>
+          )}
           <h1 className="mt-2 text-5xl font-bold tracking-tight text-[var(--kiosk-text)] md:text-6xl">
             Upcoming Events
           </h1>
