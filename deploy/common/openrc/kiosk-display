@@ -1,0 +1,30 @@
+#!/sbin/openrc-run
+
+name="Event Kiosk Display"
+description="Event Kiosk Wayland Display (cage + Electron)"
+
+command="/bin/openvt"
+command_args="-f -c 1 -- /opt/kiosk/bin/start-kiosk-wayland.sh"
+directory="/opt/kiosk"
+
+depend() {
+    need net seatd kiosk-web
+    use logger
+}
+
+start_pre() {
+    export HOME=/home/kiosk
+    export KIOSK_ROOT=/opt/kiosk
+    export KIOSK_DATA_DIR=/var/lib/kiosk
+    export KIOSK_URL=http://127.0.0.1:3000/kiosk
+    if [ -f /var/lib/kiosk/display.env ]; then
+        set -a
+        # shellcheck disable=SC1091
+        . /var/lib/kiosk/display.env
+        set +a
+    fi
+    /opt/kiosk/bin/set-display-rotation.sh --configure-system || true
+    mkdir -p /run/kiosk-wayland
+    chown kiosk:kiosk /run/kiosk-wayland
+    chmod 700 /run/kiosk-wayland
+}

@@ -18,6 +18,8 @@
     "db:push": "npm run db:push --workspace=web",
     "package:debian": "bash scripts/build-debian-package.sh",
     "package:debian:prerelease": "bash scripts/build-debian-package.sh --pre-release",
+    "package:alpine": "bash scripts/build-alpine-package.sh",
+    "package:alpine:prerelease": "bash scripts/build-alpine-package.sh --pre-release",
     "package:pi": "bash scripts/build-pi-package.sh"
   }
 }

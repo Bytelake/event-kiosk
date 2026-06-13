@@ -86,6 +86,8 @@ Direct pushes to `main` should only be used for rare hotfixes by admins, and eve
 3. Build release packages locally:
    - `npm run package:debian amd64` — x86_64 Debian/Ubuntu
    - `npm run package:debian arm64` — Raspberry Pi OS / arm64 (also creates `event-kiosk-pi-*` alias)
+   - `npm run package:alpine amd64` — x86_64 Alpine Linux (build on Alpine/musl)
+   - `npm run package:alpine arm64` — arm64 Alpine Linux (build on Alpine/musl)
 4. Create a [GitHub Release](https://github.com/Bytelake/event-kiosk/releases) and attach the tarball(s)
 
 ## Local development
