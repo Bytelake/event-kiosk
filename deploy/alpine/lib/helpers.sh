@@ -3,14 +3,14 @@
 set -euo pipefail
 
 ALPINE_APK_BASE=(
-  bash curl ca-certificates rsync
+  bash curl ca-certificates rsync util-linux shadow
 )
 
 ALPINE_APK_DISPLAY=(
   cage seatd libseat wlr-randr kbd
-  gtk+3.0 nss atk at-spi2-atk libdrm mesa-gbm alsa-lib
+  gtk+3.0 nss libatk-1.0 at-spi2-core libdrm mesa-gbm alsa-lib
   libxcomposite libxdamage libxrandr pango cairo gdk-pixbuf
-  font-liberation xdg-utils electron
+  font-liberation xdg-utils xwayland electron
 )
 
 ALPINE_APK_X11=(
@@ -42,13 +42,18 @@ alpine_ensure_repos() {
 
   [[ -f "${repos_file}" ]] || return 0
 
+  if grep -qE '^#https?://.+/community$' "${repos_file}"; then
+    sed -i 's|^#\(https\?://.*/community\)$|\1|' "${repos_file}"
+    changed=true
+  fi
+
   main_line="$(grep -E '^https?://.+/main$' "${repos_file}" | head -1 || true)"
   if [[ -z "${main_line}" ]]; then
     echo "[alpine] WARNING: could not detect Alpine mirror line in ${repos_file}" >&2
     return 0
   fi
 
-  if ! grep -qE '/community$' "${repos_file}"; then
+  if ! grep -qE '^https?://.+/community$' "${repos_file}"; then
     echo "${main_line/main/community}" >>"${repos_file}"
     changed=true
   fi
@@ -59,8 +64,42 @@ alpine_ensure_repos() {
 
   if [[ "${changed}" == "true" ]]; then
     echo "[alpine] Enabled community and testing repositories"
-    apk update
+    apk update || true
   fi
+
+  # Newer Alpine releases (e.g. 3.24) may not publish versioned testing; electron lives in edge/testing.
+  if ! apk search -x electron 2>/dev/null | grep -qE '^electron-'; then
+    if ! grep -qE 'edge/testing$' "${repos_file}"; then
+      echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >>"${repos_file}"
+      echo "[alpine] Added edge/testing repository (electron not in version testing)"
+      apk update || true
+    fi
+  fi
+}
+
+alpine_install_sudo_wrapper() {
+  if command -v sudo >/dev/null 2>&1 && sudo -u root id >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! command -v runuser >/dev/null 2>&1; then
+    echo "[alpine] ERROR: runuser not found (util-linux package)" >&2
+    return 1
+  fi
+  if [[ -x /usr/bin/sudo ]] && grep -q 'runuser -u' /usr/bin/sudo 2>/dev/null; then
+    return 0
+  fi
+  cat >/usr/bin/sudo <<'SCRIPT'
+#!/bin/sh
+# Minimal sudo wrapper for install scripts (Alpine has no sudo apk).
+if [ "$1" = "-u" ]; then
+  user=$2
+  shift 2
+  exec runuser -u "$user" -- "$@"
+fi
+exec "$@"
+SCRIPT
+  chmod 755 /usr/bin/sudo
+  echo "[alpine] Installed runuser-based sudo wrapper at /usr/bin/sudo"
 }
 
 alpine_install_node() {
@@ -87,6 +126,7 @@ alpine_install_packages() {
   local display_mode="${3:-wayland}"
 
   alpine_ensure_repos
+  alpine_install_sudo_wrapper
   echo "[alpine] Installing system packages..."
   local -a pkgs=("${ALPINE_APK_BASE[@]}")
   if [[ "${from_source}" == "true" ]]; then

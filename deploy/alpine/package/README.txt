@@ -8,10 +8,10 @@ Init: systemd or OpenRC (auto-detected).
 
 INSTALL
   1. Extract the tarball on the target system
-  2. sudo bash install.sh
-  3. sudo nano /var/lib/kiosk/.env
-  4. sudo systemctl restart kiosk-web
-     (OpenRC: sudo rc-service kiosk-web restart)
+  2. su -c 'bash install.sh'              (root required; Alpine has no sudo apk)
+  3. su -c 'nano /var/lib/kiosk/.env'
+  4. su -c 'rc-service kiosk-web restart'
+     (systemd: systemctl restart kiosk-web)
 
   Admin: http://<host-ip>:3000/admin
 

@@ -61,6 +61,7 @@ alpine_install_node
 alpine_setup_kiosk_user
 
 log "Building application (this may take several minutes)..."
+chown -R kiosk:kiosk "${REPO_ROOT}"
 sudo -u kiosk bash -lc "
   set -euo pipefail
   export ELECTRON_SKIP_BINARY_DOWNLOAD=1

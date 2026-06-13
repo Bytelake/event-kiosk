@@ -3,8 +3,9 @@
 name="Event Kiosk Display"
 description="Event Kiosk Wayland Display (cage + Electron)"
 
-command="/bin/openvt"
-command_args="-f -c 1 -- /opt/kiosk/bin/start-kiosk-wayland.sh"
+supervisor=supervise-daemon
+command="/opt/kiosk/bin/launch-kiosk-display.sh"
+pidfile="/run/kiosk-display.pid"
 directory="/opt/kiosk"
 
 depend() {

@@ -88,17 +88,19 @@ Build on Alpine (musl) — do not reuse Debian tarballs on Alpine.
 
 ```bash
 tar -xzf event-kiosk-alpine-*.tar.gz && cd event-kiosk-alpine-*
-sudo bash install.sh
-sudo nano /var/lib/kiosk/.env
-sudo systemctl restart kiosk-web    # OpenRC: sudo rc-service kiosk-web restart
+su -c 'bash install.sh'                    # root required; Alpine has no sudo apk by default
+su -c 'nano /var/lib/kiosk/.env'
+su -c 'rc-service kiosk-web restart'         # systemd: systemctl restart kiosk-web
 ```
+
+Portrait monitor: `su -c 'bash install.sh --rotation left'`
 
 ### Install from source
 
 ```bash
 git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
 cd ~/event-kiosk
-sudo bash deploy/alpine/install.sh
+su -c 'bash deploy/alpine/install.sh'
 ```
 
 ## Development
