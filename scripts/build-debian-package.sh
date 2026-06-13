@@ -56,7 +56,6 @@ fi
 
 PACKAGE_NAME="event-kiosk-debian-${ARCH_LABEL}-${VERSION_LABEL}"
 ARCHIVE="${OUT_DIR}/${PACKAGE_NAME}.tar.gz"
-PI_ALIAS="${OUT_DIR}/event-kiosk-pi-${VERSION_LABEL}.tar.gz"
 
 log() { echo "[package:debian] $*"; }
 
@@ -114,11 +113,6 @@ mkdir -p "${OUT_DIR}"
 xattr -cr "${PACKAGE_ROOT}" 2>/dev/null || true
 tar --no-xattrs -czf "${ARCHIVE}" -C "${OUT_DIR}" "${PACKAGE_NAME}" 2>/dev/null \
   || tar -czf "${ARCHIVE}" -C "${OUT_DIR}" "${PACKAGE_NAME}"
-
-if [[ "${ARCH_LABEL}" == "arm64" ]]; then
-  ln -sf "$(basename "${ARCHIVE}")" "${PI_ALIAS}"
-  log "Pi alias: ${PI_ALIAS} → $(basename "${ARCHIVE}")"
-fi
 
 BYTES=$(wc -c < "${ARCHIVE}" | tr -d ' ')
 log "Done: ${ARCHIVE} ($(numfmt --to=iec-i --suffix=B "${BYTES}" 2>/dev/null || echo "${BYTES} bytes"))"

@@ -1,6 +1,6 @@
 {
   "name": "event-kiosk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "private": true,
   "workspaces": [
@@ -19,7 +19,6 @@
     "package:debian": "bash scripts/build-debian-package.sh",
     "package:debian:prerelease": "bash scripts/build-debian-package.sh --pre-release",
     "package:alpine": "bash scripts/build-alpine-package.sh",
-    "package:alpine:prerelease": "bash scripts/build-alpine-package.sh --pre-release",
-    "package:pi": "bash scripts/build-pi-package.sh"
+    "package:alpine:prerelease": "bash scripts/build-alpine-package.sh --pre-release"
   }
 }

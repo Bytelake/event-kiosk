@@ -35,7 +35,6 @@ Download the latest tarball from [GitHub Releases](https://github.com/Bytelake/e
 
 - `event-kiosk-debian-amd64-*.tar.gz` — x86_64 PCs, Ubuntu Server, etc.
 - `event-kiosk-debian-arm64-*.tar.gz` — Raspberry Pi 4/5, ARM SBCs
-- `event-kiosk-pi-*.tar.gz` — alias for the arm64 package (legacy name)
 
 ### 2. Install
 
