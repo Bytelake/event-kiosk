@@ -97,6 +97,7 @@ configure_touch_udev() {
       log "Removed touch rotation udev rule."
     fi
   else
+    mkdir -p "$(dirname "${UDEV_RULE}")"
     cat > "${UDEV_RULE}" <<EOF
 # Event Kiosk — touch alignment for ${rotation} display rotation
 SUBSYSTEM=="input", ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="${matrix}"

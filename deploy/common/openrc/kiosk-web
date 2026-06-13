@@ -1,0 +1,29 @@
+#!/sbin/openrc-run
+
+name="Event Kiosk Web"
+description="Event Kiosk Web Application"
+
+supervisor=supervise-daemon
+command="/usr/bin/node"
+command_args="apps/web/server.js"
+command_user="kiosk"
+directory="/opt/kiosk/web"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    export NODE_ENV=production
+    export HOSTNAME=0.0.0.0
+    export PORT=3000
+    export KIOSK_DATA_DIR=/var/lib/kiosk
+    if [ -f /var/lib/kiosk/.env ]; then
+        set -a
+        # shellcheck disable=SC1091
+        . /var/lib/kiosk/.env
+        set +a
+    fi
+}

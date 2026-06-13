@@ -1,0 +1,31 @@
+#!/sbin/openrc-run
+
+name="Event Kiosk Shell"
+description="Event Kiosk Electron Shell (X11)"
+
+supervisor=supervise-daemon
+command="/opt/kiosk/bin/start-kiosk-display.sh"
+command_user="kiosk"
+directory="/opt/kiosk/shell"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+    need net kiosk-web
+    use logger
+}
+
+start_pre() {
+    export KIOSK_ROOT=/opt/kiosk
+    export KIOSK_DATA_DIR=/var/lib/kiosk
+    export KIOSK_URL=http://127.0.0.1:3000/kiosk
+    export DISPLAY=:0
+    unset ELECTRON_OZONE_PLATFORM_HINT
+    if [ -f /var/lib/kiosk/display.env ]; then
+        set -a
+        # shellcheck disable=SC1091
+        . /var/lib/kiosk/display.env
+        set +a
+    fi
+    /opt/kiosk/bin/set-display-rotation.sh --apply-x11 || true
+    sleep 5
+}

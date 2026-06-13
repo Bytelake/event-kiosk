@@ -12,19 +12,57 @@ source "${COMMON_DIR}/kiosk-paths.sh" 2>/dev/null || source "${INSTALL_DIR}/kios
   kiosk_display_env() { echo "${KIOSK_DATA_DIR}/display.env"; }
 }
 
+detect_init() {
+  if [[ -d /run/systemd/system ]] && command -v systemctl >/dev/null 2>&1; then
+    echo systemd
+  elif command -v rc-service >/dev/null 2>&1; then
+    echo openrc
+  else
+    echo unknown
+  fi
+}
+
+service_status() {
+  local svc="$1"
+  local init
+  init="$(detect_init)"
+  case "${init}" in
+    systemd)
+      if systemctl is-active --quiet "${svc}" 2>/dev/null; then
+        echo "  ${svc}: running"
+      elif systemctl is-enabled --quiet "${svc}" 2>/dev/null; then
+        echo "  ${svc}: enabled but not running"
+      else
+        echo "  ${svc}: not enabled"
+      fi
+      ;;
+    openrc)
+      if rc-service "${svc}" status 2>/dev/null | grep -qi started; then
+        echo "  ${svc}: running"
+      elif rc-update show -v 2>/dev/null | grep -q "${svc} |.*default"; then
+        echo "  ${svc}: enabled but not running"
+      else
+        echo "  ${svc}: not enabled"
+      fi
+      ;;
+    *)
+      echo "  ${svc}: unknown (no systemd or OpenRC)"
+      ;;
+  esac
+}
+
 echo "=== Event Kiosk Diagnostics ==="
+echo ""
+echo "-- Init: $(detect_init) --"
 echo ""
 
 echo "-- Services --"
-for svc in kiosk-web kiosk-display kiosk-shell seatd getty@tty1; do
-  if systemctl is-active --quiet "${svc}" 2>/dev/null; then
-    echo "  ${svc}: running"
-  elif systemctl is-enabled --quiet "${svc}" 2>/dev/null; then
-    echo "  ${svc}: enabled but not running"
-  else
-    echo "  ${svc}: not enabled"
-  fi
+for svc in kiosk-web kiosk-display kiosk-shell seatd; do
+  service_status "${svc}"
 done
+if [[ "$(detect_init)" == "systemd" ]]; then
+  service_status "getty@tty1"
+fi
 echo ""
 
 echo "-- Web --"
@@ -61,6 +99,7 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
   source "${DISPLAY_ENV}"
   echo "  KIOSK_DISPLAY_ROTATION: ${KIOSK_DISPLAY_ROTATION:-normal}"
   command -v wlr-randr >/dev/null && echo "  wlr-randr: installed" || echo "  wlr-randr: not installed"
+  command -v electron >/dev/null && echo "  electron: $(command -v electron)" || echo "  electron: not in PATH"
   if [[ -f /etc/udev/rules.d/99-kiosk-touch-rotation.rules ]]; then
     echo "  touch udev rule: present"
   else
@@ -70,9 +109,14 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
 fi
 
 echo "-- Logs (last 10 lines) --"
+INIT="$(detect_init)"
 for svc in kiosk-web kiosk-display kiosk-shell; do
   echo ">> ${svc}"
-  journalctl -u "${svc}" -n 10 --no-pager 2>/dev/null || true
+  if [[ "${INIT}" == "systemd" ]]; then
+    journalctl -u "${svc}" -n 10 --no-pager 2>/dev/null || true
+  else
+    rc-service "${svc}" status 2>/dev/null || true
+  fi
   echo ""
 done
 
