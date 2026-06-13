@@ -35,6 +35,9 @@ model Event {
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([status, kioskVisible, startAt])
+  @@index([source])
 }
 
 model Settings {

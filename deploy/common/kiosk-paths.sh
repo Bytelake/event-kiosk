@@ -19,61 +19,6 @@ ensure_data_dir() {
   chmod 750 "${KIOSK_DATA_DIR}"
 }
 
-# Copy a file into the data dir only when the destination is missing or empty.
-_migrate_file_if_needed() {
-  local src="$1"
-  local dest="$2"
-  [[ -f "${src}" ]] || return 0
-  if [[ ! -f "${dest}" ]] || [[ ! -s "${dest}" ]]; then
-    cp -a "${src}" "${dest}"
-    echo "[migrate] ${src} → ${dest}"
-  fi
-}
-
-_migrate_dir_if_needed() {
-  local src="$1"
-  local dest="$2"
-  [[ -d "${src}" ]] || return 0
-  [[ -n "$(ls -A "${src}" 2>/dev/null || true)" ]] || return 0
-  mkdir -p "${dest}"
-  cp -a "${src}/." "${dest}/"
-  echo "[migrate] ${src}/ → ${dest}/"
-}
-
-# Move database, config, and uploads from any prior install layout into KIOSK_DATA_DIR.
-migrate_to_data_dir() {
-  local install_dir="${1:-${KIOSK_INSTALL_DIR}}"
-
-  ensure_data_dir
-
-  _migrate_file_if_needed "${install_dir}/web/prisma/dev.db" "$(kiosk_db_file)"
-  _migrate_file_if_needed "${install_dir}/web/dev.db" "$(kiosk_db_file)"
-  _migrate_file_if_needed "${install_dir}/apps/web/prisma/dev.db" "$(kiosk_db_file)"
-  _migrate_file_if_needed "${KIOSK_DATA_DIR}/prisma/dev.db" "$(kiosk_db_file)"
-  _migrate_file_if_needed "${KIOSK_DATA_DIR}/dev.db" "$(kiosk_db_file)"
-
-  for journal in \
-    "${install_dir}/web/prisma/dev.db-journal" \
-    "${install_dir}/web/dev.db-journal" \
-    "${install_dir}/apps/web/prisma/dev.db-journal"; do
-    if [[ -f "${journal}" ]] && [[ ! -f "$(kiosk_db_file)-journal" ]]; then
-      cp -a "${journal}" "$(kiosk_db_file)-journal"
-    fi
-  done
-
-  _migrate_file_if_needed "${install_dir}/web/.env" "$(kiosk_env_file)"
-  _migrate_file_if_needed "${install_dir}/apps/web/.env" "$(kiosk_env_file)"
-  _migrate_file_if_needed "${install_dir}/.env" "$(kiosk_env_file)"
-
-  _migrate_file_if_needed "${install_dir}/display.env" "$(kiosk_display_env)"
-
-  _migrate_dir_if_needed "${install_dir}/web/apps/web/public/uploads" "$(kiosk_uploads_dir)"
-  _migrate_dir_if_needed "${install_dir}/web/public/uploads" "$(kiosk_uploads_dir)"
-  _migrate_dir_if_needed "${install_dir}/apps/web/public/uploads" "$(kiosk_uploads_dir)"
-
-  chown -R kiosk:kiosk "${KIOSK_DATA_DIR}"
-}
-
 # Podman --env-file treats quotes literally; production .env files use bare values.
 normalize_env_file_quotes() {
   local env_file="$1"
@@ -145,7 +90,6 @@ write_display_env_if_missing() {
 
 has_existing_install() {
   [[ -d "${KIOSK_INSTALL_DIR}/web" ]] \
-    || [[ -d "${KIOSK_INSTALL_DIR}/apps/web" ]] \
     || [[ -f "$(kiosk_db_file)" ]] \
     || [[ -f "$(kiosk_env_file)" ]]
 }

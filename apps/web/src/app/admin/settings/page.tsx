@@ -93,6 +93,9 @@ export default function AdminSettingsPage() {
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [backupMessage, setBackupMessage] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -204,6 +207,104 @@ export default function AdminSettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setSettings((s) => (s ? { ...s, orgLogoUrl: data.url } : s));
+    }
+  }
+
+  async function handleExportDatabase() {
+    setExporting(true);
+    setBackupMessage("");
+
+    try {
+      const res = await fetch("/api/database/export");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setBackupMessage(body.error || "Export failed");
+        return;
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const filename =
+        disposition?.match(/filename="(.+)"/)?.[1] ?? "kiosk-backup.db";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      setBackupMessage("Database exported");
+    } catch {
+      setBackupMessage("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImportDatabase(file: File) {
+    if (
+      !window.confirm(
+        "Importing a backup replaces all events, settings, and registration domains. Continue?",
+      )
+    ) {
+      return;
+    }
+
+    setImporting(true);
+    setBackupMessage("");
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/database/import", { method: "POST", body });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setBackupMessage(data.error || "Import failed");
+        return;
+      }
+
+      setBackupMessage(
+        `Imported ${data.eventCount} events and ${data.domainCount} registration domains`,
+      );
+
+      const [settingsRes, domainRes] = await Promise.all([
+        fetch("/api/settings"),
+        fetch("/api/domains"),
+      ]);
+      const settingsData = await settingsRes.json();
+      const domainData = await domainRes.json();
+
+      setSettings((current) =>
+        current
+          ? {
+              ...current,
+              orgName: settingsData.orgName,
+              orgLogoUrl: settingsData.orgLogoUrl ?? "",
+              brandPrimaryColor:
+                settingsData.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
+              brandSecondaryColor:
+                settingsData.brandSecondaryColor ??
+                defaultKioskColorScheme.brandSecondaryColor,
+              kioskBackgroundColor:
+                settingsData.kioskBackgroundColor ??
+                defaultKioskColorScheme.kioskBackgroundColor,
+              kioskTextColor:
+                settingsData.kioskTextColor ?? defaultKioskColorScheme.kioskTextColor,
+              kioskMutedTextColor:
+                settingsData.kioskMutedTextColor ??
+                defaultKioskColorScheme.kioskMutedTextColor,
+              breezeSubdomain: settingsData.breezeSubdomain ?? "",
+              breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
+              hasBreezeApiKey: settingsData.hasBreezeApiKey,
+              kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
+            }
+          : current,
+      );
+      setDomains(domainData);
+    } catch {
+      setBackupMessage("Import failed");
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -422,6 +523,54 @@ export default function AdminSettingsPage() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <h2 className="font-semibold">Database Backup</h2>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-slate-500">
+                  Export the SQLite database for backup or migration. Importing replaces all
+                  events, settings, and registration domains with the backup file.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button type="button" onClick={handleExportDatabase} disabled={exporting}>
+                    {exporting ? "Exporting..." : "Export Database"}
+                  </Button>
+                  <label className="inline-flex">
+                    <input
+                      type="file"
+                      accept=".db,application/x-sqlite3,application/vnd.sqlite3,application/octet-stream"
+                      className="hidden"
+                      disabled={importing}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          void handleImportDatabase(file);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <span
+                      className={`inline-flex h-10 cursor-pointer items-center rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-200 ${
+                        importing ? "pointer-events-none opacity-50" : ""
+                      }`}
+                    >
+                      {importing ? "Importing..." : "Import Database"}
+                    </span>
+                  </label>
+                </div>
+                {backupMessage && (
+                  <p
+                    className={`text-sm ${
+                      backupMessage.endsWith("failed") ? "text-red-600" : "text-emerald-700"
+                    }`}
+                  >
+                    {backupMessage}
+                  </p>
+                )}
               </CardContent>
             </Card>
 

@@ -9,7 +9,6 @@ RUN npm ci --workspace=web --ignore-scripts
 
 COPY apps/web apps/web
 WORKDIR /build/apps/web
-RUN mkdir -p public/uploads
 RUN cp .env.example .env
 RUN npx prisma generate --schema=prisma/schema.prisma
 RUN npm run build

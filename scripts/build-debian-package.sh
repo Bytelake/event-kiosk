@@ -82,10 +82,6 @@ cp -R "${STANDALONE}/." "${PACKAGE_ROOT}/web/"
 rm -rf "${PACKAGE_ROOT}/web/node_modules/@prisma" "${PACKAGE_ROOT}/web/node_modules/.prisma" 2>/dev/null || true
 mkdir -p "${PACKAGE_ROOT}/web/apps/web/.next"
 cp -R "${ROOT}/apps/web/.next/static" "${PACKAGE_ROOT}/web/apps/web/.next/static"
-mkdir -p "${PACKAGE_ROOT}/web/apps/web/public/uploads"
-if [[ -d "${ROOT}/apps/web/public" ]]; then
-  cp -R "${ROOT}/apps/web/public/." "${PACKAGE_ROOT}/web/apps/web/public/"
-fi
 mkdir -p "${PACKAGE_ROOT}/web/prisma"
 rsync -a --exclude dev.db --exclude dev.db-journal \
   "${ROOT}/apps/web/prisma/" "${PACKAGE_ROOT}/web/prisma/"

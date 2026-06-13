@@ -1,4 +1,5 @@
 Reference Material/
+AGENTS.md
 screenshots/
 node_modules/
 .next/
@@ -9,6 +10,6 @@ out/
 .env
 .env.local
 .env*.local
-uploads/
+apps/web/public/uploads/
 .DS_Store
 *.log

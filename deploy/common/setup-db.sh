@@ -20,7 +20,7 @@ log() { echo "[setup-db] $*"; }
 
 [[ -d "${WEB_DIR}" ]] || { log "Missing ${WEB_DIR}"; exit 1; }
 
-migrate_to_data_dir "${INSTALL_DIR}"
+ensure_data_dir
 write_env_if_missing "${WEB_DIR}/.env.example"
 
 ENV_FILE="$(kiosk_env_file)"

@@ -83,7 +83,7 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
 chmod +x "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/fix-prisma.sh" "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
-migrate_to_data_dir "${INSTALL_DIR}"
+ensure_data_dir
 write_env_if_missing "${INSTALL_DIR}/web/.env.example"
 write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
 

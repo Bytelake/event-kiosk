@@ -1,14 +1,35 @@
 import { PrismaClient } from "@prisma/client";
+import {
+  assertDatabaseWritable,
+  trackQueryEnd,
+  trackQueryStart,
+} from "@/lib/database-maintenance";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrismaClient() {
+  const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+
+  return client.$extends({
+    query: {
+      async $allOperations({ args, query }) {
+        assertDatabaseWritable();
+        trackQueryStart();
+        try {
+          return await query(args);
+        } finally {
+          trackQueryEnd();
+        }
+      },
+    },
+  });
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

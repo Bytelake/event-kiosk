@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fetchKioskEvents, type KioskEvent } from "@/lib/kiosk-api";
+import { fetchKioskEvent, type KioskEvent } from "@/lib/kiosk-api";
 import { openRegistration } from "@/lib/kiosk-shell";
 import { formatKioskEventScheduleDisplay } from "@/lib/utils";
 
@@ -14,9 +14,7 @@ export function KioskEventDetail() {
   const [event, setEvent] = useState<KioskEvent | null>(null);
 
   useEffect(() => {
-    fetchKioskEvents().then((events) => {
-      setEvent(events.find((e) => e.id === params.id) ?? null);
-    });
+    fetchKioskEvent(params.id).then(setEvent);
   }, [params.id]);
 
   if (!event) {

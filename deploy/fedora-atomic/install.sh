@@ -113,7 +113,7 @@ if [[ "${RESUME}" == "true" ]]; then
   cp "${REPO_ROOT}/deploy/common/kiosk-paths.sh" "${INSTALL_DIR}/kiosk-paths.sh"
   chmod +x "${INSTALL_DIR}/setup-db.sh"
   chown -R kiosk:kiosk "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"
-  migrate_to_data_dir "${INSTALL_DIR}"
+  ensure_data_dir
   write_env_if_missing "${INSTALL_DIR}/web/.env.example"
 else
   log "Building Electron shell from source..."
@@ -145,7 +145,7 @@ else
   chmod +x "${INSTALL_DIR}/bin/"*.sh "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/diagnose.sh"
 
   chown -R kiosk:kiosk "${INSTALL_DIR}"
-  migrate_to_data_dir "${INSTALL_DIR}"
+  ensure_data_dir
   write_env_if_missing "${INSTALL_DIR}/web/.env.example"
   write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
 

@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
+import { serializeEvent } from "@/lib/event-serialize";
 import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
 import { eventEnrichSchema, manualEventSchema } from "@/lib/validators";
-
-function serializeEvent(event: Awaited<ReturnType<typeof prisma.event.findMany>>[number]) {
-  return {
-    ...event,
-    startAt: event.startAt.toISOString(),
-    endAt: event.endAt?.toISOString() ?? null,
-    lastSyncedAt: event.lastSyncedAt?.toISOString() ?? null,
-    createdAt: event.createdAt.toISOString(),
-    updatedAt: event.updatedAt.toISOString(),
-  };
-}
 
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
