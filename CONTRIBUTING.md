@@ -88,8 +88,6 @@ Direct pushes to `main` should only be used for rare hotfixes by admins, and eve
    - `npm run package:debian arm64` — Raspberry Pi OS / arm64 (also creates `event-kiosk-pi-*` alias)
 4. Create a [GitHub Release](https://github.com/Bytelake/event-kiosk/releases) and attach the tarball(s)
 
-Fedora Atomic hosts pull the web backend from `ghcr.io/<org>/event-kiosk-web` (built by CI on push to `main`).
-
 ## Local development
 
 See [README.md](README.md#development) for setup (`npm install`, `.env`, `npm run dev`).

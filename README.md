@@ -4,7 +4,7 @@
 
 Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links; optional sync from **Breeze CHMS**.
 
-Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Fedora Atomic** (Desktop and IoT). Also runs locally for development on macOS, Linux, or Windows.
+Runs on **Debian/Ubuntu** (including Raspberry Pi OS). Also runs locally for development on macOS, Linux, or Windows.
 
 <p align="center">
   <img src="media/kiosk-home-20260608-204733.png" alt="Kiosk home screen listing upcoming events" width="320" />
@@ -23,7 +23,6 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Fedora Atomic** (Des
 | Platform | Install path | Architectures |
 |----------|--------------|---------------|
 | Debian, Ubuntu, Raspberry Pi OS | [deploy/debian/](deploy/debian/) | arm64, amd64 |
-| Fedora Atomic Desktop / IoT | [deploy/fedora-atomic/](deploy/fedora-atomic/) | x86_64 (arm64 where packages exist) |
 
 ## Debian / Ubuntu (includes Raspberry Pi)
 
@@ -70,18 +69,6 @@ sudo bash deploy/debian/install.sh
 Download a newer release package, extract, and run `sudo bash update.sh` (not `install.sh`). Application code lives in `/opt/kiosk`; your database, uploads, and config live in `/var/lib/kiosk`.
 
 To uninstall: `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
-
-## Fedora Atomic
-
-For Fedora Atomic Desktop (Silverblue, Kinoite) or Fedora Atomic IoT. See [deploy/fedora-atomic/README.md](deploy/fedora-atomic/README.md).
-
-```bash
-git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
-cd ~/event-kiosk
-sudo bash deploy/fedora-atomic/install.sh
-```
-
-The web backend runs in a **Podman container**; the Electron display runs on the host. If new OS packages are layered, reboot and re-run the installer.
 
 ## Development
 
@@ -167,8 +154,6 @@ apps/web/              Next.js kiosk UI, admin, API, Breeze sync
 apps/shell/            Electron kiosk shell
 deploy/common/         Shared install scripts, systemd units, paths
 deploy/debian/         Debian/Ubuntu installer and release package
-deploy/fedora-atomic/  Fedora Atomic installer (Quadlet + rpm-ostree)
-deploy/containers/     Containerfile for Atomic web backend
 deploy/pi-os-lite/     Deprecated wrappers (use deploy/debian/)
 scripts/               Build scripts
 ```
