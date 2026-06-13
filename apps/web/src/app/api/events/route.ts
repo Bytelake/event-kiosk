@@ -9,6 +9,7 @@ import { eventEnrichSchema, manualEventSchema } from "@/lib/validators";
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
   const source = request.nextUrl.searchParams.get("source");
+  const status = request.nextUrl.searchParams.get("status");
   const now = wallClockNow();
 
   if (kiosk) {
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
       ? { source: "breeze" as const }
       : source === "manual"
         ? { source: "manual" as const }
-        : source === "hidden"
-          ? { kioskVisible: false }
+        : status === "draft" || status === "archived"
+          ? { status }
           : {};
 
   const events = await prisma.event.findMany({

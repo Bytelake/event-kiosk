@@ -15,7 +15,6 @@ interface EventRow {
   startAt: string;
   source: string;
   status: string;
-  kioskVisible: boolean;
   syncStatus: string;
 }
 
@@ -23,15 +22,22 @@ const tabs = [
   { key: "", label: "All" },
   { key: "breeze", label: "Breeze" },
   { key: "manual", label: "Manual" },
-  { key: "hidden", label: "Hidden" },
+  { key: "draft", label: "Draft" },
+  { key: "archived", label: "Archived" },
 ];
+
+function tabQuery(tab: string) {
+  if (!tab) return "";
+  if (tab === "breeze" || tab === "manual") return `?source=${tab}`;
+  return `?status=${tab}`;
+}
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [tab, setTab] = useState("");
 
   useEffect(() => {
-    const query = tab ? `?source=${tab}` : "";
+    const query = tabQuery(tab);
     fetch(`/api/events${query}`)
       .then((res) => res.json())
       .then(setEvents);
@@ -82,14 +88,21 @@ export default function AdminEventsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold text-slate-900">{event.title}</h3>
                       {event.source === "breeze" && <Badge variant="breeze">Breeze</Badge>}
-                      {!event.kioskVisible && <Badge variant="warning">Hidden</Badge>}
                       {event.syncStatus === "stale" && <Badge variant="warning">Stale</Badge>}
                     </div>
                     <p className="text-sm text-slate-500">
                       {formatWallClockDateTime(event.startAt)}
                     </p>
                   </div>
-                  <Badge variant={event.status === "published" ? "success" : "default"}>
+                  <Badge
+                    variant={
+                      event.status === "published"
+                        ? "success"
+                        : event.status === "draft"
+                          ? "warning"
+                          : "default"
+                    }
+                  >
                     {event.status}
                   </Badge>
                 </Link>
