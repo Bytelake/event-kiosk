@@ -38,6 +38,8 @@ export const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a h
 export const settingsSchema = z.object({
   orgName: z.string().min(1).optional(),
   orgLogoUrl: z.string().optional().nullable(),
+  kioskShowLogo: z.boolean().optional(),
+  kioskShowOrgName: z.boolean().optional(),
   brandPrimaryColor: hexColorSchema.optional(),
   brandSecondaryColor: hexColorSchema.optional(),
   kioskBackgroundColor: hexColorSchema.optional(),

@@ -9,6 +9,8 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
   return {
     orgName: settings.orgName,
     orgLogoUrl: settings.orgLogoUrl,
+    kioskShowLogo: settings.kioskShowLogo,
+    kioskShowOrgName: settings.kioskShowOrgName,
     brandPrimaryColor: settings.brandPrimaryColor,
     brandSecondaryColor: settings.brandSecondaryColor,
     kioskBackgroundColor: settings.kioskBackgroundColor,
@@ -54,6 +56,8 @@ export async function PATCH(request: Request) {
     data: {
       orgName: data.orgName,
       orgLogoUrl: data.orgLogoUrl,
+      kioskShowLogo: data.kioskShowLogo,
+      kioskShowOrgName: data.kioskShowOrgName,
       brandPrimaryColor: data.brandPrimaryColor,
       brandSecondaryColor: data.brandSecondaryColor,
       kioskBackgroundColor: data.kioskBackgroundColor,
