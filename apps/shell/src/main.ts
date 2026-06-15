@@ -26,8 +26,9 @@ function isTruthyEnv(v: string | undefined): boolean {
   return s === "true" || s === "1" || s === "yes";
 }
 
-const desktopMode =
-  isTruthyEnv(process.env.KIOSK_DESKTOP_MODE) || !app.isPackaged;
+// Desktop window mode is opt-in via KIOSK_DESKTOP_MODE (dev:desktop). Do not tie
+// this to app.isPackaged — production installs run unpackaged `electron .`.
+const desktopMode = isTruthyEnv(process.env.KIOSK_DESKTOP_MODE);
 const DESKTOP_WIDTH = 1080;
 const DESKTOP_HEIGHT = 1920;
 const CHROME_HEIGHT = 72;
@@ -36,6 +37,8 @@ const KEYBOARD_HEIGHT = 380;
 function shouldUseRichGraphics(): boolean {
   if (isTruthyEnv(process.env.KIOSK_FULL_GRAPHICS)) return true;
   if (isTruthyEnv(process.env.KIOSK_LITE_GRAPHICS)) return false;
+  // Rich tier (animated blurs) is for local dev/screenshots only; embedded kiosks
+  // default to lite graphics to avoid sustained GPU/compositor load.
   if (desktopMode) return true;
   return false;
 }
