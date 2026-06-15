@@ -32,7 +32,7 @@ export function KioskShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "kiosk-root min-h-screen",
+        "min-h-screen",
         !isDesktopMode() && "cursor-none [&_*]:cursor-none",
       )}
     >

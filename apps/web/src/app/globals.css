@@ -20,6 +20,244 @@ body {
   box-sizing: border-box;
 }
 
+.kiosk-root {
+  font-family: var(--font-kiosk-ui), system-ui, sans-serif;
+}
+
+.kiosk-display {
+  font-family: var(--font-kiosk-display), Georgia, "Times New Roman", serif;
+}
+
+/* ── Background (stable default: no blur filters, no animation) ── */
+
 .kiosk-bg {
-  background: linear-gradient(to bottom, var(--kiosk-bg), #ffffff);
+  background: var(--kiosk-bg, #f1f5f9);
+}
+
+.kiosk-ambient-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.kiosk-aurora {
+  background: linear-gradient(135deg, #e8eef8, #f5ede8, #e8f5ee, #ede8f5);
+}
+
+.kiosk-mesh-overlay {
+  background:
+    radial-gradient(ellipse 85% 65% at 12% 8%, var(--kiosk-orb-1, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 55% at 88% 92%, var(--kiosk-orb-2, transparent) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 52% 48%, var(--kiosk-orb-3, transparent) 0%, transparent 55%);
+}
+
+.kiosk-orb-stable {
+  background-repeat: no-repeat;
+}
+
+.kiosk-orb-stable-1 {
+  background-image: radial-gradient(
+    circle at 8% 12%,
+    var(--kiosk-orb-1, transparent) 0%,
+    transparent 42%
+  );
+}
+
+.kiosk-orb-stable-2 {
+  background-image: radial-gradient(
+    circle at 92% 88%,
+    var(--kiosk-orb-2, transparent) 0%,
+    transparent 40%
+  );
+}
+
+.kiosk-orb-stable-3 {
+  background-image: radial-gradient(
+    circle at 55% 45%,
+    var(--kiosk-orb-3, transparent) 0%,
+    transparent 38%
+  );
+}
+
+.kiosk-vignette {
+  background: radial-gradient(
+    ellipse 95% 95% at 50% 50%,
+    transparent 50%,
+    rgba(15, 23, 42, 0.06) 100%
+  );
+}
+
+/* Rich tier: animated aurora + drifting blurred orbs (desktop / KIOSK_FULL_GRAPHICS=1) */
+.kiosk-orb-rich {
+  display: none;
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.kiosk-graphics-rich .kiosk-aurora {
+  background: linear-gradient(135deg, #e8eef8, #f5ede8, #e8f5ee, #ede8f5, #e8eef8);
+  background-size: 400% 400%;
+  animation: kiosk-aurora 24s ease infinite;
+}
+
+.kiosk-graphics-rich .kiosk-mesh-overlay {
+  animation: kiosk-pulse 14s ease-in-out infinite;
+}
+
+.kiosk-graphics-rich .kiosk-orb-rich {
+  display: block;
+}
+
+.kiosk-orb-rich-1 {
+  width: 55vw;
+  height: 55vw;
+  top: -8vw;
+  left: -12vw;
+  background: var(--kiosk-orb-1);
+  filter: blur(64px);
+  opacity: 0.9;
+}
+
+.kiosk-orb-rich-2 {
+  width: 58vw;
+  height: 58vw;
+  bottom: -10vw;
+  right: -14vw;
+  background: var(--kiosk-orb-2);
+  filter: blur(72px);
+  opacity: 0.85;
+}
+
+.kiosk-orb-rich-3 {
+  width: 36vw;
+  height: 36vw;
+  top: 38%;
+  left: 48%;
+  background: var(--kiosk-orb-3);
+  filter: blur(52px);
+  opacity: 0.75;
+}
+
+@keyframes kiosk-aurora {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes kiosk-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes kiosk-orb-drift-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60px, -80px) scale(1.08);
+  }
+}
+
+@keyframes kiosk-orb-drift-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-70px, 65px) scale(1.06);
+  }
+}
+
+@keyframes kiosk-orb-drift-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, 90px) scale(1.05);
+  }
+}
+
+.kiosk-graphics-rich .kiosk-orb-drift-1 {
+  animation: kiosk-orb-drift-1 22s ease-in-out infinite;
+}
+
+.kiosk-graphics-rich .kiosk-orb-drift-2 {
+  animation: kiosk-orb-drift-2 28s ease-in-out infinite;
+}
+
+.kiosk-graphics-rich .kiosk-orb-drift-3 {
+  animation: kiosk-orb-drift-3 18s ease-in-out infinite;
+}
+
+/* ── Glass surfaces: solid rgba by default; real blur in rich tier only ── */
+
+.kiosk-glass {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.kiosk-glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.kiosk-glass-on-dark {
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.kiosk-glass-chip {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.kiosk-graphics-rich .kiosk-glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.kiosk-graphics-rich .kiosk-glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kiosk-graphics-rich .kiosk-glass-on-dark {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kiosk-graphics-rich .kiosk-glass-chip {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-graphics-rich .kiosk-aurora,
+  .kiosk-graphics-rich .kiosk-mesh-overlay,
+  .kiosk-graphics-rich .kiosk-orb-drift-1,
+  .kiosk-graphics-rich .kiosk-orb-drift-2,
+  .kiosk-graphics-rich .kiosk-orb-drift-3 {
+    animation: none;
+  }
 }

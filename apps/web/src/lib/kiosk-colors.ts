@@ -33,5 +33,8 @@ export function kioskColorSchemeStyle(
     "--kiosk-bg": scheme.kioskBackgroundColor,
     "--kiosk-text": scheme.kioskTextColor,
     "--kiosk-muted": scheme.kioskMutedTextColor,
+    "--kiosk-orb-1": `color-mix(in srgb, ${scheme.brandPrimaryColor} 18%, transparent)`,
+    "--kiosk-orb-2": `color-mix(in srgb, ${scheme.brandSecondaryColor} 14%, transparent)`,
+    "--kiosk-orb-3": `color-mix(in srgb, ${scheme.brandPrimaryColor} 12%, transparent)`,
   };
 }
