@@ -37,8 +37,8 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
 
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
-log "Regenerating Prisma client..."
-bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}" --generate-only
+log "Applying database schema updates..."
+bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}"
 
 log "Checking Electron shell..."
 sudo -u kiosk bash -lc "

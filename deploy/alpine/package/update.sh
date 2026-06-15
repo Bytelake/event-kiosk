@@ -40,8 +40,8 @@ chmod +x "${INSTALL_DIR}/openrc/"* 2>/dev/null || true
 
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
-log "Regenerating Prisma client..."
-bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}" --generate-only
+log "Applying database schema updates..."
+bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}"
 
 if rc-update show -v 2>/dev/null | grep -qE 'kiosk-(display|shell) \|.*default' \
   || systemctl is-enabled --quiet kiosk-display.service 2>/dev/null \
