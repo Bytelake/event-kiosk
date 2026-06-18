@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans } from "next/font/google";
+import { getSettings } from "@/lib/db";
 import { KioskShell } from "@/components/kiosk/kiosk-shell";
-
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["700", "900"],
-  variable: "--font-kiosk-display",
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-kiosk-ui",
-});
+import {
+  googleFontsStylesheetUrl,
+  kioskFontStyle,
+  resolveKioskFonts,
+} from "@/lib/kiosk-fonts";
 
 export const metadata: Metadata = {
   other: {
@@ -19,10 +13,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function KioskLayout({ children }: { children: React.ReactNode }) {
+export default async function KioskLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSettings();
+  const fonts = resolveKioskFonts(settings);
+
   return (
-    <div className={`${playfairDisplay.variable} ${dmSans.variable} kiosk-root`}>
-      <KioskShell>{children}</KioskShell>
-    </div>
+    <>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link
+        id="kiosk-google-fonts"
+        rel="stylesheet"
+        href={googleFontsStylesheetUrl(fonts.kioskPrimaryFont, fonts.kioskSecondaryFont)}
+      />
+      <div className="kiosk-root" style={kioskFontStyle(fonts)}>
+        <KioskShell>{children}</KioskShell>
+      </div>
+    </>
   );
 }

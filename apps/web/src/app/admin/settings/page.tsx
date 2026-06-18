@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
+import {
+  defaultKioskFonts,
+  type KioskFontScheme,
+  KIOSK_PRIMARY_FONT_PRESETS,
+  KIOSK_SECONDARY_FONT_PRESETS,
+  ensureGoogleFontsPreviewLink,
+  kioskFontStyle,
+} from "@/lib/kiosk-fonts";
+import { FontField } from "@/components/admin/font-field";
 import { uploadImageFile } from "@/lib/upload-client";
 
 interface Calendar {
@@ -14,7 +23,7 @@ interface Calendar {
   name: string;
 }
 
-interface SettingsForm extends KioskColorScheme {
+interface SettingsForm extends KioskColorScheme, KioskFontScheme {
   orgName: string;
   orgLogoUrl: string;
   kioskShowLogo: boolean;
@@ -129,6 +138,9 @@ export default function AdminSettingsPage() {
         kioskTextColor: settingsData.kioskTextColor ?? defaultKioskColorScheme.kioskTextColor,
         kioskMutedTextColor:
           settingsData.kioskMutedTextColor ?? defaultKioskColorScheme.kioskMutedTextColor,
+        kioskPrimaryFont: settingsData.kioskPrimaryFont ?? defaultKioskFonts.kioskPrimaryFont,
+        kioskSecondaryFont:
+          settingsData.kioskSecondaryFont ?? defaultKioskFonts.kioskSecondaryFont,
         breezeSubdomain: settingsData.breezeSubdomain ?? "",
         breezeApiKey: "",
         breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
@@ -139,6 +151,15 @@ export default function AdminSettingsPage() {
       setDomains(domainData);
     });
   }, []);
+
+  useEffect(() => {
+    if (!settings) return;
+    ensureGoogleFontsPreviewLink(
+      "admin-kiosk-font-preview",
+      settings.kioskPrimaryFont,
+      settings.kioskSecondaryFont,
+    );
+  }, [settings?.kioskPrimaryFont, settings?.kioskSecondaryFont, settings]);
 
   if (!settings) {
     return (
@@ -183,6 +204,8 @@ export default function AdminSettingsPage() {
       kioskBackgroundColor: settings.kioskBackgroundColor,
       kioskTextColor: settings.kioskTextColor,
       kioskMutedTextColor: settings.kioskMutedTextColor,
+      kioskPrimaryFont: settings.kioskPrimaryFont,
+      kioskSecondaryFont: settings.kioskSecondaryFont,
       breezeSubdomain: settings.breezeSubdomain || null,
       breezeCalendarIds: settings.breezeCalendarIds,
       kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
@@ -347,6 +370,10 @@ export default function AdminSettingsPage() {
               kioskMutedTextColor:
                 settingsData.kioskMutedTextColor ??
                 defaultKioskColorScheme.kioskMutedTextColor,
+              kioskPrimaryFont:
+                settingsData.kioskPrimaryFont ?? defaultKioskFonts.kioskPrimaryFont,
+              kioskSecondaryFont:
+                settingsData.kioskSecondaryFont ?? defaultKioskFonts.kioskSecondaryFont,
               breezeSubdomain: settingsData.breezeSubdomain ?? "",
               breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
               hasBreezeApiKey: settingsData.hasBreezeApiKey,
@@ -432,6 +459,36 @@ export default function AdminSettingsPage() {
 
                 <div>
                   <label className="mb-3 block text-sm font-medium text-slate-700">
+                    Kiosk fonts
+                  </label>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FontField
+                      label="Primary font"
+                      description="Headings and display text"
+                      value={settings.kioskPrimaryFont}
+                      onChange={(kioskPrimaryFont) =>
+                        setSettings({ ...settings, kioskPrimaryFont })
+                      }
+                      presets={KIOSK_PRIMARY_FONT_PRESETS}
+                      previewLinkId="admin-kiosk-font-preview-primary"
+                      previewRole="primary"
+                    />
+                    <FontField
+                      label="Secondary font"
+                      description="Body text, buttons, and labels"
+                      value={settings.kioskSecondaryFont}
+                      onChange={(kioskSecondaryFont) =>
+                        setSettings({ ...settings, kioskSecondaryFont })
+                      }
+                      presets={KIOSK_SECONDARY_FONT_PRESETS}
+                      previewLinkId="admin-kiosk-font-preview-secondary"
+                      previewRole="secondary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-sm font-medium text-slate-700">
                     Kiosk color scheme
                   </label>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -451,6 +508,10 @@ export default function AdminSettingsPage() {
                     className="mt-4 overflow-hidden rounded-2xl border border-slate-200"
                     style={{
                       background: `linear-gradient(to bottom, ${settings.kioskBackgroundColor}, #ffffff)`,
+                      ...kioskFontStyle({
+                        kioskPrimaryFont: settings.kioskPrimaryFont,
+                        kioskSecondaryFont: settings.kioskSecondaryFont,
+                      }),
                     }}
                   >
                     <div className="p-6">
@@ -465,14 +526,20 @@ export default function AdminSettingsPage() {
                       {settings.kioskShowOrgName && (
                         <p
                           className="text-sm font-medium"
-                          style={{ color: settings.kioskMutedTextColor }}
+                          style={{
+                            color: settings.kioskMutedTextColor,
+                            fontFamily: "var(--font-kiosk-ui)",
+                          }}
                         >
                           {settings.orgName || "Organization name"}
                         </p>
                       )}
                       <p
                         className="mt-1 text-2xl font-bold"
-                        style={{ color: settings.kioskTextColor }}
+                        style={{
+                          color: settings.kioskTextColor,
+                          fontFamily: "var(--font-kiosk-display)",
+                        }}
                       >
                         Upcoming Events
                       </p>

@@ -16,6 +16,8 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskBackgroundColor: settings.kioskBackgroundColor,
     kioskTextColor: settings.kioskTextColor,
     kioskMutedTextColor: settings.kioskMutedTextColor,
+    kioskPrimaryFont: settings.kioskPrimaryFont,
+    kioskSecondaryFont: settings.kioskSecondaryFont,
     kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
   };
 }
@@ -63,6 +65,8 @@ export async function PATCH(request: Request) {
       kioskBackgroundColor: data.kioskBackgroundColor,
       kioskTextColor: data.kioskTextColor,
       kioskMutedTextColor: data.kioskMutedTextColor,
+      kioskPrimaryFont: data.kioskPrimaryFont,
+      kioskSecondaryFont: data.kioskSecondaryFont,
       breezeSubdomain: data.breezeSubdomain,
       breezeApiKey: data.breezeApiKey || undefined,
       breezeCalendarIds: data.breezeCalendarIds

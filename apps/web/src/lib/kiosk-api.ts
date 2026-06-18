@@ -1,4 +1,5 @@
 import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
+import { defaultKioskFonts, type KioskFontScheme } from "@/lib/kiosk-fonts";
 
 export interface KioskEvent {
   id: string;
@@ -14,13 +15,14 @@ export interface KioskEvent {
   featured: boolean;
 }
 
-export type KioskSettings = KioskColorScheme & {
-  orgName: string;
-  orgLogoUrl: string | null;
-  kioskShowLogo: boolean;
-  kioskShowOrgName: boolean;
-  kioskIdleTimeoutSeconds: number;
-};
+export type KioskSettings = KioskColorScheme &
+  KioskFontScheme & {
+    orgName: string;
+    orgLogoUrl: string | null;
+    kioskShowLogo: boolean;
+    kioskShowOrgName: boolean;
+    kioskIdleTimeoutSeconds: number;
+  };
 
 export async function fetchKioskEvents(): Promise<KioskEvent[]> {
   const res = await fetch("/api/events?kiosk=true", { cache: "no-store" });
@@ -45,6 +47,8 @@ export function parsePublicSettings(data: {
   kioskBackgroundColor?: string;
   kioskTextColor?: string;
   kioskMutedTextColor?: string;
+  kioskPrimaryFont?: string;
+  kioskSecondaryFont?: string;
   kioskIdleTimeoutSeconds?: number;
 }): KioskSettings {
   return {
@@ -53,11 +57,14 @@ export function parsePublicSettings(data: {
     kioskShowLogo: data.kioskShowLogo ?? true,
     kioskShowOrgName: data.kioskShowOrgName ?? true,
     ...defaultKioskColorScheme,
+    ...defaultKioskFonts,
     brandPrimaryColor: data.brandPrimaryColor ?? defaultKioskColorScheme.brandPrimaryColor,
     brandSecondaryColor: data.brandSecondaryColor ?? defaultKioskColorScheme.brandSecondaryColor,
     kioskBackgroundColor: data.kioskBackgroundColor ?? defaultKioskColorScheme.kioskBackgroundColor,
     kioskTextColor: data.kioskTextColor ?? defaultKioskColorScheme.kioskTextColor,
     kioskMutedTextColor: data.kioskMutedTextColor ?? defaultKioskColorScheme.kioskMutedTextColor,
+    kioskPrimaryFont: data.kioskPrimaryFont ?? defaultKioskFonts.kioskPrimaryFont,
+    kioskSecondaryFont: data.kioskSecondaryFont ?? defaultKioskFonts.kioskSecondaryFont,
     kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds ?? 60,
   };
 }
