@@ -7,6 +7,8 @@ import {
   resolveKioskFonts,
 } from "@/lib/kiosk-fonts";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
