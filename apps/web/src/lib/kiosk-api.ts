@@ -1,4 +1,8 @@
 import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
+import {
+  defaultKioskBackgroundStyle,
+  type KioskBackgroundStyle,
+} from "@/lib/kiosk-background";
 import { defaultKioskFonts, type KioskFontScheme } from "@/lib/kiosk-fonts";
 
 export interface KioskEvent {
@@ -22,6 +26,9 @@ export type KioskSettings = KioskColorScheme &
     kioskShowLogo: boolean;
     kioskShowOrgName: boolean;
     kioskIdleTimeoutSeconds: number;
+    kioskBackgroundAnimated: boolean;
+    kioskBackgroundStyle: KioskBackgroundStyle;
+    kioskBackgroundImageUrl: string | null;
   };
 
 export async function fetchKioskEvents(): Promise<KioskEvent[]> {
@@ -50,6 +57,9 @@ export function parsePublicSettings(data: {
   kioskPrimaryFont?: string;
   kioskSecondaryFont?: string;
   kioskIdleTimeoutSeconds?: number;
+  kioskBackgroundAnimated?: boolean;
+  kioskBackgroundStyle?: KioskBackgroundStyle;
+  kioskBackgroundImageUrl?: string | null;
 }): KioskSettings {
   return {
     orgName: data.orgName,
@@ -66,6 +76,9 @@ export function parsePublicSettings(data: {
     kioskPrimaryFont: data.kioskPrimaryFont ?? defaultKioskFonts.kioskPrimaryFont,
     kioskSecondaryFont: data.kioskSecondaryFont ?? defaultKioskFonts.kioskSecondaryFont,
     kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds ?? 60,
+    kioskBackgroundAnimated: data.kioskBackgroundAnimated ?? true,
+    kioskBackgroundStyle: data.kioskBackgroundStyle ?? defaultKioskBackgroundStyle,
+    kioskBackgroundImageUrl: data.kioskBackgroundImageUrl ?? null,
   };
 }
 

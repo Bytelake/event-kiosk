@@ -19,6 +19,9 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskPrimaryFont: settings.kioskPrimaryFont,
     kioskSecondaryFont: settings.kioskSecondaryFont,
     kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
+    kioskBackgroundAnimated: settings.kioskBackgroundAnimated,
+    kioskBackgroundStyle: settings.kioskBackgroundStyle,
+    kioskBackgroundImageUrl: settings.kioskBackgroundImageUrl,
   };
 }
 
@@ -53,6 +56,7 @@ export async function PATCH(request: Request) {
   const data = parsed.data;
   const existing = await getSettings();
   const previousLogoUrl = existing.orgLogoUrl;
+  const previousBackgroundImageUrl = existing.kioskBackgroundImageUrl;
   const settings = await prisma.settings.update({
     where: { id: "default" },
     data: {
@@ -73,12 +77,19 @@ export async function PATCH(request: Request) {
         ? JSON.stringify(data.breezeCalendarIds)
         : undefined,
       kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
+      kioskBackgroundAnimated: data.kioskBackgroundAnimated,
+      kioskBackgroundStyle: data.kioskBackgroundStyle,
+      kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
       settingsUpdatedAt: new Date(),
     },
   });
 
   if (previousLogoUrl !== settings.orgLogoUrl) {
     await deleteUploadIfUnreferenced(previousLogoUrl);
+  }
+
+  if (previousBackgroundImageUrl !== settings.kioskBackgroundImageUrl) {
+    await deleteUploadIfUnreferenced(previousBackgroundImageUrl);
   }
 
   return NextResponse.json({

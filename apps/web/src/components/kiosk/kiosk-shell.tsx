@@ -7,6 +7,7 @@ import { useIdleTimeout } from "@/components/kiosk/use-idle-timeout";
 import { KioskBackground } from "@/components/kiosk/kiosk-background";
 import type { KioskSettings } from "@/lib/kiosk-api";
 import { defaultKioskColorScheme } from "@/lib/kiosk-colors";
+import { defaultKioskBackgroundStyle } from "@/lib/kiosk-background";
 import { applyKioskFonts } from "@/lib/kiosk-fonts";
 import { isDesktopMode } from "@/lib/kiosk-mode";
 import { closeRegistration } from "@/lib/kiosk-shell";
@@ -45,7 +46,12 @@ export function KioskShell({ children }: { children: React.ReactNode }) {
         !isDesktopMode() && "cursor-none [&_*]:cursor-none",
       )}
     >
-      <KioskBackground colors={settings ?? defaultKioskColorScheme}>
+      <KioskBackground
+        colors={settings ?? defaultKioskColorScheme}
+        style={settings?.kioskBackgroundStyle ?? defaultKioskBackgroundStyle}
+        imageUrl={settings?.kioskBackgroundImageUrl}
+        animated={settings?.kioskBackgroundAnimated ?? true}
+      >
         {children}
       </KioskBackground>
     </div>

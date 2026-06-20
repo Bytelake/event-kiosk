@@ -93,3 +93,27 @@ has_existing_install() {
     || [[ -f "$(kiosk_db_file)" ]] \
     || [[ -f "$(kiosk_env_file)" ]]
 }
+
+# Bundled Electron lives under the install dir (not system PATH).
+kiosk_electron_bin() {
+  local root="${1:-${KIOSK_INSTALL_DIR:-/opt/kiosk}}"
+  local candidate
+  for candidate in \
+    "${root}/shell/node_modules/.bin/electron" \
+    "${root}/shell/node_modules/electron/dist/electron"; do
+    if [[ -x "${candidate}" ]]; then
+      echo "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+kiosk_install_electron() {
+  local root="${1:-${KIOSK_INSTALL_DIR:-/opt/kiosk}}"
+  sudo -u kiosk bash -lc "
+    set -euo pipefail
+    cd '${root}/shell'
+    npm install --omit=dev
+  "
+}

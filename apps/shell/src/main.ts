@@ -34,15 +34,6 @@ const DESKTOP_HEIGHT = 1920;
 const CHROME_HEIGHT = 72;
 const KEYBOARD_HEIGHT = 380;
 
-function shouldUseRichGraphics(): boolean {
-  if (isTruthyEnv(process.env.KIOSK_FULL_GRAPHICS)) return true;
-  if (isTruthyEnv(process.env.KIOSK_LITE_GRAPHICS)) return false;
-  // Rich tier (animated blurs) is for local dev/screenshots only; embedded kiosks
-  // default to lite graphics to avoid sustained GPU/compositor load.
-  if (desktopMode) return true;
-  return false;
-}
-
 function configureGpuForEmbeddedLinux() {
   if (process.platform !== "linux") return;
 
@@ -58,14 +49,6 @@ let chromeView: BrowserView | null = null;
 let keyboardView: BrowserView | null = null;
 let keyboardVisible = false;
 let registrationOpening = false;
-
-function injectKioskPageFlags(win: BrowserWindow) {
-  const rich = shouldUseRichGraphics();
-  void win.webContents.executeJavaScript(
-    `document.documentElement.classList.toggle("kiosk-graphics-rich", ${rich});`,
-    true,
-  );
-}
 
 function destroyBrowserView(view: BrowserView | null) {
   if (!view || !mainWindow) return;
@@ -152,14 +135,9 @@ function createWindow() {
 
   if (!desktopMode) {
     mainWindow.webContents.on("did-finish-load", () => {
-      injectKioskPageFlags(mainWindow!);
       void mainWindow?.webContents.insertCSS(
         "html, body, *, a, button, [role='button'] { cursor: none !important; }",
       );
-    });
-  } else {
-    mainWindow.webContents.on("did-finish-load", () => {
-      injectKioskPageFlags(mainWindow!);
     });
   }
 
@@ -467,7 +445,7 @@ function registerShortcuts() {
 
 app.whenReady().then(async () => {
   console.log(
-    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode} richGraphics=${shouldUseRichGraphics()}`,
+    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode}`,
   );
 
   await refreshAllowedDomains(API_BASE);

@@ -50,14 +50,14 @@ export function KioskHome() {
           />
         ) : null}
         {settings?.kioskShowOrgName && (
-          <p className="mb-1 text-base tracking-wide text-[var(--kiosk-muted)]">
+          <p className="kiosk-on-bg kiosk-on-bg-muted mb-1 text-base tracking-wide">
             {settings.orgName ?? "Welcome"}
           </p>
         )}
-        <h1 className="kiosk-display text-[clamp(2.25rem,5vw,3.5rem)] font-black leading-tight text-[var(--kiosk-text)]">
+        <h1 className="kiosk-on-bg kiosk-on-bg-text kiosk-display text-[clamp(2.25rem,5vw,3.5rem)] font-black leading-tight">
           Upcoming Events
         </h1>
-        <p className="mt-2 text-lg text-[var(--kiosk-muted)]">Tap an event to learn more</p>
+        <p className="kiosk-on-bg kiosk-on-bg-muted mt-2 text-lg">Tap an event to learn more</p>
       </header>
 
       {offline && <OfflineBanner />}
@@ -91,7 +91,7 @@ export function KioskHome() {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-widest text-[var(--kiosk-muted)]">
+    <h2 className="kiosk-on-bg kiosk-on-bg-muted mb-4 text-[13px] font-semibold uppercase tracking-widest">
       {children}
     </h2>
   );

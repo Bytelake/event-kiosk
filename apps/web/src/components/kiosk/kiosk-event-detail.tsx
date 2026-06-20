@@ -26,7 +26,7 @@ export function KioskEventDetail() {
 
   if (!event) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center text-xl text-[var(--kiosk-muted)]">
+      <div className="kiosk-on-bg kiosk-on-bg-muted flex min-h-[50vh] items-center justify-center text-xl">
         Loading event…
       </div>
     );
@@ -62,17 +62,17 @@ export function KioskEventDetail() {
         </div>
       )}
 
-      <h1 className="kiosk-display mb-5 text-[clamp(1.75rem,4vw,2.625rem)] font-black leading-tight text-[var(--kiosk-text)]">
+      <h1 className="kiosk-on-bg kiosk-on-bg-text kiosk-display mb-5 text-[clamp(1.75rem,4vw,2.625rem)] font-black leading-tight">
         {event.title}
       </h1>
 
       <div className="mb-6 flex flex-wrap gap-x-6 gap-y-3">
-        <div className="flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-text)_75%,transparent)]">
+        <div className="kiosk-on-bg flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-surface-text)_75%,transparent)]">
           <Calendar className="h-5 w-5 text-[var(--brand)]" />
           {schedule}
         </div>
         {event.location && (
-          <div className="flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-text)_75%,transparent)]">
+          <div className="kiosk-on-bg flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-surface-text)_75%,transparent)]">
             <MapPin className="h-5 w-5 text-[var(--brand)]" />
             {event.location}
           </div>
@@ -97,7 +97,7 @@ export function KioskEventDetail() {
             background: registering
               ? "color-mix(in srgb, var(--brand) 80%, transparent)"
               : "linear-gradient(135deg, var(--brand) 0%, var(--brand-secondary) 100%)",
-            boxShadow: "0 8px 24px var(--kiosk-orb-1)",
+            boxShadow: "0 8px 24px var(--kiosk-brand-glow)",
           }}
         >
           {registering ? (

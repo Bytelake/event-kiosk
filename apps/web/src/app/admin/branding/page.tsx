@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { defaultKioskColorScheme, type KioskColorScheme } from "@/lib/kiosk-colors";
 import {
+  defaultKioskBackgroundStyle,
+  type KioskBackgroundStyle,
+} from "@/lib/kiosk-background";
+import {
   defaultKioskFonts,
   type KioskFontScheme,
   KIOSK_PRIMARY_FONT_PRESETS,
@@ -24,6 +28,9 @@ interface BrandingForm extends KioskColorScheme, KioskFontScheme {
   orgLogoUrl: string;
   kioskShowLogo: boolean;
   kioskShowOrgName: boolean;
+  kioskBackgroundAnimated: boolean;
+  kioskBackgroundStyle: KioskBackgroundStyle;
+  kioskBackgroundImageUrl: string;
 }
 
 const colorFields: { key: keyof KioskColorScheme; label: string; description: string }[] = [
@@ -40,7 +47,7 @@ const colorFields: { key: keyof KioskColorScheme; label: string; description: st
   {
     key: "kioskBackgroundColor",
     label: "Background",
-    description: "Page background gradient start",
+    description: "Base color in the background gradient",
   },
   {
     key: "kioskTextColor",
@@ -59,6 +66,8 @@ export default function AdminBrandingPage() {
   const [saving, setSaving] = useState(false);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [pendingBackgroundFile, setPendingBackgroundFile] = useState<File | null>(null);
+  const [backgroundPreviewUrl, setBackgroundPreviewUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -66,8 +75,11 @@ export default function AdminBrandingPage() {
       if (logoPreviewUrl) {
         URL.revokeObjectURL(logoPreviewUrl);
       }
+      if (backgroundPreviewUrl) {
+        URL.revokeObjectURL(backgroundPreviewUrl);
+      }
     };
-  }, [logoPreviewUrl]);
+  }, [logoPreviewUrl, backgroundPreviewUrl]);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -90,6 +102,10 @@ export default function AdminBrandingPage() {
           kioskPrimaryFont: settingsData.kioskPrimaryFont ?? defaultKioskFonts.kioskPrimaryFont,
           kioskSecondaryFont:
             settingsData.kioskSecondaryFont ?? defaultKioskFonts.kioskSecondaryFont,
+          kioskBackgroundAnimated: settingsData.kioskBackgroundAnimated ?? true,
+          kioskBackgroundStyle:
+            settingsData.kioskBackgroundStyle ?? defaultKioskBackgroundStyle,
+          kioskBackgroundImageUrl: settingsData.kioskBackgroundImageUrl ?? "",
         });
       });
   }, []);
@@ -112,6 +128,8 @@ export default function AdminBrandingPage() {
   }
 
   const displayLogoUrl = logoPreviewUrl ?? (settings.orgLogoUrl || null);
+  const displayBackgroundUrl =
+    backgroundPreviewUrl ?? (settings.kioskBackgroundImageUrl || null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -136,6 +154,29 @@ export default function AdminBrandingPage() {
       });
     }
 
+    let kioskBackgroundImageUrl = settings.kioskBackgroundImageUrl || null;
+    if (pendingBackgroundFile) {
+      const url = await uploadImageFile(pendingBackgroundFile);
+      if (!url) {
+        setSaving(false);
+        setMessage("Background image upload failed");
+        return;
+      }
+
+      kioskBackgroundImageUrl = url;
+      setPendingBackgroundFile(null);
+      setBackgroundPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    }
+
+    if (settings.kioskBackgroundStyle === "image" && !kioskBackgroundImageUrl) {
+      setSaving(false);
+      setMessage("Upload a background image or switch to the gradient style");
+      return;
+    }
+
     const res = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -151,6 +192,9 @@ export default function AdminBrandingPage() {
         kioskMutedTextColor: settings.kioskMutedTextColor,
         kioskPrimaryFont: settings.kioskPrimaryFont,
         kioskSecondaryFont: settings.kioskSecondaryFont,
+        kioskBackgroundAnimated: settings.kioskBackgroundAnimated,
+        kioskBackgroundStyle: settings.kioskBackgroundStyle,
+        kioskBackgroundImageUrl,
       }),
     });
 
@@ -160,6 +204,7 @@ export default function AdminBrandingPage() {
       setSettings((s) => ({
         ...s!,
         orgLogoUrl: orgLogoUrl ?? "",
+        kioskBackgroundImageUrl: kioskBackgroundImageUrl ?? "",
       }));
     }
   }
@@ -179,6 +224,23 @@ export default function AdminBrandingPage() {
       return null;
     });
     setSettings((s) => (s ? { ...s, orgLogoUrl: "" } : s));
+  }
+
+  function handleBackgroundPick(file: File) {
+    setPendingBackgroundFile(file);
+    setBackgroundPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function handleRemoveBackground() {
+    setPendingBackgroundFile(null);
+    setBackgroundPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setSettings((s) => (s ? { ...s, kioskBackgroundImageUrl: "" } : s));
   }
 
   return (
@@ -302,6 +364,105 @@ export default function AdminBrandingPage() {
                   previewRole="secondary"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h2 className="font-semibold">Background</h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <fieldset className="space-y-2">
+                <legend className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Style
+                </legend>
+                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <input
+                    type="radio"
+                    name="kioskBackgroundStyle"
+                    className="mt-0.5"
+                    checked={settings.kioskBackgroundStyle === "gradient"}
+                    onChange={() =>
+                      setSettings({ ...settings, kioskBackgroundStyle: "gradient" })
+                    }
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-medium">Animated gradient</span>
+                    <span className="mt-1 block text-slate-500 dark:text-slate-400">
+                      Brand-colored gradient that shifts slowly across the screen.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <input
+                    type="radio"
+                    name="kioskBackgroundStyle"
+                    className="mt-0.5"
+                    checked={settings.kioskBackgroundStyle === "image"}
+                    onChange={() =>
+                      setSettings({ ...settings, kioskBackgroundStyle: "image" })
+                    }
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-medium">Background image</span>
+                    <span className="mt-1 block text-slate-500 dark:text-slate-400">
+                      Upload a photo. It is blurred and darkened so kiosk content stays readable.
+                    </span>
+                  </span>
+                </label>
+              </fieldset>
+
+              {settings.kioskBackgroundStyle === "image" && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Background image
+                  </label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleBackgroundPick(file);
+                    }}
+                  />
+                  {displayBackgroundUrl ? (
+                    <div className="mt-3 flex items-start gap-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={displayBackgroundUrl}
+                        alt="Background preview"
+                        className="h-24 w-auto max-w-full rounded-lg border border-slate-200 object-cover dark:border-slate-700"
+                      />
+                      <Button type="button" variant="ghost" onClick={handleRemoveBackground}>
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      JPG or PNG recommended. Required when using the image style.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={settings.kioskBackgroundAnimated}
+                  onChange={(e) =>
+                    setSettings({ ...settings, kioskBackgroundAnimated: e.target.checked })
+                  }
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-medium">Animate background</span>
+                  <span className="mt-1 block text-slate-500 dark:text-slate-400">
+                    {settings.kioskBackgroundStyle === "image"
+                      ? "When on, the background photo slowly zooms. Turn off on low-power hardware if you notice sustained GPU use."
+                      : "When on, the gradient shifts continuously. Turn off on low-power hardware if you notice sustained GPU use."}
+                  </span>
+                </span>
+              </label>
             </CardContent>
           </Card>
 

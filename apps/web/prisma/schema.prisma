@@ -61,6 +61,9 @@ model Settings {
   kioskRefreshAt          DateTime?
   settingsUpdatedAt       DateTime?
   kioskIdleTimeoutSeconds Int      @default(60)
+  kioskBackgroundAnimated Boolean  @default(true)
+  kioskBackgroundStyle    String   @default("gradient")
+  kioskBackgroundImageUrl String?
   updatedAt              DateTime @updatedAt
 }
 

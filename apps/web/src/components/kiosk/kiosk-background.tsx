@@ -1,42 +1,87 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { kioskColorSchemeStyle, type KioskColorScheme } from "@/lib/kiosk-colors";
-
-/** Soft color washes — CSS radial gradients only (no filter: blur). */
-const STABLE_ORBS = [
-  "kiosk-orb-stable kiosk-orb-stable-1",
-  "kiosk-orb-stable kiosk-orb-stable-2",
-  "kiosk-orb-stable kiosk-orb-stable-3",
-] as const;
-
-/** Rich tier only: animated blurred orbs (hidden unless html.kiosk-graphics-rich). */
-const RICH_ORBS = [
-  "kiosk-orb-rich kiosk-orb-rich-1 kiosk-orb-drift-1",
-  "kiosk-orb-rich kiosk-orb-rich-2 kiosk-orb-drift-2",
-  "kiosk-orb-rich kiosk-orb-rich-3 kiosk-orb-drift-3",
-] as const;
+import {
+  defaultKioskBackgroundStyle,
+  type KioskBackgroundStyle,
+} from "@/lib/kiosk-background";
+import { shouldUseLightKioskText } from "@/lib/kiosk-background-luminance";
+import {
+  kioskColorSchemeStyle,
+  resolveKioskColorScheme,
+  type KioskColorScheme,
+} from "@/lib/kiosk-colors";
 
 export function KioskBackground({
   colors,
+  style = defaultKioskBackgroundStyle,
+  imageUrl,
+  animated = true,
   children,
 }: {
   colors: Partial<KioskColorScheme>;
+  style?: KioskBackgroundStyle;
+  imageUrl?: string | null;
+  animated?: boolean;
   children: React.ReactNode;
 }) {
+  const useImage = style === "image" && Boolean(imageUrl);
+  const scheme = resolveKioskColorScheme(colors);
+  const [lightText, setLightText] = useState(false);
+
+  useEffect(() => {
+    if (!useImage || !imageUrl) {
+      setLightText(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    shouldUseLightKioskText(imageUrl, {
+      scrimHex: scheme.brandSecondaryColor,
+      textHex: scheme.kioskTextColor,
+      mutedTextHex: scheme.kioskMutedTextColor,
+    }).then((useLight) => {
+      if (!cancelled) setLightText(useLight);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    useImage,
+    imageUrl,
+    scheme.brandSecondaryColor,
+    scheme.kioskTextColor,
+    scheme.kioskMutedTextColor,
+  ]);
+
   return (
     <div
-      className={cn("kiosk-bg relative min-h-screen overflow-hidden")}
+      className={cn(
+        "kiosk-bg relative min-h-screen overflow-hidden",
+        useImage ? "kiosk-bg-image" : "kiosk-bg-gradient",
+        animated ? "kiosk-bg-animated" : "kiosk-bg-static",
+        lightText && "kiosk-bg-light-text",
+      )}
       style={kioskColorSchemeStyle(colors)}
     >
       <div aria-hidden className="kiosk-ambient-layer">
-        <div className="kiosk-aurora absolute inset-0" />
-        <div className="kiosk-mesh-overlay absolute inset-0" />
-        {STABLE_ORBS.map((className) => (
-          <div key={className} className={cn("absolute inset-0", className)} />
-        ))}
-        {RICH_ORBS.map((className) => (
-          <div key={className} className={className} />
-        ))}
-        <div className="kiosk-vignette absolute inset-0" />
+        {useImage ? (
+          <>
+            <div
+              className="kiosk-bg-photo"
+              style={{ backgroundImage: `url(${imageUrl})` }}
+            />
+            <div className="kiosk-bg-scrim absolute inset-0" />
+          </>
+        ) : (
+          <>
+            <div className="kiosk-bg-aurora absolute inset-0" />
+            <div className="kiosk-bg-mesh-overlay absolute inset-0" />
+          </>
+        )}
       </div>
       <div className="relative z-[1]">{children}</div>
     </div>

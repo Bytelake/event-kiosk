@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { KIOSK_BACKGROUND_STYLES } from "@/lib/kiosk-background";
 
 export const loginSchema = z.object({
   password: z.string().min(1),
@@ -61,6 +62,9 @@ export const settingsSchema = z.object({
   breezeApiKey: z.string().optional().nullable(),
   breezeCalendarIds: z.array(z.string()).optional(),
   kioskIdleTimeoutSeconds: z.number().int().min(0).max(3600).optional(),
+  kioskBackgroundAnimated: z.boolean().optional(),
+  kioskBackgroundStyle: z.enum(KIOSK_BACKGROUND_STYLES).optional(),
+  kioskBackgroundImageUrl: z.string().optional().nullable(),
 });
 
 export const allowedDomainSchema = z.object({
