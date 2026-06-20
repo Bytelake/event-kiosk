@@ -65,6 +65,7 @@ export const settingsSchema = z.object({
   kioskBackgroundAnimated: z.boolean().optional(),
   kioskBackgroundStyle: z.enum(KIOSK_BACKGROUND_STYLES).optional(),
   kioskBackgroundImageUrl: z.string().optional().nullable(),
+  registrationDomainEnforcement: z.boolean().optional(),
 });
 
 export const allowedDomainSchema = z.object({

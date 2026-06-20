@@ -22,6 +22,7 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskBackgroundAnimated: settings.kioskBackgroundAnimated,
     kioskBackgroundStyle: settings.kioskBackgroundStyle,
     kioskBackgroundImageUrl: settings.kioskBackgroundImageUrl,
+    registrationDomainEnforcement: settings.registrationDomainEnforcement,
   };
 }
 
@@ -80,6 +81,7 @@ export async function PATCH(request: Request) {
       kioskBackgroundAnimated: data.kioskBackgroundAnimated,
       kioskBackgroundStyle: data.kioskBackgroundStyle,
       kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
+      registrationDomainEnforcement: data.registrationDomainEnforcement,
       settingsUpdatedAt: new Date(),
     },
   });
