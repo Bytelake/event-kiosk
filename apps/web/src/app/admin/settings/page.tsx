@@ -19,6 +19,7 @@ interface SettingsForm {
   breezeCalendarIds: string[];
   hasBreezeApiKey: boolean;
   kioskIdleTimeoutSeconds: number;
+  registrationDomainEnforcement: boolean;
 }
 
 export default function AdminSettingsPage() {
@@ -44,6 +45,7 @@ export default function AdminSettingsPage() {
         breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
         hasBreezeApiKey: settingsData.hasBreezeApiKey,
         kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
+        registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
       });
       setCalendars(calendarData);
       setDomains(domainData);
@@ -68,6 +70,7 @@ export default function AdminSettingsPage() {
       breezeSubdomain: settings.breezeSubdomain || null,
       breezeCalendarIds: settings.breezeCalendarIds,
       kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
+      registrationDomainEnforcement: settings.registrationDomainEnforcement,
     };
     if (settings.breezeApiKey) {
       payload.breezeApiKey = settings.breezeApiKey;
@@ -308,6 +311,26 @@ export default function AdminSettingsPage() {
               <h2 className="font-semibold">Registration Domains</h2>
             </CardHeader>
             <CardContent className="space-y-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={settings.registrationDomainEnforcement}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, registrationDomainEnforcement: e.target.checked } : s,
+                    )
+                  }
+                />
+                <span>
+                  <span className="font-medium">Enforce registration domain whitelist</span>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    When enabled, the kiosk only opens HTTPS registration links from the domains
+                    below (plus common providers like SignUpGenius and Eventbrite). Turn off to
+                    allow any HTTPS registration URL.
+                  </p>
+                </span>
+              </label>
               <div className="flex gap-2">
                 <Input
                   placeholder="signupgenius.com"

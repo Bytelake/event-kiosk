@@ -9,6 +9,11 @@ import { Badge } from "@/components/ui/card";
 import { format } from "date-fns";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 import { uploadImageFile } from "@/lib/upload-client";
+import {
+  extractRegistrationHostname,
+  isRegistrationDomainAllowed,
+  normalizeRegistrationUrl,
+} from "@/lib/registration-domains";
 
 interface EventFormProps {
   initial?: Record<string, unknown>;
@@ -36,6 +41,10 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
   const [uploading, setUploading] = useState(false);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+  const [domainEnforcement, setDomainEnforcement] = useState(true);
+  const [addingDomain, setAddingDomain] = useState(false);
+  const [domainMessage, setDomainMessage] = useState("");
 
   useEffect(() => {
     return () => {
@@ -44,6 +53,18 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       }
     };
   }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/domains").then((r) => r.json()),
+      fetch("/api/settings").then((r) => r.json()),
+    ]).then(([domainData, settingsData]) => {
+      if (Array.isArray(domainData)) {
+        setAllowedDomains(domainData.map((d: { domain: string }) => d.domain));
+      }
+      setDomainEnforcement(settingsData.registrationDomainEnforcement ?? true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!initial) return;
@@ -98,7 +119,9 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       ...form,
       imageUrl,
       endAt: form.endAt || null,
-      registrationUrl: form.registrationUrl || null,
+      registrationUrl: form.registrationUrl
+        ? normalizeRegistrationUrl(form.registrationUrl)
+        : null,
       kioskVisible: form.status === "published",
     });
   }
@@ -112,6 +135,39 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
   }
 
   const displayImageUrl = imagePreviewUrl ?? (form.imageUrl || null);
+  const normalizedRegistrationUrl = form.registrationUrl
+    ? normalizeRegistrationUrl(form.registrationUrl)
+    : "";
+  const registrationHostname = normalizedRegistrationUrl
+    ? extractRegistrationHostname(normalizedRegistrationUrl)
+    : null;
+  const registrationDomainBlocked =
+    domainEnforcement &&
+    registrationHostname &&
+    !isRegistrationDomainAllowed(normalizedRegistrationUrl, allowedDomains);
+
+  async function addRegistrationDomain() {
+    if (!registrationHostname) return;
+    setAddingDomain(true);
+    setDomainMessage("");
+
+    const res = await fetch("/api/domains", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain: registrationHostname }),
+    });
+
+    setAddingDomain(false);
+    if (res.ok) {
+      const domain = await res.json();
+      setAllowedDomains((d) => [...d, domain.domain]);
+      setDomainMessage(`Added ${domain.domain} to allowed registration domains`);
+      return;
+    }
+
+    const body = await res.json().catch(() => ({}));
+    setDomainMessage(body.error ? "Could not add domain" : "Domain already allowed");
+  }
 
   function handleAllDayChange(checked: boolean) {
     if (isBreeze) {
@@ -241,9 +297,39 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
             <label className="mb-1 block text-sm font-medium">Registration URL</label>
             <Input
               value={form.registrationUrl}
-              placeholder="https://www.signupgenius.com/..."
-              onChange={(e) => setForm({ ...form, registrationUrl: e.target.value })}
+              placeholder="signupgenius.com or https://..."
+              onChange={(e) => {
+                setForm({ ...form, registrationUrl: e.target.value });
+                setDomainMessage("");
+              }}
+              onBlur={() => {
+                if (!form.registrationUrl) return;
+                const normalized = normalizeRegistrationUrl(form.registrationUrl);
+                if (normalized !== form.registrationUrl) {
+                  setForm((f) => ({ ...f, registrationUrl: normalized }));
+                }
+              }}
             />
+            {registrationDomainBlocked && (
+              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                <p>
+                  <span className="font-medium">{registrationHostname}</span> is not in the
+                  registration domain whitelist. The kiosk will block this link until the domain is
+                  allowed.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-2"
+                  disabled={addingDomain}
+                  onClick={() => void addRegistrationDomain()}
+                >
+                  {addingDomain ? "Adding..." : `Add ${registrationHostname}`}
+                </Button>
+              </div>
+            )}
+            {domainMessage && (
+              <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{domainMessage}</p>
+            )}
           </div>
 
           <div>

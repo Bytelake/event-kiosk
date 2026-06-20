@@ -64,6 +64,7 @@ model Settings {
   kioskBackgroundAnimated Boolean  @default(true)
   kioskBackgroundStyle    String   @default("gradient")
   kioskBackgroundImageUrl String?
+  registrationDomainEnforcement Boolean @default(true)
   updatedAt              DateTime @updatedAt
 }
 

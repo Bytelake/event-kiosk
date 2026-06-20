@@ -1,8 +1,20 @@
 import { isAllowedRegistrationUrl } from "./domain-whitelist";
 
 let extraDomains: string[] = [];
+let enforcementEnabled = true;
+
+function isHttpsUrl(url: string) {
+  try {
+    return new URL(url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export function isRegistrationUrlAllowed(url: string) {
+  if (!enforcementEnabled) {
+    return isHttpsUrl(url);
+  }
   return isAllowedRegistrationUrl(url, extraDomains);
 }
 
@@ -13,9 +25,15 @@ export async function refreshAllowedDomains(apiBase: string) {
     });
     if (!res.ok) return;
 
-    const data = (await res.json()) as { allowedDomains?: string[] };
+    const data = (await res.json()) as {
+      allowedDomains?: string[];
+      registrationDomainEnforcement?: boolean;
+    };
     if (Array.isArray(data.allowedDomains)) {
       extraDomains = data.allowedDomains;
+    }
+    if (typeof data.registrationDomainEnforcement === "boolean") {
+      enforcementEnabled = data.registrationDomainEnforcement;
     }
   } catch {
     // Keep the previous list if the web app is temporarily unreachable.
