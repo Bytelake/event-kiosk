@@ -69,6 +69,19 @@ sudo bash deploy/debian/install.sh
 
 Download a newer release package, extract, and run `sudo bash update.sh`. Application code lives in `/opt/kiosk`; the database, uploads, and config live in `/var/lib/kiosk`.
 
+### Backup & restore
+
+In **Admin → Settings → Backup & Restore** you can export or import kiosk data.
+
+| Export type | File | Includes | Best for |
+|-------------|------|----------|----------|
+| **Full backup** | `.zip` (up to 2 GB) | SQLite database + all uploaded images (event photos, org logo, kiosk background) | Moving to a new machine, disaster recovery, cloning a kiosk |
+| **Database only** | `.db` | Events, settings, and registration domains only | Quick snapshots, inspecting data, when media files are unchanged or copied separately |
+
+**Import** accepts either format. A full backup restores everything in one step. A database-only import replaces events and settings but does not restore image files — event and branding images will appear broken unless you also copy `/var/lib/kiosk/uploads/` (production) or `apps/web/public/uploads/` (local dev).
+
+On production systems, persistent data lives in `/var/lib/kiosk/` (`kiosk.db` and `uploads/`). A full backup is the recommended way to migrate that data to a fresh install.
+
 To uninstall: `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
 
 ## Alpine Linux
