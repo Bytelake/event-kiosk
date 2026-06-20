@@ -1,5 +1,6 @@
 import { mkdir, readdir, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { isAllowedUploadExtension } from "@/lib/upload-validation";
 
 /** Uploaded images (served at /uploads/… via app/uploads/[...path]/route.ts). */
 export function getUploadsDir(): string {
@@ -28,10 +29,16 @@ export function filenameFromUploadUrl(url: string | null | undefined): string | 
 }
 
 export async function writeUploadedImage(buffer: Buffer, ext: string): Promise<string> {
+  const normalizedExt = ext.toLowerCase();
+  if (!isAllowedUploadExtension(normalizedExt)) {
+    throw new Error(`Unsupported upload extension: ${ext}`);
+  }
+
   const uploadsDir = getUploadsDir();
   await mkdir(uploadsDir, { recursive: true });
 
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+  const safeExt = normalizedExt === ".jpeg" ? ".jpg" : normalizedExt;
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`;
   await writeFile(path.join(uploadsDir, filename), buffer);
   return filename;
 }
