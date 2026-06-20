@@ -191,14 +191,17 @@ function EventCard({ event, featured = false }: { event: KioskEvent; featured?: 
           <h3
             className={cn(
               "kiosk-display mb-1 font-bold leading-tight text-white",
-              featured ? "text-[28px]" : "text-xl",
+              featured ? "text-[40px]" : "text-[28px]",
             )}
-            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}
+            style={{ textShadow: "0 2px 8px rgba(0,0,0,0.45)" }}
           >
             {event.title}
           </h3>
           {event.shortDescription && (
-            <p className="mb-3 line-clamp-2 text-[15px] leading-snug text-white/80">
+            <p
+              className="mb-3 line-clamp-2 text-[15px] leading-snug text-white/80"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+            >
               {event.shortDescription}
             </p>
           )}
