@@ -5,19 +5,6 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const eventEnrichSchema = z.object({
-  shortDescription: z.string().optional().nullable(),
-  fullDescription: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
-  imageUrl: z.string().optional().nullable(),
-  registrationUrl: z.string().url().optional().nullable().or(z.literal("")),
-  featured: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  kioskVisible: z.boolean().optional(),
-  allDay: z.boolean().optional(),
-  status: z.enum(["draft", "published", "archived"]).optional(),
-});
-
 export const manualEventSchema = z.object({
   title: z.string().min(1),
   startAt: z.string().min(1),
@@ -58,9 +45,6 @@ export const settingsSchema = z.object({
   kioskMutedTextColor: hexColorSchema.optional(),
   kioskPrimaryFont: googleFontFamilySchema.optional(),
   kioskSecondaryFont: googleFontFamilySchema.optional(),
-  breezeSubdomain: z.string().optional().nullable(),
-  breezeApiKey: z.string().optional().nullable(),
-  breezeCalendarIds: z.array(z.string()).optional(),
   kioskIdleTimeoutSeconds: z.number().int().min(0).max(3600).optional(),
   kioskBackgroundAnimated: z.boolean().optional(),
   kioskBackgroundStyle: z.enum(KIOSK_BACKGROUND_STYLES).optional(),

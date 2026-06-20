@@ -5,78 +5,42 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
-import { format } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface DashboardData {
-  lastBreezeSyncAt: string | null;
-  lastBreezeSyncError: string | null;
   eventCounts: {
     total: number;
     published: number;
-    breeze: number;
     hidden: number;
   };
 }
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function loadDashboard() {
-    const [settingsRes, eventsRes] = await Promise.all([
-      fetch("/api/settings"),
-      fetch("/api/events"),
-    ]);
-    const settings = await settingsRes.json();
-    const events = await eventsRes.json();
-
-    setData({
-      lastBreezeSyncAt: settings.lastBreezeSyncAt,
-      lastBreezeSyncError: settings.lastBreezeSyncError,
-      eventCounts: {
-        total: events.length,
-        published: events.filter((e: { status: string }) => e.status === "published").length,
-        breeze: events.filter((e: { source: string }) => e.source === "breeze").length,
-        hidden: events.filter((e: { kioskVisible: boolean }) => !e.kioskVisible).length,
-      },
-    });
-  }
 
   useEffect(() => {
-    loadDashboard();
+    fetch("/api/events")
+      .then((res) => res.json())
+      .then((events) => {
+        setData({
+          eventCounts: {
+            total: events.length,
+            published: events.filter((e: { status: string }) => e.status === "published").length,
+            hidden: events.filter((e: { kioskVisible: boolean }) => !e.kioskVisible).length,
+          },
+        });
+      });
   }, []);
-
-  async function handleSync() {
-    setSyncing(true);
-    setMessage("");
-    const res = await fetch("/api/breeze/sync", { method: "POST" });
-    const body = await res.json();
-    setSyncing(false);
-
-    if (!res.ok) {
-      setMessage(body.error || "Sync failed");
-      return;
-    }
-
-    setMessage(
-      `Synced ${body.total} events (${body.created} new, ${body.updated} updated, ${body.stale} stale)`,
-    );
-    loadDashboard();
-  }
 
   return (
     <AuthGuard>
       <div className="mx-auto max-w-6xl px-6 py-8">
           <AdminPageHeader title="Dashboard" />
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-3">
             {[
               ["Total Events", data?.eventCounts.total],
               ["Published", data?.eventCounts.published],
-              ["From Breeze", data?.eventCounts.breeze],
               ["Hidden", data?.eventCounts.hidden],
             ].map(([label, value]) => (
               <Card key={label as string}>
@@ -89,35 +53,6 @@ export default function AdminDashboardPage() {
               </Card>
             ))}
           </div>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold">Breeze Sync</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Last sync:{" "}
-                    {data?.lastBreezeSyncAt
-                      ? format(new Date(data.lastBreezeSyncAt), "MMM d, yyyy h:mm a")
-                      : "Never"}
-                  </p>
-                </div>
-                <Button onClick={handleSync} disabled={syncing}>
-                  {syncing ? "Syncing..." : "Sync Now"}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {data?.lastBreezeSyncError && (
-                <p className="mb-3 text-sm text-red-600 dark:text-red-400">{data.lastBreezeSyncError}</p>
-              )}
-              {message && <p className="text-sm text-emerald-700 dark:text-emerald-400">{message}</p>}
-              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-                New Breeze events are imported as drafts and hidden from the kiosk until you enrich
-                and publish them.
-              </p>
-            </CardContent>
-          </Card>
 
           <div className="mt-6 flex gap-3">
             <Link href="/admin/events">

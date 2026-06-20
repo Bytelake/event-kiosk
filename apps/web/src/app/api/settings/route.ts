@@ -3,7 +3,6 @@ import { getSettings, prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { settingsSchema } from "@/lib/validators";
-import { parseCalendarIds } from "@/lib/utils";
 
 function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
   return {
@@ -32,11 +31,6 @@ export async function GET() {
 
   return NextResponse.json({
     ...serializePublicSettings(settings),
-    breezeSubdomain: settings.breezeSubdomain,
-    hasBreezeApiKey: Boolean(settings.breezeApiKey || process.env.BREEZE_API_KEY),
-    breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),
-    lastBreezeSyncAt: settings.lastBreezeSyncAt?.toISOString() ?? null,
-    lastBreezeSyncError: settings.lastBreezeSyncError,
     kioskRefreshAt: settings.kioskRefreshAt?.toISOString() ?? null,
     allowedDomains: domains.map((d) => d.domain),
   });
@@ -72,11 +66,6 @@ export async function PATCH(request: Request) {
       kioskMutedTextColor: data.kioskMutedTextColor,
       kioskPrimaryFont: data.kioskPrimaryFont,
       kioskSecondaryFont: data.kioskSecondaryFont,
-      breezeSubdomain: data.breezeSubdomain,
-      breezeApiKey: data.breezeApiKey || undefined,
-      breezeCalendarIds: data.breezeCalendarIds
-        ? JSON.stringify(data.breezeCalendarIds)
-        : undefined,
       kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
       kioskBackgroundAnimated: data.kioskBackgroundAnimated,
       kioskBackgroundStyle: data.kioskBackgroundStyle,
@@ -94,12 +83,5 @@ export async function PATCH(request: Request) {
     await deleteUploadIfUnreferenced(previousBackgroundImageUrl);
   }
 
-  return NextResponse.json({
-    ...serializePublicSettings(settings),
-    breezeSubdomain: settings.breezeSubdomain,
-    hasBreezeApiKey: Boolean(settings.breezeApiKey),
-    breezeCalendarIds: parseCalendarIds(settings.breezeCalendarIds),
-    lastBreezeSyncAt: settings.lastBreezeSyncAt?.toISOString() ?? null,
-    lastBreezeSyncError: settings.lastBreezeSyncError,
-  });
+  return NextResponse.json(serializePublicSettings(settings));
 }

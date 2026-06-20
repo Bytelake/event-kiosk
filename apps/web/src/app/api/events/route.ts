@@ -4,11 +4,10 @@ import { isAuthenticated } from "@/lib/auth";
 import { serializeEvent } from "@/lib/event-serialize";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
-import { eventEnrichSchema, manualEventSchema } from "@/lib/validators";
+import { manualEventSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
-  const source = request.nextUrl.searchParams.get("source");
   const status = request.nextUrl.searchParams.get("status");
   const now = wallClockNow();
 
@@ -30,13 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const where =
-    source === "breeze"
-      ? { source: "breeze" as const }
-      : source === "manual"
-        ? { source: "manual" as const }
-        : status === "draft" || status === "archived"
-          ? { status }
-          : {};
+    status === "draft" || status === "archived" ? { status } : {};
 
   const events = await prisma.event.findMany({
     where,
@@ -99,56 +92,31 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const previousImageUrl = existing.imageUrl;
-  let event;
-
-  if (existing.source === "breeze") {
-    const parsed = eventEnrichSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    }
-    const data = parsed.data;
-    event = await prisma.event.update({
-      where: { id },
-      data: {
-        shortDescription: data.shortDescription ?? null,
-        fullDescription: data.fullDescription ?? null,
-        location: data.location ?? null,
-        imageUrl: data.imageUrl ?? null,
-        registrationUrl: data.registrationUrl || null,
-        featured: data.featured,
-        sortOrder: data.sortOrder,
-        kioskVisible: data.kioskVisible,
-        allDay: data.allDay,
-        status: data.status,
-      },
-    });
-  } else {
-    const parsed = manualEventSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    }
-
-    const data = parsed.data;
-    event = await prisma.event.update({
-      where: { id },
-      data: {
-        title: data.title,
-        startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
-        endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
-        shortDescription: data.shortDescription ?? null,
-        fullDescription: data.fullDescription ?? null,
-        location: data.location ?? null,
-        imageUrl: data.imageUrl ?? null,
-        registrationUrl: data.registrationUrl || null,
-        featured: data.featured,
-        sortOrder: data.sortOrder,
-        kioskVisible: data.kioskVisible,
-        allDay: data.allDay,
-        status: data.status,
-      },
-    });
+  const parsed = manualEventSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+
+  const previousImageUrl = existing.imageUrl;
+  const data = parsed.data;
+  const event = await prisma.event.update({
+    where: { id },
+    data: {
+      title: data.title,
+      startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
+      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
+      shortDescription: data.shortDescription ?? null,
+      fullDescription: data.fullDescription ?? null,
+      location: data.location ?? null,
+      imageUrl: data.imageUrl ?? null,
+      registrationUrl: data.registrationUrl || null,
+      featured: data.featured,
+      sortOrder: data.sortOrder,
+      kioskVisible: data.kioskVisible,
+      allDay: data.allDay,
+      status: data.status,
+    },
+  });
 
   if (previousImageUrl !== event.imageUrl) {
     await deleteUploadIfUnreferenced(previousImageUrl);

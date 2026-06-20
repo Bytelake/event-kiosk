@@ -347,15 +347,3 @@ export function formatEventCardDateBadge(
     time: formatBadgeTime(schedule.times),
   };
 }
-
-export function parseCalendarIds(json: string): string[] {
-  try {
-    const parsed = JSON.parse(json) as unknown;
-    if (Array.isArray(parsed)) {
-      return parsed.map(String);
-    }
-  } catch {
-    // ignore
-  }
-  return [];
-}

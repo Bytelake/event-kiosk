@@ -59,12 +59,7 @@ export default function EditEventPage() {
             }
           />
           <div className="mx-auto max-w-4xl">
-          <EventForm
-            initial={event}
-            onSave={handleSave}
-            saving={saving}
-            isBreeze={event.source === "breeze"}
-          />
+          <EventForm initial={event} onSave={handleSave} saving={saving} />
           </div>
       </div>
     </AuthGuard>

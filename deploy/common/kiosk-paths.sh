@@ -45,8 +45,6 @@ UPLOADS_DIR=$(kiosk_uploads_dir)
 ADMIN_PASSWORD=changeme
 SESSION_SECRET=change-this-to-a-long-random-string
 COOKIE_SECURE=false
-BREEZE_SUBDOMAIN=
-BREEZE_API_KEY=
 EOF
   fi
 

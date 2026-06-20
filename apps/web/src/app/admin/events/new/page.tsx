@@ -26,9 +26,9 @@ export default function NewEventPage() {
   return (
     <AuthGuard>
       <div className="mx-auto max-w-6xl px-6 py-8">
-          <AdminPageHeader title="New Manual Event" />
+          <AdminPageHeader title="New Event" />
           <div className="mx-auto max-w-4xl">
-          <EventForm onSave={handleSave} saving={saving} isBreeze={false} />
+          <EventForm onSave={handleSave} saving={saving} />
           </div>
       </div>
     </AuthGuard>

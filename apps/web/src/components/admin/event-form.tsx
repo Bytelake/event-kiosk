@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
 import { format } from "date-fns";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 import { uploadImageFile } from "@/lib/upload-client";
@@ -19,10 +18,9 @@ interface EventFormProps {
   initial?: Record<string, unknown>;
   onSave: (data: Record<string, unknown>) => Promise<void>;
   saving: boolean;
-  isBreeze: boolean;
 }
 
-export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps) {
+export function EventForm({ initial, onSave, saving }: EventFormProps) {
   const [form, setForm] = useState({
     title: "",
     startAt: "",
@@ -35,7 +33,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
     featured: false,
     status: "draft",
     sortOrder: 0,
-    breezeDescription: "",
     allDay: false,
   });
   const [uploading, setUploading] = useState(false);
@@ -82,7 +79,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
       featured: Boolean(initial.featured),
       status: String(initial.status ?? "draft"),
       sortOrder: Number(initial.sortOrder ?? 0),
-      breezeDescription: String(initial.breezeDescription ?? ""),
       allDay: eventIsAllDay(
         initial.allDay as boolean | undefined,
         startAt || String(initial.startAt ?? ""),
@@ -170,11 +166,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
   }
 
   function handleAllDayChange(checked: boolean) {
-    if (isBreeze) {
-      setForm((f) => ({ ...f, allDay: checked }));
-      return;
-    }
-
     setForm((f) => {
       if (checked) {
         return {
@@ -212,24 +203,15 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <h2 className="font-semibold">Event Details</h2>
-            {isBreeze && <Badge variant="breeze">Synced from Breeze</Badge>}
-          </div>
+          <h2 className="font-semibold">Event Details</h2>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Title</label>
             <Input
               value={form.title}
-              disabled={isBreeze}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-            {isBreeze && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Updated automatically from Breeze on sync
-              </p>
-            )}
           </div>
 
           <label className="flex items-center gap-3">
@@ -247,7 +229,6 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
               <Input
                 type={form.allDay ? "date" : "datetime-local"}
                 value={form.allDay ? toDateLocalValue(form.startAt) : form.startAt}
-                disabled={isBreeze}
                 onChange={(e) => handleStartChange(e.target.value)}
               />
             </div>
@@ -256,18 +237,10 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
               <Input
                 type={form.allDay ? "date" : "datetime-local"}
                 value={form.allDay ? toDateLocalValue(form.endAt) : form.endAt}
-                disabled={isBreeze}
                 onChange={(e) => handleEndChange(e.target.value)}
               />
             </div>
           </div>
-
-          {isBreeze && form.breezeDescription && (
-            <div className="rounded-xl bg-sky-50 p-4 text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-200">
-              <p className="font-medium">Breeze description (reference only)</p>
-              <p className="mt-1 whitespace-pre-wrap">{form.breezeDescription}</p>
-            </div>
-          )}
 
           <div>
             <label className="mb-1 block text-sm font-medium">Short description</label>

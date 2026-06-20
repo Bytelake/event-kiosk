@@ -13,22 +13,18 @@ interface EventRow {
   id: string;
   title: string;
   startAt: string;
-  source: string;
   status: string;
   syncStatus: string;
 }
 
 const tabs = [
   { key: "", label: "All" },
-  { key: "breeze", label: "Breeze" },
-  { key: "manual", label: "Manual" },
   { key: "draft", label: "Draft" },
   { key: "archived", label: "Archived" },
 ];
 
 function tabQuery(tab: string) {
   if (!tab) return "";
-  if (tab === "breeze" || tab === "manual") return `?source=${tab}`;
   return `?status=${tab}`;
 }
 
@@ -59,7 +55,7 @@ export default function AdminEventsPage() {
               </Button>
             ))}
             <Link href="/admin/events/new" className="ml-auto">
-              <Button>Add Manual Event</Button>
+              <Button>Add Event</Button>
             </Link>
           </div>
 
@@ -70,7 +66,7 @@ export default function AdminEventsPage() {
             <CardContent className="space-y-3">
               {events.length === 0 && (
                 <p className="text-slate-500 dark:text-slate-400">
-                  No events found. Run a Breeze sync to import events.
+                  No events found. Add an event to get started.
                 </p>
               )}
               {events.map((event) => (
@@ -82,7 +78,6 @@ export default function AdminEventsPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold text-slate-900 dark:text-slate-100">{event.title}</h3>
-                      {event.source === "breeze" && <Badge variant="breeze">Breeze</Badge>}
                       {event.syncStatus === "stale" && <Badge variant="warning">Stale</Badge>}
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">

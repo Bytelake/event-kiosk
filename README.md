@@ -2,7 +2,7 @@
 
 # Event Kiosk
 
-Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links; optional sync from **Breeze CHMS**.
+Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links.
 
 Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also runs locally for development on macOS, Linux, or Windows.
 
@@ -13,7 +13,6 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also
 
 ## Features
 
-- Breeze CHMS calendar sync
 - Touch-friendly kiosk UI for large displays
 - Admin panel for events, branding, and settings
 - Fullscreen Electron shell with registration domain whitelist
@@ -157,8 +156,6 @@ While `dev:desktop` is running, navigate to the kiosk screen you want, then pres
 
 Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Set `COOKIE_SECURE=false` when using HTTP on a kiosk. Set `KIOSK_DESKTOP_MODE=true` for local desktop dev (see above).
 
-Breeze credentials can go in `.env` or Admin → Settings.
-
 ### Release packages
 
 Build a Debian/Ubuntu tarball on a dev machine:
@@ -191,24 +188,16 @@ Copy tarball to kiosk machine for testing, deployment:
 scp dist/event-kiosk-debian-arm64-*.tar.gz user@<IP-ADDRESS>
 ```
 
-## Breeze setup
-
-1. In Breeze: **Account → API** — copy subdomain and API key
-2. In admin **Settings**, enter credentials and select calendars
-3. **Sync Now**, then edit events and publish
-
-Breeze-owned fields (title, date) update on sync. Admin-added content is preserved.
-
-
 ## Project structure
 
 ```
-apps/web/              Next.js kiosk UI, admin, API, Breeze sync
+apps/web/              Next.js kiosk UI, admin, and API
 apps/shell/            Electron kiosk shell
 deploy/common/         Shared install scripts, systemd units, paths
 deploy/debian/         Debian/Ubuntu installer and release package
 deploy/alpine/         Alpine Linux installer and release package
 deploy/pi-os-lite/     Deprecated wrappers (use deploy/debian/)
+archive/               Archived code (e.g. Breeze CHMS integration)
 scripts/               Build scripts
 ```
 

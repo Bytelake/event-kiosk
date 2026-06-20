@@ -8,23 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-interface Calendar {
-  id: number | string;
-  name: string;
-}
-
 interface SettingsForm {
-  breezeSubdomain: string;
-  breezeApiKey: string;
-  breezeCalendarIds: string[];
-  hasBreezeApiKey: boolean;
   kioskIdleTimeoutSeconds: number;
   registrationDomainEnforcement: boolean;
 }
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SettingsForm | null>(null);
-  const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [domains, setDomains] = useState<{ id: string; domain: string }[]>([]);
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
@@ -36,18 +26,12 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/settings").then((r) => r.json()),
-      fetch("/api/breeze/calendars").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/domains").then((r) => r.json()),
-    ]).then(([settingsData, calendarData, domainData]) => {
+    ]).then(([settingsData, domainData]) => {
       setSettings({
-        breezeSubdomain: settingsData.breezeSubdomain ?? "",
-        breezeApiKey: "",
-        breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
-        hasBreezeApiKey: settingsData.hasBreezeApiKey,
         kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
         registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
       });
-      setCalendars(calendarData);
       setDomains(domainData);
     });
   }, []);
@@ -67,14 +51,9 @@ export default function AdminSettingsPage() {
     setMessage("");
 
     const payload: Record<string, unknown> = {
-      breezeSubdomain: settings.breezeSubdomain || null,
-      breezeCalendarIds: settings.breezeCalendarIds,
       kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
       registrationDomainEnforcement: settings.registrationDomainEnforcement,
     };
-    if (settings.breezeApiKey) {
-      payload.breezeApiKey = settings.breezeApiKey;
-    }
 
     const res = await fetch("/api/settings", {
       method: "PATCH",
@@ -85,22 +64,7 @@ export default function AdminSettingsPage() {
     setSaving(false);
     if (res.ok) {
       setMessage("Settings saved");
-      setSettings((s) => ({
-        ...s!,
-        breezeApiKey: "",
-        hasBreezeApiKey: true,
-      }));
     }
-  }
-
-  function toggleCalendar(id: string) {
-    setSettings((s) => {
-      if (!s) return s;
-      const selected = s.breezeCalendarIds.includes(id)
-        ? s.breezeCalendarIds.filter((c) => c !== id)
-        : [...s.breezeCalendarIds, id];
-      return { ...s, breezeCalendarIds: selected };
-    });
   }
 
   async function addDomain() {
@@ -205,9 +169,6 @@ export default function AdminSettingsPage() {
         current
           ? {
               ...current,
-              breezeSubdomain: settingsData.breezeSubdomain ?? "",
-              breezeCalendarIds: settingsData.breezeCalendarIds ?? [],
-              hasBreezeApiKey: settingsData.hasBreezeApiKey,
               kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
             }
           : current,
@@ -267,57 +228,6 @@ export default function AdminSettingsPage() {
                   input. Set to 0 to disable.
                 </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <h2 className="font-semibold">Breeze CHMS</h2>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Breeze subdomain (e.g. yourchurch)"
-                value={settings.breezeSubdomain}
-                onChange={(e) => setSettings({ ...settings, breezeSubdomain: e.target.value })}
-              />
-              <Input
-                type="password"
-                placeholder={
-                  settings.hasBreezeApiKey
-                    ? "API key configured (enter to replace)"
-                    : "Breeze API key"
-                }
-                value={settings.breezeApiKey}
-                onChange={(e) => setSettings({ ...settings, breezeApiKey: e.target.value })}
-              />
-              {calendars.length > 0 && (
-                <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Calendars to sync
-                  </p>
-                  <div className="space-y-2">
-                    {calendars.map((calendar) => {
-                      const id = String(calendar.id);
-                      return (
-                        <label
-                          key={id}
-                          className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={settings.breezeCalendarIds.includes(id)}
-                            onChange={() => toggleCalendar(id)}
-                          />
-                          <span>{calendar.name}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Leave all unchecked to sync every calendar.
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
