@@ -122,12 +122,12 @@ export default function AdminSettingsPage() {
     setDomains((d) => d.filter((item) => item.id !== id));
   }
 
-  async function handleExportDatabase() {
+  async function downloadExport(url: string, fallbackFilename: string, successMessage: string) {
     setExporting(true);
     setBackupMessage("");
 
     try {
-      const res = await fetch("/api/database/export");
+      const res = await fetch(url);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setBackupMessage(body.error || "Export failed");
@@ -136,14 +136,14 @@ export default function AdminSettingsPage() {
 
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition");
-      const filename = disposition?.match(/filename="(.+)"/)?.[1] ?? "kiosk-backup.db";
-      const url = URL.createObjectURL(blob);
+      const filename = disposition?.match(/filename="(.+)"/)?.[1] ?? fallbackFilename;
+      const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
+      link.href = objectUrl;
       link.download = filename;
       link.click();
-      URL.revokeObjectURL(url);
-      setBackupMessage("Database exported");
+      URL.revokeObjectURL(objectUrl);
+      setBackupMessage(successMessage);
     } catch {
       setBackupMessage("Export failed");
     } finally {
@@ -151,10 +151,22 @@ export default function AdminSettingsPage() {
     }
   }
 
+  function handleExportFullBackup() {
+    void downloadExport("/api/database/export", "kiosk-backup.zip", "Full backup exported");
+  }
+
+  function handleExportDatabaseOnly() {
+    void downloadExport(
+      "/api/database/export?format=db",
+      "kiosk-backup.db",
+      "Database exported (no media files)",
+    );
+  }
+
   async function handleImportDatabase(file: File) {
     if (
       !window.confirm(
-        "Importing a backup replaces all events, settings, and registration domains. Continue?",
+        "Importing a backup replaces all events, settings, registration domains, and uploaded images. Continue?",
       )
     ) {
       return;
@@ -176,6 +188,9 @@ export default function AdminSettingsPage() {
 
       setBackupMessage(
         `Imported ${data.eventCount} events and ${data.domainCount} registration domains` +
+          (data.restoredUploadCount
+            ? `; restored ${data.restoredUploadCount} uploaded images`
+            : "") +
           (data.prunedUploadCount ? `; removed ${data.prunedUploadCount} unused uploads` : ""),
       );
 
@@ -359,21 +374,43 @@ export default function AdminSettingsPage() {
 
           <Card>
             <CardHeader>
-              <h2 className="font-semibold">Database Backup</h2>
+              <h2 className="font-semibold">Backup &amp; Restore</h2>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Export the SQLite database for backup or migration. Importing replaces all events,
-                settings, and registration domains with the backup file.
-              </p>
+              <div className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                <p>
+                  Use <span className="font-medium text-slate-700 dark:text-slate-300">Export Full Backup</span>{" "}
+                  when moving to a new machine or restoring after a wipe. The zip includes the
+                  database plus uploaded event images, logos, and kiosk backgrounds (up to 2 GB).
+                </p>
+                <p>
+                  Use <span className="font-medium text-slate-700 dark:text-slate-300">Export Database Only</span>{" "}
+                  for a lightweight SQLite snapshot of events, settings, and registration domains.
+                  Image paths are stored in the database, but the files themselves are not included —
+                  imported images will be missing unless the uploads folder is copied separately.
+                </p>
+                <p>
+                  Import accepts either a full backup (.zip) or a database-only file (.db). Full
+                  backups restore media automatically; database-only imports replace data but not
+                  uploaded files.
+                </p>
+              </div>
               <div className="flex flex-wrap gap-3">
-                <Button type="button" onClick={handleExportDatabase} disabled={exporting}>
-                  {exporting ? "Exporting..." : "Export Database"}
+                <Button type="button" onClick={handleExportFullBackup} disabled={exporting}>
+                  {exporting ? "Exporting..." : "Export Full Backup"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleExportDatabaseOnly}
+                  disabled={exporting}
+                >
+                  {exporting ? "Exporting..." : "Export Database Only"}
                 </Button>
                 <label className="inline-flex">
                   <input
                     type="file"
-                    accept=".db,application/x-sqlite3,application/vnd.sqlite3,application/octet-stream"
+                    accept=".zip,.db,application/zip,application/x-sqlite3,application/vnd.sqlite3,application/octet-stream"
                     className="hidden"
                     disabled={importing}
                     onChange={(e) => {
@@ -389,7 +426,7 @@ export default function AdminSettingsPage() {
                       importing ? "pointer-events-none opacity-50" : ""
                     }`}
                   >
-                    {importing ? "Importing..." : "Import Database"}
+                    {importing ? "Importing..." : "Import Backup"}
                   </span>
                 </label>
               </div>
