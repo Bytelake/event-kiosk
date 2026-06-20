@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -69,15 +69,8 @@ export default function AdminDashboardPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-              <p className="text-slate-500">Manage your event kiosk</p>
-            </div>
-            <AdminNav />
-          </div>
+      <div className="mx-auto max-w-6xl px-6 py-8">
+          <AdminPageHeader title="Dashboard" />
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {[
@@ -88,8 +81,10 @@ export default function AdminDashboardPage() {
             ].map(([label, value]) => (
               <Card key={label as string}>
                 <CardContent>
-                  <p className="text-sm text-slate-500">{label}</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-900">{value ?? "—"}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                    {value ?? "—"}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -100,7 +95,7 @@ export default function AdminDashboardPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold">Breeze Sync</h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Last sync:{" "}
                     {data?.lastBreezeSyncAt
                       ? format(new Date(data.lastBreezeSyncAt), "MMM d, yyyy h:mm a")
@@ -114,10 +109,10 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               {data?.lastBreezeSyncError && (
-                <p className="mb-3 text-sm text-red-600">{data.lastBreezeSyncError}</p>
+                <p className="mb-3 text-sm text-red-600 dark:text-red-400">{data.lastBreezeSyncError}</p>
               )}
-              {message && <p className="text-sm text-emerald-700">{message}</p>}
-              <p className="mt-4 text-sm text-slate-500">
+              {message && <p className="text-sm text-emerald-700 dark:text-emerald-400">{message}</p>}
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
                 New Breeze events are imported as drafts and hidden from the kiosk until you enrich
                 and publish them.
               </p>
@@ -132,7 +127,6 @@ export default function AdminDashboardPage() {
               <Button variant="secondary">Settings</Button>
             </Link>
           </div>
-        </div>
       </div>
     </AuthGuard>
   );

@@ -58,10 +58,10 @@ export function FontField({
         };
 
   return (
-    <div className="rounded-xl border border-slate-200 p-4">
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
       <div className="mb-3">
-        <p className="font-medium text-slate-900">{label}</p>
-        <p className="text-xs text-slate-500">{description}</p>
+        <p className="font-medium text-slate-900 dark:text-slate-100">{label}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
       </div>
       <select
         value={selectValue}
@@ -77,7 +77,7 @@ export function FontField({
           setCustomMode(false);
           onChange(next);
         }}
-        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
       >
         {presets.map((preset) => (
           <option key={preset.family} value={preset.family}>
@@ -99,13 +99,13 @@ export function FontField({
             }}
             placeholder="e.g. Roboto Slab"
           />
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Enter any family name from{" "}
             <a
               href="https://fonts.google.com"
               target="_blank"
               rel="noreferrer"
-              className="text-blue-600 underline"
+              className="text-blue-600 underline dark:text-blue-400"
             >
               Google Fonts
             </a>
@@ -113,7 +113,7 @@ export function FontField({
           </p>
         </div>
       )}
-      <p className="mt-3 text-lg text-slate-800" style={previewStyle}>
+      <p className="mt-3 text-lg text-slate-800 dark:text-slate-200" style={previewStyle}>
         The quick brown fox jumps over the lazy dog
       </p>
     </div>

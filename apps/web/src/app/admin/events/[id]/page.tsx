@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { EventForm } from "@/components/admin/event-form";
 import { Button } from "@/components/ui/button";
@@ -42,31 +42,30 @@ export default function EditEventPage() {
   if (!event) {
     return (
       <AuthGuard>
-        <div className="p-8 text-slate-500">Loading event...</div>
+        <div className="p-8 text-slate-500 dark:text-slate-400">Loading event...</div>
       </AuthGuard>
     );
   }
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-4xl px-6 py-8">
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <AdminNav />
-              <h1 className="mt-4 text-3xl font-bold text-slate-900">Edit Event</h1>
-            </div>
-            <Button variant="danger" onClick={handleDelete}>
-              Delete
-            </Button>
-          </div>
+      <div className="mx-auto max-w-6xl px-6 py-8">
+          <AdminPageHeader
+            title="Edit Event"
+            actions={
+              <Button variant="danger" onClick={handleDelete}>
+                Delete
+              </Button>
+            }
+          />
+          <div className="mx-auto max-w-4xl">
           <EventForm
             initial={event}
             onSave={handleSave}
             saving={saving}
             isBreeze={event.source === "breeze"}
           />
-        </div>
+          </div>
       </div>
     </AuthGuard>
   );

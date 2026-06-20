@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatWallClockDateTime } from "@/lib/utils";
-import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -45,15 +45,8 @@ export default function AdminEventsPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Events</h1>
-              <p className="text-slate-500">Enrich Breeze events or create manual entries</p>
-            </div>
-            <AdminNav />
-          </div>
+      <div className="mx-auto max-w-6xl px-6 py-8">
+          <AdminPageHeader title="Events" />
 
           <div className="mb-6 flex flex-wrap gap-2">
             {tabs.map((item) => (
@@ -76,21 +69,23 @@ export default function AdminEventsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {events.length === 0 && (
-                <p className="text-slate-500">No events found. Run a Breeze sync to import events.</p>
+                <p className="text-slate-500 dark:text-slate-400">
+                  No events found. Run a Breeze sync to import events.
+                </p>
               )}
               {events.map((event) => (
                 <Link
                   key={event.id}
                   href={`/admin/events/${event.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/60"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-slate-900">{event.title}</h3>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{event.title}</h3>
                       {event.source === "breeze" && <Badge variant="breeze">Breeze</Badge>}
                       {event.syncStatus === "stale" && <Badge variant="warning">Stale</Badge>}
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {formatWallClockDateTime(event.startAt)}
                     </p>
                   </div>
@@ -109,7 +104,6 @@ export default function AdminEventsPage() {
               ))}
             </CardContent>
           </Card>
-        </div>
       </div>
     </AuthGuard>
   );

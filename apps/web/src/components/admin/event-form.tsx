@@ -170,7 +170,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
             {isBreeze && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Updated automatically from Breeze on sync
               </p>
             )}
@@ -207,7 +207,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
           </div>
 
           {isBreeze && form.breezeDescription && (
-            <div className="rounded-xl bg-sky-50 p-4 text-sm text-sky-900">
+            <div className="rounded-xl bg-sky-50 p-4 text-sm text-sky-900 dark:bg-sky-950 dark:text-sky-200">
               <p className="font-medium">Breeze description (reference only)</p>
               <p className="mt-1 whitespace-pre-wrap">{form.breezeDescription}</p>
             </div>
@@ -256,7 +256,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
                 if (file) handleImagePick(file);
               }}
             />
-            {uploading && <p className="mt-1 text-sm text-slate-500">Uploading...</p>}
+            {uploading && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Uploading...</p>}
             {displayImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
@@ -267,7 +267,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
             <div>
               <label className="mb-1 block text-sm font-medium">Status</label>
               <select
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
               >
@@ -296,7 +296,7 @@ export function EventForm({ initial, onSave, saving, isBreeze }: EventFormProps)
           </label>
 
           {initial?.lastSyncedAt ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Last synced: {format(new Date(String(initial.lastSyncedAt)), "MMM d, yyyy h:mm a")}
             </p>
           ) : null}
