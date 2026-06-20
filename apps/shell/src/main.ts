@@ -26,20 +26,89 @@ function isTruthyEnv(v: string | undefined): boolean {
   return s === "true" || s === "1" || s === "yes";
 }
 
-const desktopMode =
-  isTruthyEnv(process.env.KIOSK_DESKTOP_MODE) || !app.isPackaged;
+// Desktop window mode is opt-in via KIOSK_DESKTOP_MODE (dev:desktop). Do not tie
+// this to app.isPackaged — production installs run unpackaged `electron .`.
+const desktopMode = isTruthyEnv(process.env.KIOSK_DESKTOP_MODE);
 const DESKTOP_WIDTH = 1080;
 const DESKTOP_HEIGHT = 1920;
 const CHROME_HEIGHT = 72;
 const KEYBOARD_HEIGHT = 380;
+
+function configureGpuForEmbeddedLinux() {
+  if (process.platform !== "linux") return;
+
+  // Avoid Chromium crashes when /dev/shm is small (common on embedded Linux).
+  app.commandLine.appendSwitch("disable-dev-shm-usage");
+}
+
+configureGpuForEmbeddedLinux();
 
 let mainWindow: BrowserWindow | null = null;
 let registrationView: BrowserView | null = null;
 let chromeView: BrowserView | null = null;
 let keyboardView: BrowserView | null = null;
 let keyboardVisible = false;
+let registrationOpening = false;
+
+function destroyBrowserView(view: BrowserView | null) {
+  if (!view || !mainWindow) return;
+  try {
+    if (!mainWindow.isDestroyed() && mainWindow.getBrowserViews().includes(view)) {
+      mainWindow.removeBrowserView(view);
+    }
+    if (!view.webContents.isDestroyed()) {
+      view.webContents.close();
+    }
+  } catch (err) {
+    console.warn("[kiosk] Error destroying BrowserView:", err);
+  }
+}
+
+function setupMainWindowCrashRecovery(win: BrowserWindow) {
+  const wc = win.webContents;
+
+  wc.on("render-process-gone", (_event, details) => {
+    console.error(
+      "[kiosk] Main renderer gone:",
+      details.reason,
+      "exitCode=",
+      details.exitCode,
+    );
+    if (details.reason === "clean-exit") return;
+
+    setTimeout(() => {
+      if (win.isDestroyed() || wc.isDestroyed()) {
+        createWindow();
+        return;
+      }
+      void wc.reload();
+    }, 500);
+  });
+
+  wc.on("unresponsive", () => {
+    console.error("[kiosk] Main window unresponsive — reloading");
+    if (!wc.isDestroyed()) void wc.reload();
+  });
+}
+
+function setupRegistrationCrashRecovery(view: BrowserView, label: string) {
+  view.webContents.on("render-process-gone", (_event, details) => {
+    console.error(
+      `[kiosk] ${label} renderer gone:`,
+      details.reason,
+      "exitCode=",
+      details.exitCode,
+    );
+    closeRegistrationView();
+  });
+}
 
 function createWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+    mainWindow = null;
+  }
+
   mainWindow = new BrowserWindow({
     width: desktopMode ? DESKTOP_WIDTH : undefined,
     height: desktopMode ? DESKTOP_HEIGHT : undefined,
@@ -55,6 +124,8 @@ function createWindow() {
       sandbox: true,
     },
   });
+
+  setupMainWindowCrashRecovery(mainWindow);
 
   if (desktopMode) {
     mainWindow.setAspectRatio(DESKTOP_WIDTH / DESKTOP_HEIGHT);
@@ -100,6 +171,7 @@ function showKeyboard() {
         sandbox: true,
       },
     });
+    setupRegistrationCrashRecovery(keyboardView, "Registration keyboard");
     mainWindow.addBrowserView(keyboardView);
     keyboardView.webContents.loadFile(
       path.join(__dirname, "registration-keyboard.html"),
@@ -111,8 +183,10 @@ function showKeyboard() {
 }
 
 function hideKeyboard() {
-  if (!keyboardVisible) return;
+  if (!keyboardVisible && !keyboardView) return;
   keyboardVisible = false;
+  destroyBrowserView(keyboardView);
+  keyboardView = null;
   layoutRegistrationViews();
   setRegistrationKeyboardOpen(false);
   void registrationView?.webContents.executeJavaScript(
@@ -158,75 +232,74 @@ function setupRegistrationInputMonitoring(view: BrowserView) {
 }
 
 function openRegistrationView(url: string) {
-  if (!mainWindow) return;
+  if (!mainWindow || registrationOpening) return;
   if (!isRegistrationUrlAllowed(url)) {
     console.warn("Blocked registration URL:", url);
     return;
   }
 
-  closeRegistrationView();
+  registrationOpening = true;
+  try {
+    closeRegistrationView();
 
-  chromeView = new BrowserView({
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
+    chromeView = new BrowserView({
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
 
-  registrationView = new BrowserView({
-    webPreferences: {
-      preload: path.join(__dirname, "registration-preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
+    registrationView = new BrowserView({
+      webPreferences: {
+        preload: path.join(__dirname, "registration-preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
 
-  mainWindow.addBrowserView(chromeView);
-  mainWindow.addBrowserView(registrationView);
-  setupRegistrationInputMonitoring(registrationView);
-  layoutRegistrationViews();
+    setupRegistrationCrashRecovery(chromeView, "Registration chrome");
+    setupRegistrationCrashRecovery(registrationView, "Registration page");
 
-  chromeView.webContents.loadFile(path.join(__dirname, "registration-chrome.html"));
+    mainWindow.addBrowserView(chromeView);
+    mainWindow.addBrowserView(registrationView);
+    setupRegistrationInputMonitoring(registrationView);
+    layoutRegistrationViews();
 
-  registrationView.webContents.setWindowOpenHandler(({ url: newUrl }) => {
-    if (isRegistrationUrlAllowed(newUrl)) {
-      registrationView?.webContents.loadURL(newUrl);
-    }
-    return { action: "deny" };
-  });
+    chromeView.webContents.loadFile(path.join(__dirname, "registration-chrome.html"));
 
-  registrationView.webContents.on("will-navigate", (event, navigationUrl) => {
-    if (!isRegistrationUrlAllowed(navigationUrl)) {
-      event.preventDefault();
-    }
-  });
+    registrationView.webContents.setWindowOpenHandler(({ url: newUrl }) => {
+      if (isRegistrationUrlAllowed(newUrl)) {
+        registrationView?.webContents.loadURL(newUrl);
+      }
+      return { action: "deny" };
+    });
 
-  registrationView.webContents.loadURL(url);
+    registrationView.webContents.on("will-navigate", (event, navigationUrl) => {
+      if (!isRegistrationUrlAllowed(navigationUrl)) {
+        event.preventDefault();
+      }
+    });
+
+    registrationView.webContents.loadURL(url);
+  } finally {
+    registrationOpening = false;
+  }
 }
 
 function closeRegistrationView() {
   hideKeyboard();
 
-  if (keyboardView && mainWindow) {
-    mainWindow.removeBrowserView(keyboardView);
-    keyboardView.webContents.close();
-    keyboardView = null;
-  }
+  destroyBrowserView(keyboardView);
+  keyboardView = null;
 
-  if (!mainWindow) return;
-  if (registrationView) {
-    mainWindow.removeBrowserView(registrationView);
-    registrationView.webContents.close();
-    registrationView = null;
-  }
-  if (chromeView) {
-    mainWindow.removeBrowserView(chromeView);
-    chromeView.webContents.close();
-    chromeView = null;
-  }
+  destroyBrowserView(registrationView);
+  registrationView = null;
+
+  destroyBrowserView(chromeView);
+  chromeView = null;
 }
 
 function layoutRegistrationViews() {
@@ -371,6 +444,10 @@ function registerShortcuts() {
 }
 
 app.whenReady().then(async () => {
+  console.log(
+    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode}`,
+  );
+
   await refreshAllowedDomains(API_BASE);
   startAllowedDomainsPolling(API_BASE);
   createWindow();
@@ -431,3 +508,13 @@ app.on("will-quit", () => {
 });
 
 process.on("SIGTERM", () => app.quit());
+
+app.on("child-process-gone", (_event, details) => {
+  console.error(
+    "[kiosk] Child process gone:",
+    details.type,
+    details.reason,
+    "exitCode=",
+    details.exitCode,
+  );
+});

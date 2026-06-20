@@ -41,8 +41,10 @@ export function LoginForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
-            <p className="mt-1 text-sm text-slate-500">Sign in to manage kiosk events</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Admin Login</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Sign in to manage kiosk events
+            </p>
           </div>
           <Input
             type="password"
@@ -51,7 +53,7 @@ export function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
@@ -84,11 +86,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (error) {
-    return <div className="p-8 text-red-600">{error}</div>;
+    return <div className="p-8 text-red-600 dark:text-red-400">{error}</div>;
   }
 
   if (!ready) {
-    return <div className="p-8 text-slate-500">Loading...</div>;
+    return <div className="p-8 text-slate-500 dark:text-slate-400">Loading...</div>;
   }
 
   return <>{children}</>;

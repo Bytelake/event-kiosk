@@ -51,6 +51,8 @@ model Settings {
   kioskBackgroundColor String  @default("#f1f5f9")
   kioskTextColor      String   @default("#0f172a")
   kioskMutedTextColor String   @default("#64748b")
+  kioskPrimaryFont    String   @default("Playfair Display")
+  kioskSecondaryFont  String   @default("DM Sans")
   breezeSubdomain     String?
   breezeApiKey        String?
   breezeCalendarIds   String   @default("[]")
@@ -59,6 +61,9 @@ model Settings {
   kioskRefreshAt          DateTime?
   settingsUpdatedAt       DateTime?
   kioskIdleTimeoutSeconds Int      @default(60)
+  kioskBackgroundAnimated Boolean  @default(true)
+  kioskBackgroundStyle    String   @default("gradient")
+  kioskBackgroundImageUrl String?
   updatedAt              DateTime @updatedAt
 }
 

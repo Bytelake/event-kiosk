@@ -10,7 +10,11 @@ async function countUploadReferences(filename: string): Promise<number> {
   const url = uploadPublicUrl(filename);
   const [eventCount, settingsCount] = await Promise.all([
     prisma.event.count({ where: { imageUrl: url } }),
-    prisma.settings.count({ where: { orgLogoUrl: url } }),
+    prisma.settings.count({
+      where: {
+        OR: [{ orgLogoUrl: url }, { kioskBackgroundImageUrl: url }],
+      },
+    }),
   ]);
   return eventCount + settingsCount;
 }

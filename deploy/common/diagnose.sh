@@ -92,6 +92,28 @@ if [[ -f "${ENV_FILE}" ]]; then
   echo ""
 fi
 
+echo "-- Electron (kiosk display) --"
+echo "  note: Electron is bundled under ${INSTALL_DIR}/shell — it is not expected in PATH"
+if bin="$(kiosk_electron_bin "${INSTALL_DIR}" 2>/dev/null)"; then
+  echo "  bundled: ${bin}"
+  sudo -u kiosk "${bin}" --version 2>/dev/null | sed 's/^/    /' || true
+elif [[ -d "${INSTALL_DIR}/shell/node_modules/electron" ]]; then
+  echo "  bundled: electron package present but binary missing (incomplete install)"
+  echo "  fix: sudo -u kiosk bash -lc 'cd ${INSTALL_DIR}/shell && npm install --omit=dev'"
+elif [[ -d "${INSTALL_DIR}/shell/node_modules" ]]; then
+  echo "  bundled: node_modules present but electron not installed"
+  echo "  fix: sudo -u kiosk bash -lc 'cd ${INSTALL_DIR}/shell && npm install --omit=dev'"
+else
+  echo "  bundled: missing"
+  echo "  fix: sudo -u kiosk bash -lc 'cd ${INSTALL_DIR}/shell && npm install --omit=dev'"
+fi
+if command -v electron >/dev/null 2>&1; then
+  echo "  system PATH: $(command -v electron) (optional; not used when bundled is present)"
+else
+  echo "  system PATH: not installed (normal for Debian installs)"
+fi
+echo ""
+
 DISPLAY_ENV="$(kiosk_display_env)"
 if [[ -f "${DISPLAY_ENV}" ]]; then
   echo "-- Display --"
@@ -99,7 +121,6 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
   source "${DISPLAY_ENV}"
   echo "  KIOSK_DISPLAY_ROTATION: ${KIOSK_DISPLAY_ROTATION:-normal}"
   command -v wlr-randr >/dev/null && echo "  wlr-randr: installed" || echo "  wlr-randr: not installed"
-  command -v electron >/dev/null && echo "  electron: $(command -v electron)" || echo "  electron: not in PATH"
   if [[ -f /etc/udev/rules.d/99-kiosk-touch-rotation.rules ]]; then
     echo "  touch udev rule: present"
   else

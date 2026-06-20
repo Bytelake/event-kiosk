@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/events", label: "Events" },
+  { href: "/admin/branding", label: "Branding" },
   { href: "/admin/settings", label: "Settings" },
 ];
 
@@ -36,8 +37,8 @@ export function AdminNav() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <nav className="flex flex-wrap gap-2">
+    <div className="flex items-center gap-2">
+      <nav className="flex items-center gap-2">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -46,7 +47,7 @@ export function AdminNav() {
               "rounded-lg px-4 py-2 text-sm font-medium transition",
               pathname === link.href
                 ? "bg-blue-600 text-white"
-                : "bg-white text-slate-700 hover:bg-slate-100",
+                : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
             )}
           >
             {link.label}
@@ -55,7 +56,7 @@ export function AdminNav() {
         <Link
           href="/kiosk"
           target="_blank"
-          className="rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+          className="rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
         >
           Preview Kiosk
         </Link>
@@ -64,12 +65,12 @@ export function AdminNav() {
         type="button"
         onClick={refreshDisplay}
         disabled={refreshing}
-        className="rounded-lg bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50"
+        className="rounded-lg bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
       >
         {refreshing ? "Refreshing..." : "Refresh Display"}
       </button>
       {refreshMessage ? (
-        <span className="text-sm text-violet-700">{refreshMessage}</span>
+        <span className="text-sm text-violet-700 dark:text-violet-300">{refreshMessage}</span>
       ) : null}
     </div>
   );

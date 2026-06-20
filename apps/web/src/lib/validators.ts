@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { KIOSK_BACKGROUND_STYLES } from "@/lib/kiosk-background";
 
 export const loginSchema = z.object({
   password: z.string().min(1),
@@ -35,6 +36,16 @@ export const manualEventSchema = z.object({
 
 export const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a hex color");
 
+export const googleFontFamilySchema = z
+  .string()
+  .trim()
+  .min(1, "Font name is required")
+  .max(100)
+  .regex(
+    /^[a-zA-Z0-9]+([a-zA-Z0-9 '&\-]*[a-zA-Z0-9])?$/,
+    "Must be a valid Google Font family name",
+  );
+
 export const settingsSchema = z.object({
   orgName: z.string().min(1).optional(),
   orgLogoUrl: z.string().optional().nullable(),
@@ -45,10 +56,15 @@ export const settingsSchema = z.object({
   kioskBackgroundColor: hexColorSchema.optional(),
   kioskTextColor: hexColorSchema.optional(),
   kioskMutedTextColor: hexColorSchema.optional(),
+  kioskPrimaryFont: googleFontFamilySchema.optional(),
+  kioskSecondaryFont: googleFontFamilySchema.optional(),
   breezeSubdomain: z.string().optional().nullable(),
   breezeApiKey: z.string().optional().nullable(),
   breezeCalendarIds: z.array(z.string()).optional(),
   kioskIdleTimeoutSeconds: z.number().int().min(0).max(3600).optional(),
+  kioskBackgroundAnimated: z.boolean().optional(),
+  kioskBackgroundStyle: z.enum(KIOSK_BACKGROUND_STYLES).optional(),
+  kioskBackgroundImageUrl: z.string().optional().nullable(),
 });
 
 export const allowedDomainSchema = z.object({

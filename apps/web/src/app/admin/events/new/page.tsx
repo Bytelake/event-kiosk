@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { EventForm } from "@/components/admin/event-form";
 
@@ -25,14 +25,11 @@ export default function NewEventPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-4xl px-6 py-8">
-          <div className="mb-8">
-            <AdminNav />
-            <h1 className="mt-4 text-3xl font-bold text-slate-900">New Manual Event</h1>
-          </div>
+      <div className="mx-auto max-w-6xl px-6 py-8">
+          <AdminPageHeader title="New Manual Event" />
+          <div className="mx-auto max-w-4xl">
           <EventForm onSave={handleSave} saving={saving} isBreeze={false} />
-        </div>
+          </div>
       </div>
     </AuthGuard>
   );

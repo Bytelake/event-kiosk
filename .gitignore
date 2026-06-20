@@ -13,3 +13,4 @@ out/
 apps/web/public/uploads/
 .DS_Store
 *.log
+test-image*

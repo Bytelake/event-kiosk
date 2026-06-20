@@ -41,11 +41,11 @@ log "Applying database schema updates..."
 bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}"
 
 log "Checking Electron shell..."
-sudo -u kiosk bash -lc "
-  set -euo pipefail
-  cd '${INSTALL_DIR}/shell'
-  npm install --omit=dev
-"
+kiosk_install_electron "${INSTALL_DIR}"
+if ! kiosk_electron_bin "${INSTALL_DIR}" >/dev/null; then
+  die "Electron install failed — bundled binary missing at ${INSTALL_DIR}/shell/node_modules.
+Run: sudo -u kiosk bash -lc 'cd ${INSTALL_DIR}/shell && npm install --omit=dev'"
+fi
 
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 

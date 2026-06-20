@@ -42,7 +42,7 @@
         border-radius: 12px;
         background: #334155;
         color: white;
-        font-size: 24px;
+        font-size: 31px;
         font-weight: 600;
         cursor: pointer;
         touch-action: manipulation;
@@ -53,8 +53,8 @@
       }
 
       .key svg {
-        width: 28px;
-        height: 28px;
+        width: 36px;
+        height: 36px;
       }
 
       .key svg path:not(.shift-caps-line) {
@@ -87,7 +87,7 @@
 
       .key-action {
         background: #2563eb;
-        font-size: 20px;
+        font-size: 26px;
       }
 
       .key-action:active {
@@ -96,7 +96,7 @@
 
       .key-secondary {
         background: #475569;
-        font-size: 18px;
+        font-size: 23px;
       }
 
       .key-secondary:active {
@@ -108,25 +108,76 @@
         background: #2563eb;
       }
 
-      .row-bot-layout {
-        justify-content: center;
+      .keyboard-grid {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        flex: 1;
+        min-height: 0;
+        margin: 0 auto;
+        width: 100%;
+        max-width: 100%;
       }
 
-      .key-square {
+      .keyboard-grid > .row {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+
+      .row-letter {
+        justify-content: flex-start;
+      }
+
+      .row-bot-middle {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: stretch;
+      }
+
+      .row-bot-middle .row-keys {
+        display: flex;
+        gap: 8px;
+      }
+
+      .row-bot-gap {
         flex: 0 0 auto;
         height: 100%;
+      }
+
+      .key-letter,
+      .key-square,
+      .key-modifier {
+        flex: 0 0 auto;
+        height: 100%;
+        min-width: 0;
+      }
+
+      .key-letter,
+      .key-square {
         aspect-ratio: 1;
         width: auto;
-        min-width: 0;
+      }
+
+      .row-keys {
+        display: flex;
+        gap: 8px;
+      }
+
+      .row-bot {
+        gap: 0;
       }
     </style>
   </head>
   <body>
     <div class="row" id="row-numbers"></div>
-    <div class="row" id="row-top"></div>
-    <div class="row" id="row-mid"></div>
-    <div class="row" id="row-bot"></div>
-    <div class="row" id="row-actions"></div>
+    <div class="keyboard-grid">
+      <div class="row" id="row-top"></div>
+      <div class="row" id="row-mid"></div>
+      <div class="row" id="row-bot"></div>
+      <div class="row" id="row-actions"></div>
+    </div>
 
     <script>
       var shifted = false;
@@ -227,9 +278,10 @@
       function renderRow(containerId, keys, extra, afterKeyPress) {
         var container = document.getElementById(containerId);
         container.innerHTML = "";
+        container.className = "row row-letter";
         keys.forEach(function (key) {
           container.appendChild(
-            makeKey(label(key), "", function () {
+            makeKey(label(key), "key-letter", function () {
               window.keyboardAPI.sendKey(label(key));
               if (afterKeyPress) afterKeyPress();
             }),
@@ -256,66 +308,62 @@
         );
       }
 
+      function makeBotGap() {
+        var gap = document.createElement("div");
+        gap.className = "row-bot-gap";
+        gap.setAttribute("aria-hidden", "true");
+        return gap;
+      }
+
       function renderLetters() {
         document.getElementById("row-numbers").classList.add("hidden");
 
-        var shiftBtn = makeIconKey(shiftIcon, "key-wide key-secondary", "Shift", function () {
+        var shiftBtn = makeIconKey(shiftIcon, "key-modifier key-secondary", "Shift", function () {
           onShiftPress(shiftBtn);
         });
-        updateShiftBtn(shiftBtn);
 
         var afterKey = function () {
           afterLetterTyped(shiftBtn);
         };
 
-        renderRow("row-top", row1, function (container) {
-          container.appendChild(
-            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
-              window.keyboardAPI.backspace();
-            }),
-          );
-        }, afterKey);
+        renderRow("row-top", row1, null, afterKey);
 
-        var mid = document.getElementById("row-mid");
-        mid.innerHTML = "";
-        mid.appendChild(shiftBtn);
-        row2.forEach(function (key) {
-          mid.appendChild(
-            makeKey(label(key), "", function () {
-              window.keyboardAPI.sendKey(label(key));
-              afterKey();
-            }),
-          );
-        });
-        mid.appendChild(
-          makeKey("@", "key-secondary", function () {
-            window.keyboardAPI.sendKey("@");
-          }),
-        );
+        renderRow("row-mid", row2, null, afterKey);
 
         var bot = document.getElementById("row-bot");
         bot.innerHTML = "";
-        bot.className = "row row-bot-layout";
+        bot.className = "row row-bot";
 
-        bot.appendChild(
-          makeKey("-", "key-square key-secondary", function () {
-            window.keyboardAPI.sendKey("-");
-          }),
-        );
+        bot.appendChild(shiftBtn);
+        updateShiftBtn(shiftBtn);
+        bot.appendChild(makeBotGap());
 
+        var letterMiddle = document.createElement("div");
+        letterMiddle.className = "row-bot-middle";
+
+        var letterGroup = document.createElement("div");
+        letterGroup.className = "row-keys";
         row3.forEach(function (key) {
-          bot.appendChild(
-            makeKey(label(key), "key-square", function () {
+          letterGroup.appendChild(
+            makeKey(label(key), "key-letter", function () {
               window.keyboardAPI.sendKey(label(key));
               afterKey();
             }),
           );
         });
+        letterMiddle.appendChild(letterGroup);
+        bot.appendChild(letterMiddle);
+        bot.appendChild(makeBotGap());
 
         bot.appendChild(
-          makeKey(".", "key-square key-secondary", function () {
-            window.keyboardAPI.sendKey(".");
-          }),
+          makeIconKey(
+            backspaceIcon,
+            "key-modifier key-secondary",
+            "Backspace",
+            function () {
+              window.keyboardAPI.backspace();
+            },
+          ),
         );
 
         renderActionRow("123", function () {
@@ -332,12 +380,16 @@
 
         renderRow("row-top", symbolRow1);
         renderRow("row-mid", symbolRow2);
-        document.getElementById("row-bot").className = "row";
         renderRow("row-bot", symbolRow3, function (container) {
           container.appendChild(
-            makeIconKey(backspaceIcon, "key-wide key-secondary", "Backspace", function () {
-              window.keyboardAPI.backspace();
-            }),
+            makeIconKey(
+              backspaceIcon,
+              "key-modifier key-secondary key-backspace-bot",
+              "Backspace",
+              function () {
+                window.keyboardAPI.backspace();
+              },
+            ),
           );
         });
 
@@ -347,37 +399,81 @@
         });
       }
 
-      function syncBotKeySize() {
+      function syncKeySizes() {
+        var grid = document.querySelector(".keyboard-grid");
+        var top = document.getElementById("row-top");
         var mid = document.getElementById("row-mid");
         var bot = document.getElementById("row-bot");
-        if (!mid || !bot.classList.contains("row-bot-layout")) return;
+        if (!mid || !grid) return;
 
-        var sample = mid.querySelector(".key:not(.key-wide)");
-        if (!sample) return;
-
-        var size = sample.offsetHeight;
+        var size = mid.offsetHeight;
         if (size < 1) return;
 
-        bot.querySelectorAll(".key-square").forEach(function (btn) {
+        var gap = 8;
+
+        document.querySelectorAll(".key-letter, .key-square").forEach(function (btn) {
           btn.style.width = size + "px";
           btn.style.height = size + "px";
           btn.style.flex = "0 0 " + size + "px";
         });
+
+        if (keyboardMode !== "letters" || !top) {
+          mid.style.paddingLeft = "0px";
+          grid.style.width =
+            top && top.querySelector(".key-letter")
+              ? 10 * size + 9 * gap + "px"
+              : "";
+          document.querySelectorAll(".key-modifier").forEach(function (btn) {
+            btn.style.width = Math.round(size * 1.45) + "px";
+            btn.style.height = size + "px";
+            btn.style.flex = "0 0 " + Math.round(size * 1.45) + "px";
+          });
+          return;
+        }
+
+        void top.offsetWidth;
+        var topWidth = 10 * size + 9 * gap;
+        var row2Pad = Math.round((size + gap) / 2);
+        var modW = Math.round(size * 1.4);
+        var modGap = Math.round(size * 0.1 + gap * 1.5);
+
+        grid.style.width = topWidth + "px";
+
+        mid.style.marginLeft = "0px";
+        mid.style.boxSizing = "border-box";
+        mid.style.width = "100%";
+        mid.style.paddingLeft = row2Pad + "px";
+
+        bot.style.width = "100%";
+
+        bot.querySelectorAll(".key-modifier").forEach(function (btn) {
+          btn.style.width = modW + "px";
+          btn.style.height = size + "px";
+          btn.style.flex = "0 0 " + modW + "px";
+        });
+
+        bot.querySelectorAll(".row-bot-gap").forEach(function (el) {
+          el.style.width = modGap + "px";
+          el.style.flex = "0 0 " + modGap + "px";
+        });
+      }
+
+      function syncLayout() {
+        syncKeySizes();
       }
 
       function render() {
         if (keyboardMode === "symbols") {
           renderSymbols();
+          requestAnimationFrame(syncLayout);
         } else {
           renderLetters();
-          requestAnimationFrame(syncBotKeySize);
+          requestAnimationFrame(syncLayout);
         }
       }
 
       window.addEventListener("resize", function () {
-        if (keyboardMode === "letters") {
-          requestAnimationFrame(syncBotKeySize);
-        }
+        requestAnimationFrame(syncLayout);
       });
 
       render();

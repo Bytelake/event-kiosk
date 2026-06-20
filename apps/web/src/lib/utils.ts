@@ -322,8 +322,8 @@ export function formatEventCardDateBadge(
 
     return {
       label: isCurrentMonth
-        ? formatEventDate(startAt).split(",")[0]
-        : format(start.date, "MMMM"),
+        ? format(start.date, "EEE").toUpperCase()
+        : format(start.date, "MMM").toUpperCase(),
       day: String(getWallClockDay(startAt)),
       time: formatBadgeTime(schedule.times),
     };
