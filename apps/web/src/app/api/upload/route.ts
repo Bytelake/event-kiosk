@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
 import { isAuthenticated } from "@/lib/auth";
+import { detectImageFormat, MAX_UPLOAD_BYTES } from "@/lib/upload-validation";
 import { uploadPublicUrl, writeUploadedImage } from "@/lib/uploads";
 
 export async function POST(request: NextRequest) {
@@ -16,13 +16,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "File must be an image" }, { status: 400 });
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ error: "File too large" }, { status: 413 });
   }
 
-  const ext = path.extname(file.name) || ".jpg";
   const buffer = Buffer.from(await file.arrayBuffer());
-  const filename = await writeUploadedImage(buffer, ext);
+
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ error: "File too large" }, { status: 413 });
+  }
+
+  const format = detectImageFormat(buffer);
+  if (!format) {
+    return NextResponse.json(
+      { error: "File must be a JPEG, PNG, GIF, or WebP image" },
+      { status: 400 },
+    );
+  }
+
+  const filename = await writeUploadedImage(buffer, format.ext);
 
   return NextResponse.json({ url: uploadPublicUrl(filename) });
 }
