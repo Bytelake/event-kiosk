@@ -1,7 +1,10 @@
+const rootPackage = require("../../package.json");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
   env: {
+    KIOSK_APP_VERSION: rootPackage.version,
     NEXT_PUBLIC_KIOSK_DESKTOP_MODE:
       process.env.KIOSK_DESKTOP_MODE === "true" ? "true" : "false",
   },

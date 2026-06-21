@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
+import { SystemMetricsPanel } from "@/components/admin/system-metrics-panel";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface DashboardData {
@@ -52,6 +53,10 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          <div className="mt-8">
+            <SystemMetricsPanel />
           </div>
 
           <div className="mt-6 flex gap-3">
