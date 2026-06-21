@@ -14,7 +14,7 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also
 ## Features
 
 - Touch-friendly kiosk UI for large displays
-- Admin panel for events, branding, and settings
+- Admin panel for managing events, branding, and settings
 - Fullscreen Electron shell with registration domain whitelist
 
 ## Supported platforms
@@ -93,8 +93,6 @@ Download from [GitHub Releases](https://github.com/Bytelake/event-kiosk/releases
 
 - `event-kiosk-alpine-amd64-*.tar.gz` — x86_64 PCs
 - `event-kiosk-alpine-arm64-*.tar.gz` — ARM SBCs
-
-Build on Alpine (musl) — do not reuse Debian tarballs on Alpine.
 
 ### 2. Install
 
