@@ -132,6 +132,7 @@ export async function extractFullBackup(buffer: Buffer): Promise<{
 }
 
 export async function restoreUploadsFromBackup(sourceDir: string): Promise<number> {
+  const { optimizeUploadedImage } = await import("@/lib/image-optimize");
   const uploadsDir = getUploadsDir();
   await mkdir(uploadsDir, { recursive: true });
 
@@ -146,7 +147,28 @@ export async function restoreUploadsFromBackup(sourceDir: string): Promise<numbe
     const sourcePath = path.join(sourceDir, entry.name);
     const targetPath = path.join(uploadsDir, entry.name);
     const fileBuffer = await readFile(sourcePath);
-    await writeFile(targetPath, fileBuffer);
+
+    const ext = path.extname(entry.name).toLowerCase();
+    const sourceExt =
+      ext === ".jpeg"
+        ? ".jpg"
+        : ext === ".jpg" || ext === ".png" || ext === ".gif" || ext === ".webp"
+          ? ext
+          : null;
+
+    if (sourceExt) {
+      try {
+        const optimized = await optimizeUploadedImage(fileBuffer, sourceExt, {
+          preserveExt: sourceExt,
+        });
+        await writeFile(targetPath, optimized.buffer);
+      } catch {
+        await writeFile(targetPath, fileBuffer);
+      }
+    } else {
+      await writeFile(targetPath, fileBuffer);
+    }
+
     restored++;
   }
 

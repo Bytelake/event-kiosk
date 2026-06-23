@@ -7,7 +7,7 @@ const nextConfig = {
   },
   experimental: {
     // Don't bundle Prisma — install native binaries on the target host during setup
-    serverComponentsExternalPackages: ["@prisma/client"],
+    serverComponentsExternalPackages: ["@prisma/client", "sharp"],
   },
 };
 

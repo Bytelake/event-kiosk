@@ -114,6 +114,15 @@ else
 fi
 echo ""
 
+echo "-- Image processing (sharp) --"
+if sudo -u kiosk bash -lc "cd '${INSTALL_DIR}/web' && node -e \"require('sharp')(Buffer.from([0xff,0xd8,0xff,0xd9])).metadata().then(() => process.exit(0)).catch(() => process.exit(1))\"" 2>/dev/null; then
+  echo "  sharp: OK"
+else
+  echo "  sharp: FAILED (image uploads will not work)"
+  echo "  fix: sudo bash ${INSTALL_DIR}/fix-sharp.sh && sudo systemctl restart kiosk-web"
+fi
+echo ""
+
 DISPLAY_ENV="$(kiosk_display_env)"
 if [[ -f "${DISPLAY_ENV}" ]]; then
   echo "-- Display --"

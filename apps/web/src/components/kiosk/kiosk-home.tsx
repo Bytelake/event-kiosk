@@ -9,6 +9,7 @@ import {
   formatKioskEventCardDisplay,
   cn,
 } from "@/lib/utils";
+import { preloadImageUrls } from "@/lib/preload-images";
 
 export function KioskHome() {
   const [events, setEvents] = useState<KioskEvent[]>([]);
@@ -23,6 +24,11 @@ export function KioskHome() {
       ]);
       setEvents(eventData);
       setSettings(settingsData);
+      preloadImageUrls([
+        settingsData.orgLogoUrl,
+        settingsData.kioskBackgroundImageUrl,
+        ...eventData.map((event) => event.imageUrl),
+      ]);
       setOffline(false);
     } catch {
       setOffline(true);

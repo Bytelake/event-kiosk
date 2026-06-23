@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
+import { optimizeUploadedImage } from "@/lib/image-optimize";
 import { detectImageFormat, MAX_UPLOAD_BYTES } from "@/lib/upload-validation";
 import { uploadPublicUrl, writeUploadedImage } from "@/lib/uploads";
 
@@ -34,7 +35,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const filename = await writeUploadedImage(buffer, format.ext);
-
-  return NextResponse.json({ url: uploadPublicUrl(filename) });
+  try {
+    const optimized = await optimizeUploadedImage(buffer, format.ext);
+    const filename = await writeUploadedImage(optimized.buffer, optimized.ext);
+    return NextResponse.json({ url: uploadPublicUrl(filename) });
+  } catch (error) {
+    console.error("[upload]", error);
+    const message = error instanceof Error ? error.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

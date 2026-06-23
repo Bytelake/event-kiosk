@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { fetchKioskEvent, type KioskEvent } from "@/lib/kiosk-api";
 import { openRegistration } from "@/lib/kiosk-shell";
+import { preloadImageUrls } from "@/lib/preload-images";
 import { formatKioskEventScheduleDisplay } from "@/lib/utils";
 
 export function KioskEventDetail() {
@@ -14,7 +15,10 @@ export function KioskEventDetail() {
   const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
-    fetchKioskEvent(params.id).then(setEvent);
+    fetchKioskEvent(params.id).then((event) => {
+      setEvent(event);
+      preloadImageUrls([event?.imageUrl]);
+    });
   }, [params.id]);
 
   const handleRegister = () => {

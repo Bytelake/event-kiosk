@@ -33,9 +33,8 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
   "${INSTALL_DIR}/diagnose.sh" \
   "${INSTALL_DIR}/setup-db.sh" \
   "${INSTALL_DIR}/fix-prisma.sh" \
+  "${INSTALL_DIR}/fix-sharp.sh" \
   "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
-
-chown -R kiosk:kiosk "${INSTALL_DIR}"
 
 log "Applying database schema updates..."
 bash "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}"

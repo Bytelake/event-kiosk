@@ -35,6 +35,7 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
   "${INSTALL_DIR}/diagnose.sh" \
   "${INSTALL_DIR}/setup-db.sh" \
   "${INSTALL_DIR}/fix-prisma.sh" \
+  "${INSTALL_DIR}/fix-sharp.sh" \
   "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
 chmod +x "${INSTALL_DIR}/openrc/"* 2>/dev/null || true
 
