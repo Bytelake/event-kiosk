@@ -6,6 +6,7 @@ import { ThemeSelector } from "@/components/admin/theme-selector";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SystemAboutSection } from "@/components/admin/system-about-section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface SettingsForm {
@@ -185,6 +186,10 @@ export default function AdminSettingsPage() {
     <AuthGuard>
       <div className="mx-auto max-w-6xl px-6 py-8">
         <AdminPageHeader title="Settings" />
+
+        <div className="mx-auto mb-6 max-w-4xl">
+          <SystemAboutSection />
+        </div>
 
         <form onSubmit={handleSave} className="mx-auto max-w-4xl space-y-6">
           <Card>
