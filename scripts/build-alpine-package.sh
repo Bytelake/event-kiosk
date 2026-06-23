@@ -35,6 +35,13 @@ if [[ -z "${PRERELEASE}" && -n "${KIOSK_PRERELEASE:-}" ]]; then
   esac
 fi
 
+if [[ -z "${PRERELEASE}" && -n "${npm_config_pre_release:-}" ]]; then
+  case "${npm_config_pre_release}" in
+    1 | true | yes) PRERELEASE="prerelease" ;;
+    *) PRERELEASE="${npm_config_pre_release}" ;;
+  esac
+fi
+
 if [[ -f /etc/os-release ]]; then
   # shellcheck disable=SC1091
   source /etc/os-release
@@ -69,6 +76,7 @@ log() { echo "[package:alpine] $*"; }
 
 if [[ -n "${PRERELEASE}" ]]; then
   log "Pre-release build (version label: ${VERSION_LABEL})"
+  export KIOSK_PACKAGE_VERSION="${VERSION_LABEL}"
 fi
 
 log "Building web app (standalone)..."

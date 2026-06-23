@@ -171,14 +171,21 @@ npm run package:alpine amd64
 npm run package:alpine arm64
 ```
 
-For local testing (not an official release), add `--pre-release` so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-arm64-0.0.2-prerelease.abc1234.tar.gz`):
+For local testing (not an official release), use a pre-release build so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-amd64-0.0.5-prerelease.abc1234.tar.gz`). The installed version shown in Admin → About uses the same label.
 
 ```bash
-npm run package:debian -- arm64 --pre-release
 npm run package:debian:prerelease -- amd64
-npm run package:debian -- amd64 --pre-release=test
-KIOSK_PRERELEASE=1 npm run package:debian -- arm64
+npm run package:debian:prerelease -- arm64
 ```
+
+These work without needing a `--` separator. You can also pass `--pre-release` explicitly, but npm requires `--` before script flags:
+
+```bash
+npm run package:debian -- amd64 --pre-release
+npm run package:debian -- amd64 --pre-release=test
+```
+
+Avoid `npm run package:debian amd64 --pre-release` (no `--`) — npm treats `--pre-release` as its own config and the script may not see it unless your npm version forwards `npm_config_pre_release`.
 
 Copy tarball to kiosk machine for testing, deployment:
 
