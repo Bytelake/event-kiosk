@@ -1,7 +1,30 @@
+import fs from "fs";
+import path from "path";
+
 export const GITHUB_REPO = "Bytelake/event-kiosk";
 
+const VERSION_FILE_RELATIVE_PATHS = [
+  ".kiosk-package-version",
+  "apps/web/.kiosk-package-version",
+];
+
+function readPackageVersionFile(): string | null {
+  for (const rel of VERSION_FILE_RELATIVE_PATHS) {
+    try {
+      const value = fs.readFileSync(path.join(process.cwd(), rel), "utf8").trim();
+      if (value) {
+        return value;
+      }
+    } catch {
+      // optional file — only present in packaged installs
+    }
+  }
+
+  return null;
+}
+
 export function getKioskVersion(): string {
-  return process.env.KIOSK_APP_VERSION ?? "0.0.0";
+  return readPackageVersionFile() ?? process.env.KIOSK_APP_VERSION ?? "0.0.0";
 }
 
 /** Compare numeric semver segments; ignores pre-release suffixes. */

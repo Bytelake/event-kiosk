@@ -68,14 +68,28 @@ ARCHIVE="${OUT_DIR}/${PACKAGE_NAME}.tar.gz"
 
 log() { echo "[package:debian] $*"; }
 
+write_package_version_file() {
+  echo "${VERSION_LABEL}" > "${ROOT}/apps/web/.kiosk-package-version"
+}
+
+stage_package_version_file() {
+  echo "${VERSION_LABEL}" > "${PACKAGE_ROOT}/web/.kiosk-package-version"
+  mkdir -p "${PACKAGE_ROOT}/web/apps/web"
+  echo "${VERSION_LABEL}" > "${PACKAGE_ROOT}/web/apps/web/.kiosk-package-version"
+}
+
 if [[ -n "${PRERELEASE}" ]]; then
   log "Pre-release build (version label: ${VERSION_LABEL})"
-  export KIOSK_PACKAGE_VERSION="${VERSION_LABEL}"
+else
+  log "Release build (version label: ${VERSION_LABEL})"
 fi
 
+write_package_version_file
 log "Building web app (standalone)..."
+rm -rf "${ROOT}/apps/web/.next"
 cd "${ROOT}/apps/web"
-npm run build
+KIOSK_PACKAGE_VERSION="${VERSION_LABEL}" npm run build
+rm -f "${ROOT}/apps/web/.kiosk-package-version"
 
 log "Building Electron shell..."
 cd "${ROOT}/apps/shell"
@@ -97,6 +111,7 @@ mkdir -p "${PACKAGE_ROOT}/web/prisma"
 rsync -a --exclude dev.db --exclude dev.db-journal \
   "${ROOT}/apps/web/prisma/" "${PACKAGE_ROOT}/web/prisma/"
 cp "${ROOT}/apps/web/.env.example" "${PACKAGE_ROOT}/web/.env.example"
+stage_package_version_file
 
 cp -R "${ROOT}/apps/shell/dist/." "${PACKAGE_ROOT}/shell/dist/"
 cp "${ROOT}/apps/shell/package.json" "${PACKAGE_ROOT}/shell/package.json"
