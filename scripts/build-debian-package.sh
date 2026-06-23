@@ -36,6 +36,15 @@ if [[ -z "${PRERELEASE}" && -n "${KIOSK_PRERELEASE:-}" ]]; then
   esac
 fi
 
+# npm run package:debian amd64 --pre-release (without `--`) passes --pre-release as
+# an npm config, not a script arg. npm exposes it as npm_config_pre_release.
+if [[ -z "${PRERELEASE}" && -n "${npm_config_pre_release:-}" ]]; then
+  case "${npm_config_pre_release}" in
+    1 | true | yes) PRERELEASE="prerelease" ;;
+    *) PRERELEASE="${npm_config_pre_release}" ;;
+  esac
+fi
+
 ARCH="${ARCH:-$(uname -m)}"
 case "${ARCH}" in
   x86_64 | amd64) ARCH_LABEL="amd64" ;;
@@ -61,6 +70,7 @@ log() { echo "[package:debian] $*"; }
 
 if [[ -n "${PRERELEASE}" ]]; then
   log "Pre-release build (version label: ${VERSION_LABEL})"
+  export KIOSK_PACKAGE_VERSION="${VERSION_LABEL}"
 fi
 
 log "Building web app (standalone)..."
