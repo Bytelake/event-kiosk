@@ -110,6 +110,7 @@ mkdir -p "${PACKAGE_ROOT}/web" "${PACKAGE_ROOT}/shell/dist" "${PACKAGE_ROOT}/bin
 STANDALONE="${ROOT}/apps/web/.next/standalone"
 cp -R "${STANDALONE}/." "${PACKAGE_ROOT}/web/"
 rm -rf "${PACKAGE_ROOT}/web/node_modules/@prisma" "${PACKAGE_ROOT}/web/node_modules/.prisma" 2>/dev/null || true
+rm -rf "${PACKAGE_ROOT}/web/node_modules/sharp" "${PACKAGE_ROOT}/web/node_modules/@img" 2>/dev/null || true
 rm -rf "${PACKAGE_ROOT}/web/apps/web/public/uploads" 2>/dev/null || true
 mkdir -p "${PACKAGE_ROOT}/web/apps/web/.next"
 cp -R "${ROOT}/apps/web/.next/static" "${PACKAGE_ROOT}/web/apps/web/.next/static"
@@ -135,12 +136,13 @@ cp "${ROOT}/deploy/alpine/package/lib/helpers.sh" "${PACKAGE_ROOT}/lib/helpers.s
 cp "${ROOT}/deploy/alpine/package/install.sh" "${PACKAGE_ROOT}/install.sh"
 cp "${ROOT}/deploy/alpine/package/update.sh" "${PACKAGE_ROOT}/update.sh"
 cp "${ROOT}/deploy/alpine/package/uninstall.sh" "${PACKAGE_ROOT}/uninstall.sh"
+cp "${ROOT}/deploy/common/fix-sharp.sh" "${PACKAGE_ROOT}/fix-sharp.sh"
 cp "${ROOT}/deploy/alpine/package/fix-prisma.sh" "${PACKAGE_ROOT}/fix-prisma.sh"
 cp "${ROOT}/deploy/alpine/package/fix-permissions.sh" "${PACKAGE_ROOT}/fix-permissions.sh"
 cp "${ROOT}/deploy/alpine/package/README.txt" "${PACKAGE_ROOT}/README.txt"
 
 chmod +x "${PACKAGE_ROOT}/install.sh" "${PACKAGE_ROOT}/update.sh" "${PACKAGE_ROOT}/uninstall.sh"
-chmod +x "${PACKAGE_ROOT}/fix-prisma.sh" "${PACKAGE_ROOT}/fix-permissions.sh" "${PACKAGE_ROOT}/setup-db.sh" "${PACKAGE_ROOT}/diagnose.sh"
+chmod +x "${PACKAGE_ROOT}/fix-prisma.sh" "${PACKAGE_ROOT}/fix-permissions.sh" "${PACKAGE_ROOT}/fix-sharp.sh" "${PACKAGE_ROOT}/setup-db.sh" "${PACKAGE_ROOT}/diagnose.sh"
 chmod +x "${PACKAGE_ROOT}/bin/"*.sh "${PACKAGE_ROOT}/openrc/"*
 
 mkdir -p "${OUT_DIR}"

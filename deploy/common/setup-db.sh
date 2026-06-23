@@ -63,6 +63,7 @@ if [[ "${MODE}" == "--generate-only" ]]; then
     export PRISMA_GENERATE_SKIP_AUTOINSTALL=1
     '${PRISMA_BIN}' generate --schema=prisma/schema.prisma
   "
+  kiosk_install_sharp "${INSTALL_DIR}"
   chown -R kiosk:kiosk "${INSTALL_DIR}"
   log "Prisma client ready (database untouched at ${DB_FILE})"
   exit 0
@@ -94,4 +95,5 @@ sudo -u kiosk bash -lc "
 "
 
 chown -R kiosk:kiosk "${INSTALL_DIR}" "${KIOSK_DATA_DIR}"
+kiosk_install_sharp "${INSTALL_DIR}"
 log "Database ready at ${DB_FILE}"

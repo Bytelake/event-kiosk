@@ -139,14 +139,14 @@ export default function AdminBrandingPage() {
 
     let orgLogoUrl = settings.orgLogoUrl || null;
     if (pendingLogoFile) {
-      const url = await uploadImageFile(pendingLogoFile);
-      if (!url) {
+      const result = await uploadImageFile(pendingLogoFile);
+      if (!result.ok) {
         setSaving(false);
-        setMessage("Logo upload failed");
+        setMessage(result.error);
         return;
       }
 
-      orgLogoUrl = url;
+      orgLogoUrl = result.url;
       setPendingLogoFile(null);
       setLogoPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -156,14 +156,14 @@ export default function AdminBrandingPage() {
 
     let kioskBackgroundImageUrl = settings.kioskBackgroundImageUrl || null;
     if (pendingBackgroundFile) {
-      const url = await uploadImageFile(pendingBackgroundFile);
-      if (!url) {
+      const result = await uploadImageFile(pendingBackgroundFile);
+      if (!result.ok) {
         setSaving(false);
-        setMessage("Background image upload failed");
+        setMessage(result.error);
         return;
       }
 
-      kioskBackgroundImageUrl = url;
+      kioskBackgroundImageUrl = result.url;
       setPendingBackgroundFile(null);
       setBackgroundPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);

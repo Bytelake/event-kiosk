@@ -80,7 +80,7 @@ chmod +x "${INSTALL_DIR}/bin/"*.sh \
   "${INSTALL_DIR}/update.sh" \
   "${INSTALL_DIR}/uninstall.sh" \
   "${INSTALL_DIR}/diagnose.sh" 2>/dev/null || true
-chmod +x "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/fix-prisma.sh" "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
+chmod +x "${INSTALL_DIR}/setup-db.sh" "${INSTALL_DIR}/fix-prisma.sh" "${INSTALL_DIR}/fix-sharp.sh" "${INSTALL_DIR}/fix-permissions.sh" 2>/dev/null || true
 chown -R kiosk:kiosk "${INSTALL_DIR}"
 
 ensure_data_dir

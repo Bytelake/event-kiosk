@@ -115,3 +115,19 @@ kiosk_install_electron() {
     npm install --omit=dev
   "
 }
+
+# sharp ships platform-specific binaries — install on the host like Prisma.
+kiosk_install_sharp() {
+  local root="${1:-${KIOSK_INSTALL_DIR:-/opt/kiosk}}"
+  local web="${root}/web"
+  [[ -d "${web}" ]] || return 0
+
+  echo "[sharp] Installing sharp for host architecture..."
+  sudo -u kiosk bash -lc "
+    set -euo pipefail
+    cd '${web}'
+    rm -rf node_modules/sharp node_modules/@img 2>/dev/null || true
+    npm install sharp@0.33.5 --omit=dev --no-package-lock
+    node -e \"require('sharp')(Buffer.from([0xff,0xd8,0xff,0xd9])).metadata().then(() => process.exit(0)).catch((error) => { console.error(error); process.exit(1); })\"
+  "
+}

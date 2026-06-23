@@ -36,6 +36,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     allDay: false,
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
@@ -98,17 +99,21 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     let imageUrl = form.imageUrl || null;
     if (pendingImageFile) {
       setUploading(true);
-      const url = await uploadImageFile(pendingImageFile);
+      setUploadError("");
+      const result = await uploadImageFile(pendingImageFile);
       setUploading(false);
-      if (!url) return;
+      if (!result.ok) {
+        setUploadError(result.error);
+        return;
+      }
 
-      imageUrl = url;
+      imageUrl = result.url;
       setPendingImageFile(null);
       setImagePreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
-      setForm((f) => ({ ...f, imageUrl: url }));
+      setForm((f) => ({ ...f, imageUrl: result.url }));
     }
 
     await onSave({
@@ -316,6 +321,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
               }}
             />
             {uploading && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Uploading...</p>}
+            {uploadError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{uploadError}</p>
+            )}
             {displayImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
