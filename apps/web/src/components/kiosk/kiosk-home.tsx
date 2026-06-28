@@ -3,7 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, ChevronRight, WifiOff } from "lucide-react";
-import { fetchKioskEvents, fetchPublicSettings, type KioskEvent, type KioskSettings } from "@/lib/kiosk-api";
+import {
+  fetchKioskEvents,
+  fetchPublicSettings,
+  getCachedKioskEvents,
+  getCachedKioskSettings,
+  type KioskEvent,
+  type KioskSettings,
+} from "@/lib/kiosk-api";
 import {
   formatEventCardDateBadge,
   formatKioskEventCardDisplay,
@@ -12,8 +19,13 @@ import {
 import { preloadImageUrls } from "@/lib/preload-images";
 
 export function KioskHome() {
-  const [events, setEvents] = useState<KioskEvent[]>([]);
-  const [settings, setSettings] = useState<KioskSettings | null>(null);
+  const [events, setEvents] = useState<KioskEvent[]>(
+    () => getCachedKioskEvents() ?? [],
+  );
+  const [settings, setSettings] = useState<KioskSettings | null>(
+    () => getCachedKioskSettings(),
+  );
+  const [loaded, setLoaded] = useState(() => getCachedKioskEvents() !== null);
   const [offline, setOffline] = useState(false);
 
   const load = useCallback(async () => {
@@ -29,8 +41,10 @@ export function KioskHome() {
         settingsData.kioskBackgroundImageUrl,
         ...eventData.map((event) => event.imageUrl),
       ]);
+      setLoaded(true);
       setOffline(false);
     } catch {
+      setLoaded(true);
       setOffline(true);
     }
   }, []);
@@ -81,7 +95,9 @@ export function KioskHome() {
 
       <section>
         <SectionHeading>All Events</SectionHeading>
-        {events.length === 0 ? (
+        {!loaded && events.length === 0 ? (
+          <LoadingState />
+        ) : events.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -110,6 +126,14 @@ function OfflineBanner() {
       <p className="text-base text-amber-900">
         <strong>Connection unavailable</strong> — showing last loaded events
       </p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="kiosk-on-bg kiosk-on-bg-muted flex min-h-[220px] items-center justify-center rounded-3xl bg-white/90 px-8 py-16 text-xl">
+      Loading events…
     </div>
   );
 }

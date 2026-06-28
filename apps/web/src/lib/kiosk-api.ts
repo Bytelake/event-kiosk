@@ -31,10 +31,24 @@ export type KioskSettings = KioskColorScheme &
     kioskBackgroundImageUrl: string | null;
   };
 
+/** In-memory cache so kiosk home can render instantly when navigating back. */
+let cachedKioskEvents: KioskEvent[] | null = null;
+let cachedKioskSettings: KioskSettings | null = null;
+
+export function getCachedKioskEvents(): KioskEvent[] | null {
+  return cachedKioskEvents;
+}
+
+export function getCachedKioskSettings(): KioskSettings | null {
+  return cachedKioskSettings;
+}
+
 export async function fetchKioskEvents(): Promise<KioskEvent[]> {
   const res = await fetch("/api/events?kiosk=true", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load events");
-  return res.json();
+  const events = (await res.json()) as KioskEvent[];
+  cachedKioskEvents = events;
+  return events;
 }
 
 export async function fetchKioskEvent(id: string): Promise<KioskEvent | null> {
@@ -85,5 +99,7 @@ export function parsePublicSettings(data: {
 export async function fetchPublicSettings(): Promise<KioskSettings> {
   const res = await fetch("/api/settings", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load settings");
-  return parsePublicSettings(await res.json());
+  const settings = parsePublicSettings(await res.json());
+  cachedKioskSettings = settings;
+  return settings;
 }
