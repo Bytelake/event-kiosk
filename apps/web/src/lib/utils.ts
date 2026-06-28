@@ -54,6 +54,27 @@ export function eventIsAllDay(
   return isWallClockMidnight(endAt);
 }
 
+/** Whether an event's schedule has fully ended (kiosk hiding and auto-archive). */
+export function eventHasEnded(
+  startAt: Date | string,
+  endAt: Date | string | null | undefined,
+  allDay = false,
+  now: Date = wallClockNow(),
+): boolean {
+  const effectiveEnd = endAt ?? startAt;
+  if (eventIsAllDay(allDay, startAt, endAt)) {
+    const end = wallClockParts(effectiveEnd);
+    const current = wallClockParts(now);
+    if (current.year !== end.year) return current.year > end.year;
+    if (current.month !== end.month) return current.month > end.month;
+    return current.day > end.day;
+  }
+
+  const endDate =
+    typeof effectiveEnd === "string" ? parseISO(effectiveEnd) : effectiveEnd;
+  return endDate < now;
+}
+
 /** Current wall-clock time on this device, encoded the same way as event datetimes. */
 export function wallClockNow(): Date {
   const now = new Date();
