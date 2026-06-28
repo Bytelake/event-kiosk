@@ -75,6 +75,21 @@ export function eventHasEnded(
   return endDate < now;
 }
 
+/** Whether an event should still appear on the kiosk. */
+export function eventIsActive(
+  startAt: Date | string,
+  endAt: Date | string | null | undefined,
+  allDay = false,
+  now: Date = wallClockNow(),
+): boolean {
+  return !eventHasEnded(startAt, endAt, allDay, now);
+}
+
+export function wallClockStartOfDay(now: Date): Date {
+  const current = wallClockParts(now);
+  return new Date(Date.UTC(current.year, current.month, current.day, 0, 0, 0, 0));
+}
+
 /** Current wall-clock time on this device, encoded the same way as event datetimes. */
 export function wallClockNow(): Date {
   const now = new Date();

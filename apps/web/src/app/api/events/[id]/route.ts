@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { serializeEvent } from "@/lib/event-serialize";
-import { wallClockNow } from "@/lib/utils";
+import { eventIsActive, wallClockNow } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +20,7 @@ export async function GET(
     if (
       event.status !== "published" ||
       !event.kioskVisible ||
-      event.startAt < now
+      !eventIsActive(event.startAt, event.endAt, event.allDay, now)
     ) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
