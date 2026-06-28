@@ -4,7 +4,12 @@ import { isAuthenticated } from "@/lib/auth";
 import { serializeEvent } from "@/lib/event-serialize";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { archivePastEventsIfDue } from "@/lib/archive-past-events";
-import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
+import {
+  eventIsActive,
+  parseWallClockDatetime,
+  wallClockNow,
+  wallClockStartOfDay,
+} from "@/lib/utils";
 import { manualEventSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
@@ -14,14 +19,20 @@ export async function GET(request: NextRequest) {
   const now = wallClockNow();
 
   if (kiosk) {
-    const events = await prisma.event.findMany({
+    const candidates = await prisma.event.findMany({
       where: {
         status: "published",
         kioskVisible: true,
-        startAt: { gte: now },
+        OR: [
+          { endAt: { gte: now } },
+          { endAt: null, startAt: { gte: wallClockStartOfDay(now) } },
+        ],
       },
       orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { startAt: "asc" }],
     });
+    const events = candidates.filter((event) =>
+      eventIsActive(event.startAt, event.endAt, event.allDay, now),
+    );
     return NextResponse.json(events.map(serializeEvent));
   }
 
