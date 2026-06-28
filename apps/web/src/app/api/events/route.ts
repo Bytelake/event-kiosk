@@ -3,12 +3,14 @@ import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { serializeEvent } from "@/lib/event-serialize";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
+import { archivePastEventsIfDue } from "@/lib/archive-past-events";
 import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
 import { manualEventSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
   const status = request.nextUrl.searchParams.get("status");
+  await archivePastEventsIfDue();
   const now = wallClockNow();
 
   if (kiosk) {
