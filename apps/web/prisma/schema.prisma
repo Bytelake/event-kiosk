@@ -65,6 +65,11 @@ model Settings {
   kioskBackgroundStyle    String   @default("gradient")
   kioskBackgroundImageUrl String?
   registrationDomainEnforcement Boolean @default(true)
+  kioskDisplayEnabled         Boolean @default(true)
+  kioskDisplayScheduleEnabled Boolean @default(false)
+  kioskDisplayOnTime          String  @default("07:00")
+  kioskDisplayOffTime         String  @default("22:00")
+  kioskDisplayIdleOffSeconds  Int     @default(0)
   updatedAt              DateTime @updatedAt
 }
 

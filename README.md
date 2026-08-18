@@ -15,6 +15,7 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also
 
 - Touch-friendly kiosk UI for large displays
 - Admin panel for managing events, branding, and settings
+- HDMI display sleep (manual, scheduled, or idle) so the monitor can power down while the PC stays on
 - Fullscreen Electron shell with registration domain whitelist
 
 ## Supported platforms
@@ -140,6 +141,16 @@ This starts the Next.js dev server and Electron shell together. Admin is still a
 Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor) when using `npm run dev` without the shell.
 
 Desktop mode disables hidden cursor styling. The idle timeout still follows the value in Admin → Settings (set to `0` to disable during local dev). Production kiosk behavior is unchanged when the flag is unset or `false`.
+
+### Display sleep (HDMI)
+
+On a deployed Linux kiosk, **Admin → Settings → Display output** can sleep the monitor while the PC keeps running:
+
+- Uncheck **HDMI output enabled** to sleep the display immediately (admin on a phone still works).
+- Enable **Sleep on a daily schedule** to wake and sleep at set times (uses the kiosk PC clock/timezone).
+- **Sleep after idle** turns HDMI off after a period without touch; touch wakes it during scheduled on hours.
+
+The kiosk writes DRM DPMS so HDMI actually stops signaling, which lets most monitors enter their own power-save mode and reduces burn-in. After updating, restart `kiosk-display` (or `kiosk-shell` on X11) once so the helper can grant the kiosk user permission to control the outputs.
 
 #### Screenshots for docs
 

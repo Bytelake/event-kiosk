@@ -42,6 +42,8 @@ su -c 'rc-service kiosk-display restart'
 | `--display=x11` | Electron on X11 (`DISPLAY=:0`) |
 | `--rotation left` | Portrait monitor (`right`, `inverted`, `normal`) |
 
+After install, **Admin → Settings → Display output** can sleep HDMI on a schedule or after idle so the monitor can power down while the PC stays on.
+
 ## Install from source
 
 ```bash
