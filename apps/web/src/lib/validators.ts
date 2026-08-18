@@ -56,6 +56,7 @@ export const settingsSchema = z.object({
   registrationDomainEnforcement: z.boolean().optional(),
   kioskDisplayEnabled: z.boolean().optional(),
   kioskDisplayScheduleEnabled: z.boolean().optional(),
+  kioskDisplayOnDays: z.array(z.number().int().min(0).max(6)).min(1).max(7).optional(),
   kioskDisplayOnTime: hhMmSchema.optional(),
   kioskDisplayOffTime: hhMmSchema.optional(),
   kioskDisplayIdleOffSeconds: z.number().int().min(0).max(86_400).optional(),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSettings, prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { applyScheduledDisplayPower } from "@/lib/display-power";
+import { parseDisplayOnDays, stringifyDisplayOnDays } from "@/lib/display-schedule";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { settingsSchema } from "@/lib/validators";
 
@@ -25,6 +26,7 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     registrationDomainEnforcement: settings.registrationDomainEnforcement,
     kioskDisplayEnabled: settings.kioskDisplayEnabled,
     kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
+    kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
     kioskDisplayOnTime: settings.kioskDisplayOnTime,
     kioskDisplayOffTime: settings.kioskDisplayOffTime,
     kioskDisplayIdleOffSeconds: settings.kioskDisplayIdleOffSeconds,
@@ -79,6 +81,10 @@ export async function PATCH(request: Request) {
       registrationDomainEnforcement: data.registrationDomainEnforcement,
       kioskDisplayEnabled: data.kioskDisplayEnabled,
       kioskDisplayScheduleEnabled: data.kioskDisplayScheduleEnabled,
+      kioskDisplayOnDays:
+        data.kioskDisplayOnDays !== undefined
+          ? stringifyDisplayOnDays(data.kioskDisplayOnDays)
+          : undefined,
       kioskDisplayOnTime: data.kioskDisplayOnTime,
       kioskDisplayOffTime: data.kioskDisplayOffTime,
       kioskDisplayIdleOffSeconds: data.kioskDisplayIdleOffSeconds,
@@ -97,6 +103,7 @@ export async function PATCH(request: Request) {
   if (
     data.kioskDisplayEnabled !== undefined ||
     data.kioskDisplayScheduleEnabled !== undefined ||
+    data.kioskDisplayOnDays !== undefined ||
     data.kioskDisplayOnTime !== undefined ||
     data.kioskDisplayOffTime !== undefined ||
     data.kioskDisplayIdleOffSeconds !== undefined

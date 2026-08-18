@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SystemAboutSection } from "@/components/admin/system-about-section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { parseDisplayOnDays, WEEKDAYS } from "@/lib/display-schedule";
 
 interface SettingsForm {
   kioskIdleTimeoutSeconds: number;
   registrationDomainEnforcement: boolean;
   kioskDisplayEnabled: boolean;
   kioskDisplayScheduleEnabled: boolean;
+  kioskDisplayOnDays: number[];
   kioskDisplayOnTime: string;
   kioskDisplayOffTime: string;
   kioskDisplayIdleOffMinutes: number;
@@ -38,6 +40,7 @@ function settingsFromApi(settingsData: {
   registrationDomainEnforcement?: boolean;
   kioskDisplayEnabled?: boolean;
   kioskDisplayScheduleEnabled?: boolean;
+  kioskDisplayOnDays?: number[] | string;
   kioskDisplayOnTime?: string;
   kioskDisplayOffTime?: string;
   kioskDisplayIdleOffSeconds?: number;
@@ -47,6 +50,7 @@ function settingsFromApi(settingsData: {
     registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
     kioskDisplayEnabled: settingsData.kioskDisplayEnabled ?? true,
     kioskDisplayScheduleEnabled: settingsData.kioskDisplayScheduleEnabled ?? false,
+    kioskDisplayOnDays: parseDisplayOnDays(settingsData.kioskDisplayOnDays),
     kioskDisplayOnTime: settingsData.kioskDisplayOnTime ?? "07:00",
     kioskDisplayOffTime: settingsData.kioskDisplayOffTime ?? "22:00",
     kioskDisplayIdleOffMinutes: Math.round((settingsData.kioskDisplayIdleOffSeconds ?? 0) / 60),
@@ -115,6 +119,7 @@ export default function AdminSettingsPage() {
       registrationDomainEnforcement: settings.registrationDomainEnforcement,
       kioskDisplayEnabled: settings.kioskDisplayEnabled,
       kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
+      kioskDisplayOnDays: settings.kioskDisplayOnDays,
       kioskDisplayOnTime: toHhMm(settings.kioskDisplayOnTime) || "07:00",
       kioskDisplayOffTime: toHhMm(settings.kioskDisplayOffTime) || "22:00",
       kioskDisplayIdleOffSeconds: Math.max(0, settings.kioskDisplayIdleOffMinutes) * 60,
@@ -349,13 +354,54 @@ export default function AdminSettingsPage() {
                   }
                 />
                 <span>
-                  <span className="font-medium">Sleep on a daily schedule</span>
+                  <span className="font-medium">Use a weekly schedule</span>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Automatically wake and sleep the monitor at the times below, using this PC&apos;s
-                    clock.
+                    Keep the monitor on during the hours below on selected days (defaults to
+                    Sunday). Other days stay off unless someone touches the screen.
                   </p>
                 </span>
               </label>
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  On these days
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map((day) => {
+                    const checked = settings.kioskDisplayOnDays.includes(day.value);
+                    return (
+                      <label
+                        key={day.value}
+                        className={`inline-flex items-center rounded-lg border px-3 py-2 text-sm ${
+                          settings.kioskDisplayScheduleEnabled
+                            ? "cursor-pointer border-slate-200 dark:border-slate-700"
+                            : "cursor-not-allowed border-slate-100 text-slate-400 dark:border-slate-800"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="mr-2"
+                          disabled={!settings.kioskDisplayScheduleEnabled}
+                          checked={checked}
+                          onChange={(e) =>
+                            setSettings((s) => {
+                              if (!s) return s;
+                              const next = e.target.checked
+                                ? [...s.kioskDisplayOnDays, day.value]
+                                : s.kioskDisplayOnDays.filter((value) => value !== day.value);
+                              return {
+                                ...s,
+                                kioskDisplayOnDays:
+                                  next.length > 0 ? next.sort((a, b) => a - b) : s.kioskDisplayOnDays,
+                              };
+                            })
+                          }
+                        />
+                        {day.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -405,8 +451,9 @@ export default function AdminSettingsPage() {
                   }
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  After this long with no touch, sleep the monitor. Touch wakes it during scheduled
-                  on hours. Set to 0 to keep the display on whenever HDMI output is enabled.
+                  On unscheduled days the monitor stays off until someone touches it, then sleeps
+                  again after this many minutes. During scheduled on hours it stays on. Set to 0 to
+                  leave the monitor off on unscheduled days.
                 </p>
               </div>
             </CardContent>

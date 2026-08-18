@@ -147,8 +147,8 @@ Desktop mode disables hidden cursor styling. The idle timeout still follows the 
 On a deployed Linux kiosk, **Admin → Settings → Display output** can sleep the monitor while the PC keeps running:
 
 - Uncheck **HDMI output enabled** to sleep the display immediately (admin on a phone still works).
-- Enable **Sleep on a daily schedule** to wake and sleep at set times (uses the kiosk PC clock/timezone).
-- **Sleep after idle** turns HDMI off after a period without touch; touch wakes it during scheduled on hours.
+- Enable **Use a weekly schedule** to keep the monitor on during set hours on selected days (Sunday by default). Other days stay off.
+- **Sleep after idle** on unscheduled days: a touch wakes the monitor, then it sleeps again so it is not left on all week.
 
 The kiosk writes DRM DPMS so HDMI actually stops signaling, which lets most monitors enter their own power-save mode and reduces burn-in. After updating, restart `kiosk-display` (or `kiosk-shell` on X11) once so the helper can grant the kiosk user permission to control the outputs.
 

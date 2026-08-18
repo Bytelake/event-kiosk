@@ -13,6 +13,7 @@ const APPLY_TIMEOUT_MS = 8_000;
 export interface DisplayPowerSettings {
   kioskDisplayEnabled: boolean;
   kioskDisplayScheduleEnabled: boolean;
+  kioskDisplayOnDays: number[];
   kioskDisplayOnTime: string;
   kioskDisplayOffTime: string;
   kioskDisplayIdleOffSeconds: number;
@@ -21,13 +22,14 @@ export interface DisplayPowerSettings {
 const defaults: DisplayPowerSettings = {
   kioskDisplayEnabled: true,
   kioskDisplayScheduleEnabled: false,
+  kioskDisplayOnDays: [0],
   kioskDisplayOnTime: "07:00",
   kioskDisplayOffTime: "22:00",
   kioskDisplayIdleOffSeconds: 0,
 };
 
 let settings: DisplayPowerSettings = { ...defaults };
-let lastActivityAt = Date.now();
+let lastActivityAt: number | null = null;
 let appliedOn: boolean | null = null;
 let applying = false;
 
@@ -35,6 +37,27 @@ function parseHhMm(value: string): number | null {
   const match = HH_MM.exec(value.trim());
   if (!match) return null;
   return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function parseDisplayOnDays(value: unknown): number[] {
+  let raw: unknown = value;
+  if (typeof value === "string") {
+    try {
+      raw = JSON.parse(value);
+    } catch {
+      return [0];
+    }
+  }
+  if (!Array.isArray(raw)) return [0];
+  const days = [
+    ...new Set(
+      raw.filter(
+        (day): day is number =>
+          typeof day === "number" && Number.isInteger(day) && day >= 0 && day <= 6,
+      ),
+    ),
+  ].sort((a, b) => a - b);
+  return days.length > 0 ? days : [0];
 }
 
 function isInDisplayHours(onTime: string, offTime: string, now = new Date()): boolean {
@@ -49,18 +72,26 @@ function isInDisplayHours(onTime: string, offTime: string, now = new Date()): bo
 
 function desiredDisplayOn(now = new Date()): boolean {
   if (!settings.kioskDisplayEnabled) return false;
-  if (
-    settings.kioskDisplayScheduleEnabled &&
-    !isInDisplayHours(settings.kioskDisplayOnTime, settings.kioskDisplayOffTime, now)
-  ) {
-    return false;
+
+  const idleMs = settings.kioskDisplayIdleOffSeconds * 1000;
+  const idleExpired =
+    idleMs > 0 && lastActivityAt != null && Date.now() - lastActivityAt >= idleMs;
+
+  if (settings.kioskDisplayScheduleEnabled) {
+    const scheduledDay = settings.kioskDisplayOnDays.includes(now.getDay());
+    const inHours = isInDisplayHours(
+      settings.kioskDisplayOnTime,
+      settings.kioskDisplayOffTime,
+      now,
+    );
+
+    if (scheduledDay && inHours) return true;
+    if (scheduledDay && !inHours) return false;
+    if (idleMs <= 0 || lastActivityAt == null) return false;
+    return !idleExpired;
   }
-  if (
-    settings.kioskDisplayIdleOffSeconds > 0 &&
-    Date.now() - lastActivityAt >= settings.kioskDisplayIdleOffSeconds * 1000
-  ) {
-    return false;
-  }
+
+  if (lastActivityAt != null && idleExpired) return false;
   return true;
 }
 
@@ -116,6 +147,7 @@ function parseSettings(data: Partial<DisplayPowerSettings>): DisplayPowerSetting
       typeof data.kioskDisplayScheduleEnabled === "boolean"
         ? data.kioskDisplayScheduleEnabled
         : defaults.kioskDisplayScheduleEnabled,
+    kioskDisplayOnDays: parseDisplayOnDays(data.kioskDisplayOnDays),
     kioskDisplayOnTime:
       typeof data.kioskDisplayOnTime === "string" && parseHhMm(data.kioskDisplayOnTime) !== null
         ? data.kioskDisplayOnTime
@@ -136,6 +168,7 @@ function settingsEqual(a: DisplayPowerSettings, b: DisplayPowerSettings): boolea
   return (
     a.kioskDisplayEnabled === b.kioskDisplayEnabled &&
     a.kioskDisplayScheduleEnabled === b.kioskDisplayScheduleEnabled &&
+    a.kioskDisplayOnDays.join(",") === b.kioskDisplayOnDays.join(",") &&
     a.kioskDisplayOnTime === b.kioskDisplayOnTime &&
     a.kioskDisplayOffTime === b.kioskDisplayOffTime &&
     a.kioskDisplayIdleOffSeconds === b.kioskDisplayIdleOffSeconds

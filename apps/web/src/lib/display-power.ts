@@ -4,6 +4,7 @@ import path from "path";
 import { promisify } from "util";
 import {
   desiredDisplayOn,
+  parseDisplayOnDays,
   type DisplayPowerSettings,
 } from "@/lib/display-schedule";
 import { isDesktopMode } from "@/lib/kiosk-mode";
@@ -48,10 +49,15 @@ function parseStatusOutput(stdout: string): { on: boolean | null; method: string
   return { on, method: method === "none" ? null : method };
 }
 
-function settingsToDisplayPower(settings: DisplayPowerSettings): DisplayPowerSettings {
+function settingsToDisplayPower(
+  settings: Omit<DisplayPowerSettings, "kioskDisplayOnDays"> & {
+    kioskDisplayOnDays: DisplayPowerSettings["kioskDisplayOnDays"] | string;
+  },
+): DisplayPowerSettings {
   return {
     kioskDisplayEnabled: settings.kioskDisplayEnabled,
     kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
+    kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
     kioskDisplayOnTime: settings.kioskDisplayOnTime,
     kioskDisplayOffTime: settings.kioskDisplayOffTime,
     kioskDisplayIdleOffSeconds: settings.kioskDisplayIdleOffSeconds,
@@ -82,7 +88,7 @@ export async function readDisplayHardwareStatus(): Promise<DisplayPowerHardware>
 }
 
 export async function applyScheduledDisplayPower(
-  settings: DisplayPowerSettings,
+  settings: Parameters<typeof settingsToDisplayPower>[0],
 ): Promise<DisplayPowerHardware> {
   if (isDesktopMode() || process.platform !== "linux") {
     return { on: null, method: null, available: false, error: null };

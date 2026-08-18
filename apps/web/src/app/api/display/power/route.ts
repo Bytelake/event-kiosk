@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
 import { getSettings } from "@/lib/db";
 import { applyScheduledDisplayPower, readDisplayHardwareStatus } from "@/lib/display-power";
-import { desiredDisplayOn } from "@/lib/display-schedule";
+import { desiredDisplayOn, parseDisplayOnDays } from "@/lib/display-schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +14,13 @@ export async function GET() {
 
   const settings = await getSettings();
   const hardware = await readDisplayHardwareStatus();
+  const displaySettings = {
+    ...settings,
+    kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
+  };
 
   return NextResponse.json({
-    desiredOn: desiredDisplayOn(settings),
+    desiredOn: desiredDisplayOn(displaySettings),
     hardwareOn: hardware.on,
     available: hardware.available,
     method: hardware.method,
@@ -32,9 +36,13 @@ export async function POST() {
 
   const settings = await getSettings();
   const applied = await applyScheduledDisplayPower(settings);
+  const displaySettings = {
+    ...settings,
+    kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
+  };
 
   return NextResponse.json({
-    desiredOn: desiredDisplayOn(settings),
+    desiredOn: desiredDisplayOn(displaySettings),
     hardwareOn: applied.on,
     available: applied.available,
     method: applied.method,

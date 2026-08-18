@@ -67,6 +67,7 @@ model Settings {
   registrationDomainEnforcement Boolean @default(true)
   kioskDisplayEnabled         Boolean @default(true)
   kioskDisplayScheduleEnabled Boolean @default(false)
+  kioskDisplayOnDays          String  @default("[0]")
   kioskDisplayOnTime          String  @default("07:00")
   kioskDisplayOffTime         String  @default("22:00")
   kioskDisplayIdleOffSeconds  Int     @default(0)
