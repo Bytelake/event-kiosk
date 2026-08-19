@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSettings, prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
+import { applyScheduledDisplayPower } from "@/lib/display-power";
+import { parseDisplayOnDays, stringifyDisplayOnDays } from "@/lib/display-schedule";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { settingsSchema } from "@/lib/validators";
 
@@ -22,6 +24,12 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskBackgroundStyle: settings.kioskBackgroundStyle,
     kioskBackgroundImageUrl: settings.kioskBackgroundImageUrl,
     registrationDomainEnforcement: settings.registrationDomainEnforcement,
+    kioskDisplayEnabled: settings.kioskDisplayEnabled,
+    kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
+    kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
+    kioskDisplayOnTime: settings.kioskDisplayOnTime,
+    kioskDisplayOffTime: settings.kioskDisplayOffTime,
+    kioskDisplayIdleOffSeconds: settings.kioskDisplayIdleOffSeconds,
   };
 }
 
@@ -71,6 +79,15 @@ export async function PATCH(request: Request) {
       kioskBackgroundStyle: data.kioskBackgroundStyle,
       kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
       registrationDomainEnforcement: data.registrationDomainEnforcement,
+      kioskDisplayEnabled: data.kioskDisplayEnabled,
+      kioskDisplayScheduleEnabled: data.kioskDisplayScheduleEnabled,
+      kioskDisplayOnDays:
+        data.kioskDisplayOnDays !== undefined
+          ? stringifyDisplayOnDays(data.kioskDisplayOnDays)
+          : undefined,
+      kioskDisplayOnTime: data.kioskDisplayOnTime,
+      kioskDisplayOffTime: data.kioskDisplayOffTime,
+      kioskDisplayIdleOffSeconds: data.kioskDisplayIdleOffSeconds,
       settingsUpdatedAt: new Date(),
     },
   });
@@ -81,6 +98,19 @@ export async function PATCH(request: Request) {
 
   if (previousBackgroundImageUrl !== settings.kioskBackgroundImageUrl) {
     await deleteUploadIfUnreferenced(previousBackgroundImageUrl);
+  }
+
+  if (
+    data.kioskDisplayEnabled !== undefined ||
+    data.kioskDisplayScheduleEnabled !== undefined ||
+    data.kioskDisplayOnDays !== undefined ||
+    data.kioskDisplayOnTime !== undefined ||
+    data.kioskDisplayOffTime !== undefined ||
+    data.kioskDisplayIdleOffSeconds !== undefined
+  ) {
+    void applyScheduledDisplayPower(settings).catch((err) => {
+      console.warn("[display-power] Failed to apply HDMI power after settings save:", err);
+    });
   }
 
   return NextResponse.json(serializePublicSettings(settings));

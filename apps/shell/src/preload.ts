@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld("kioskShell", {
   isElectron: true,
   openRegistration: (url: string) => ipcRenderer.send("open-registration", url),
   closeRegistration: () => ipcRenderer.send("close-registration"),
+  notifyActivity: () => ipcRenderer.send("kiosk-display-activity"),
 });
 
 contextBridge.exposeInMainWorld("__kioskInput", {

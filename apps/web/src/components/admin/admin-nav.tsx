@@ -23,6 +23,31 @@ export function AdminNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState("");
+  const [displayEnabled, setDisplayEnabled] = useState<boolean | null>(null);
+  const [togglingDisplay, setTogglingDisplay] = useState(false);
+  const [displayMessage, setDisplayMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDisplay() {
+      try {
+        const res = await fetch("/api/display/power");
+        if (!res.ok) return;
+        const data = (await res.json()) as { enabled?: boolean };
+        if (!cancelled && typeof data.enabled === "boolean") {
+          setDisplayEnabled(data.enabled);
+        }
+      } catch {
+        // Ignore; button stays in default until the next action.
+      }
+    }
+
+    void loadDisplay();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -65,6 +90,33 @@ export function AdminNav() {
     } finally {
       setRefreshing(false);
       window.setTimeout(() => setRefreshMessage(""), 3000);
+    }
+  }
+
+  async function toggleDisplay() {
+    if (displayEnabled === null) return;
+    const nextEnabled = !displayEnabled;
+    setTogglingDisplay(true);
+    setDisplayMessage("");
+
+    try {
+      const res = await fetch("/api/display/power", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+      if (!res.ok) {
+        setDisplayMessage(nextEnabled ? "Wake failed" : "Sleep failed");
+        return;
+      }
+      const data = (await res.json()) as { enabled?: boolean; error?: string | null };
+      setDisplayEnabled(data.enabled ?? nextEnabled);
+      setDisplayMessage(nextEnabled ? "Display waking" : "Display sleeping");
+    } catch {
+      setDisplayMessage(nextEnabled ? "Wake failed" : "Sleep failed");
+    } finally {
+      setTogglingDisplay(false);
+      window.setTimeout(() => setDisplayMessage(""), 3000);
     }
   }
 
@@ -116,6 +168,26 @@ export function AdminNav() {
             Preview Kiosk
           </Link>
         </nav>
+        <button
+          type="button"
+          onClick={toggleDisplay}
+          disabled={togglingDisplay || displayEnabled === null}
+          className={cn(
+            itemClass,
+            "bg-amber-50 text-left text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900",
+          )}
+        >
+          {togglingDisplay
+            ? displayEnabled
+              ? "Sleeping..."
+              : "Waking..."
+            : displayEnabled === false
+              ? "Wake Display"
+              : "Sleep Display"}
+        </button>
+        {displayMessage ? (
+          <span className="px-2 text-sm text-amber-800 dark:text-amber-200">{displayMessage}</span>
+        ) : null}
         <button
           type="button"
           onClick={refreshDisplay}

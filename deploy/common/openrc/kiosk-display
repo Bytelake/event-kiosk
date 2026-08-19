@@ -25,6 +25,7 @@ start_pre() {
         set +a
     fi
     /opt/kiosk/bin/set-display-rotation.sh --configure-system || true
+    /opt/kiosk/bin/set-display-power.sh --configure-system || true
     mkdir -p /run/kiosk-wayland
     chown kiosk:kiosk /run/kiosk-wayland
     chmod 700 /run/kiosk-wayland

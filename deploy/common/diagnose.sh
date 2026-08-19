@@ -130,6 +130,12 @@ if [[ -f "${DISPLAY_ENV}" ]]; then
   source "${DISPLAY_ENV}"
   echo "  KIOSK_DISPLAY_ROTATION: ${KIOSK_DISPLAY_ROTATION:-normal}"
   command -v wlr-randr >/dev/null && echo "  wlr-randr: installed" || echo "  wlr-randr: not installed"
+  if [[ -x "${INSTALL_DIR}/bin/set-display-power.sh" ]]; then
+    echo "  display power:"
+    "${INSTALL_DIR}/bin/set-display-power.sh" status 2>/dev/null | sed 's/^/    /' || echo "    status failed"
+  else
+    echo "  display power script: missing"
+  fi
   if [[ -f /etc/udev/rules.d/99-kiosk-touch-rotation.rules ]]; then
     echo "  touch udev rule: present"
   else
