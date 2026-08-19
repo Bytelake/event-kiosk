@@ -50,6 +50,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
   const [domainEnforcement, setDomainEnforcement] = useState(true);
   const [addingDomain, setAddingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     return () => {
@@ -103,6 +104,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSaveError("");
 
     let imageUrl = form.imageUrl || null;
     if (pendingImageFile) {
@@ -124,15 +126,19 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       setForm((f) => ({ ...f, imageUrl: result.url }));
     }
 
-    await onSave({
-      ...form,
-      imageUrl,
-      endAt: form.endAt || null,
-      registrationUrl: form.registrationUrl
-        ? normalizeRegistrationUrl(form.registrationUrl)
-        : null,
-      kioskVisible: form.status === "published",
-    });
+    try {
+      await onSave({
+        ...form,
+        imageUrl,
+        endAt: form.endAt || null,
+        registrationUrl: form.registrationUrl
+          ? normalizeRegistrationUrl(form.registrationUrl)
+          : null,
+        kioskVisible: form.status === "published",
+      });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not save event");
+    }
   }
 
   function handleImagePick(file: File) {
@@ -399,6 +405,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             </p>
           ) : null}
 
+          {saveError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+          )}
           <Button type="submit" disabled={saving || uploading}>
             {saving || uploading ? "Saving..." : "Save Event"}
           </Button>

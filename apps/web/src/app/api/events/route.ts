@@ -11,7 +11,26 @@ import {
   wallClockStartOfDay,
 } from "@/lib/utils";
 import { DEFAULT_EVENT_URL_LABEL } from "@/lib/event-url-label";
-import { manualEventSchema } from "@/lib/validators";
+import { formatValidationError, manualEventSchema } from "@/lib/validators";
+
+function saveErrorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : "Could not save event";
+  const schemaDrift =
+    message.includes("urlLabel") ||
+    (typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2022");
+
+  return NextResponse.json(
+    {
+      error: schemaDrift
+        ? "Database schema is out of date. Stop the app and run npm run db:push --workspace=web."
+        : message,
+    },
+    { status: 500 },
+  );
+}
 
 export async function GET(request: NextRequest) {
   const kiosk = request.nextUrl.searchParams.get("kiosk") === "true";
@@ -62,32 +81,36 @@ export async function POST(request: Request) {
   const body = await request.json();
   const parsed = manualEventSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 });
   }
 
   const data = parsed.data;
-  const event = await prisma.event.create({
-    data: {
-      source: "manual",
-      syncStatus: "manual",
-      title: data.title,
-      startAt: parseWallClockDatetime(data.startAt),
-      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : null,
-      allDay: data.allDay ?? false,
-      shortDescription: data.shortDescription ?? null,
-      fullDescription: data.fullDescription ?? null,
-      location: data.location ?? null,
-      imageUrl: data.imageUrl ?? null,
-      registrationUrl: data.registrationUrl || null,
-      urlLabel: data.urlLabel ?? DEFAULT_EVENT_URL_LABEL,
-      featured: data.featured ?? false,
-      sortOrder: data.sortOrder ?? 0,
-      kioskVisible: data.kioskVisible ?? true,
-      status: data.status ?? "draft",
-    },
-  });
+  try {
+    const event = await prisma.event.create({
+      data: {
+        source: "manual",
+        syncStatus: "manual",
+        title: data.title,
+        startAt: parseWallClockDatetime(data.startAt),
+        endAt: data.endAt ? parseWallClockDatetime(data.endAt) : null,
+        allDay: data.allDay ?? false,
+        shortDescription: data.shortDescription ?? null,
+        fullDescription: data.fullDescription ?? null,
+        location: data.location ?? null,
+        imageUrl: data.imageUrl ?? null,
+        registrationUrl: data.registrationUrl || null,
+        urlLabel: data.urlLabel ?? DEFAULT_EVENT_URL_LABEL,
+        featured: data.featured ?? false,
+        sortOrder: data.sortOrder ?? 0,
+        kioskVisible: data.kioskVisible ?? true,
+        status: data.status ?? "draft",
+      },
+    });
 
-  return NextResponse.json(serializeEvent(event), { status: 201 });
+    return NextResponse.json(serializeEvent(event), { status: 201 });
+  } catch (error) {
+    return saveErrorResponse(error);
+  }
 }
 
 export async function PATCH(request: NextRequest) {
@@ -101,44 +124,48 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  const existing = await prisma.event.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   const body = await request.json();
   const parsed = manualEventSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 });
   }
 
-  const previousImageUrl = existing.imageUrl;
-  const data = parsed.data;
-  const event = await prisma.event.update({
-    where: { id },
-    data: {
-      title: data.title,
-      startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
-      endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
-      shortDescription: data.shortDescription ?? null,
-      fullDescription: data.fullDescription ?? null,
-      location: data.location ?? null,
-      imageUrl: data.imageUrl ?? null,
-      registrationUrl: data.registrationUrl || null,
-      urlLabel: data.urlLabel,
-      featured: data.featured,
-      sortOrder: data.sortOrder,
-      kioskVisible: data.kioskVisible,
-      allDay: data.allDay,
-      status: data.status,
-    },
-  });
+  try {
+    const existing = await prisma.event.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-  if (previousImageUrl !== event.imageUrl) {
-    await deleteUploadIfUnreferenced(previousImageUrl);
+    const previousImageUrl = existing.imageUrl;
+    const data = parsed.data;
+    const event = await prisma.event.update({
+      where: { id },
+      data: {
+        title: data.title,
+        startAt: data.startAt ? parseWallClockDatetime(data.startAt) : undefined,
+        endAt: data.endAt ? parseWallClockDatetime(data.endAt) : data.endAt === null ? null : undefined,
+        shortDescription: data.shortDescription ?? null,
+        fullDescription: data.fullDescription ?? null,
+        location: data.location ?? null,
+        imageUrl: data.imageUrl ?? null,
+        registrationUrl: data.registrationUrl || null,
+        urlLabel: data.urlLabel,
+        featured: data.featured,
+        sortOrder: data.sortOrder,
+        kioskVisible: data.kioskVisible,
+        allDay: data.allDay,
+        status: data.status,
+      },
+    });
+
+    if (previousImageUrl !== event.imageUrl) {
+      await deleteUploadIfUnreferenced(previousImageUrl);
+    }
+
+    return NextResponse.json(serializeEvent(event));
+  } catch (error) {
+    return saveErrorResponse(error);
   }
-
-  return NextResponse.json(serializeEvent(event));
 }
 
 export async function DELETE(request: NextRequest) {
