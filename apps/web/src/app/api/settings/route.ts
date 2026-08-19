@@ -22,15 +22,46 @@ function serializePublicSettings(settings: Awaited<ReturnType<typeof getSettings
     kioskBackgroundStyle: settings.kioskBackgroundStyle,
     kioskBackgroundImageUrl: settings.kioskBackgroundImageUrl,
     registrationDomainEnforcement: settings.registrationDomainEnforcement,
+    newsletterEnabled: settings.newsletterEnabled,
+    newsletterTitle: settings.newsletterTitle,
+    newsletterBody: settings.newsletterBody,
+    newsletterUrl: settings.newsletterUrl,
+    newsletterButtonLabel: settings.newsletterButtonLabel,
+    givingEnabled: settings.givingEnabled,
+    givingTitle: settings.givingTitle,
+    givingBody: settings.givingBody,
+    givingSuccessMessage: settings.givingSuccessMessage,
   };
+}
+
+function serializeStaffSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
+  return {
+    givingNotifyEmail: settings.givingNotifyEmail,
+    givingVisitorEmailSubject: settings.givingVisitorEmailSubject,
+    givingVisitorEmailBody: settings.givingVisitorEmailBody,
+  };
+}
+
+function serializeSettings(
+  settings: Awaited<ReturnType<typeof getSettings>>,
+  includeStaff: boolean,
+) {
+  if (!includeStaff) return serializePublicSettings(settings);
+  return { ...serializePublicSettings(settings), ...serializeStaffSettings(settings) };
 }
 
 export async function GET() {
   const settings = await getSettings();
   const domains = await prisma.allowedDomain.findMany({ orderBy: { domain: "asc" } });
+  let authed = false;
+  try {
+    authed = await isAuthenticated();
+  } catch {
+    authed = false;
+  }
 
   return NextResponse.json({
-    ...serializePublicSettings(settings),
+    ...serializeSettings(settings, authed),
     kioskRefreshAt: settings.kioskRefreshAt?.toISOString() ?? null,
     allowedDomains: domains.map((d) => d.domain),
   });
@@ -71,6 +102,18 @@ export async function PATCH(request: Request) {
       kioskBackgroundStyle: data.kioskBackgroundStyle,
       kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
       registrationDomainEnforcement: data.registrationDomainEnforcement,
+      newsletterEnabled: data.newsletterEnabled,
+      newsletterTitle: data.newsletterTitle,
+      newsletterBody: data.newsletterBody,
+      newsletterUrl: data.newsletterUrl,
+      newsletterButtonLabel: data.newsletterButtonLabel,
+      givingEnabled: data.givingEnabled,
+      givingTitle: data.givingTitle,
+      givingBody: data.givingBody,
+      givingSuccessMessage: data.givingSuccessMessage,
+      givingNotifyEmail: data.givingNotifyEmail,
+      givingVisitorEmailSubject: data.givingVisitorEmailSubject,
+      givingVisitorEmailBody: data.givingVisitorEmailBody,
       settingsUpdatedAt: new Date(),
     },
   });
@@ -83,5 +126,5 @@ export async function PATCH(request: Request) {
     await deleteUploadIfUnreferenced(previousBackgroundImageUrl);
   }
 
-  return NextResponse.json(serializePublicSettings(settings));
+  return NextResponse.json(serializeSettings(settings, true));
 }

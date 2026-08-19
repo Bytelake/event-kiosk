@@ -30,6 +30,15 @@ export type KioskSettings = KioskColorScheme &
     kioskBackgroundAnimated: boolean;
     kioskBackgroundStyle: KioskBackgroundStyle;
     kioskBackgroundImageUrl: string | null;
+    newsletterEnabled: boolean;
+    newsletterTitle: string;
+    newsletterBody: string;
+    newsletterUrl: string;
+    newsletterButtonLabel: string;
+    givingEnabled: boolean;
+    givingTitle: string;
+    givingBody: string;
+    givingSuccessMessage: string;
   };
 
 /** In-memory cache so kiosk home can render instantly when navigating back. */
@@ -75,6 +84,15 @@ export function parsePublicSettings(data: {
   kioskBackgroundAnimated?: boolean;
   kioskBackgroundStyle?: KioskBackgroundStyle;
   kioskBackgroundImageUrl?: string | null;
+  newsletterEnabled?: boolean;
+  newsletterTitle?: string;
+  newsletterBody?: string;
+  newsletterUrl?: string | null;
+  newsletterButtonLabel?: string;
+  givingEnabled?: boolean;
+  givingTitle?: string;
+  givingBody?: string;
+  givingSuccessMessage?: string;
 }): KioskSettings {
   return {
     orgName: data.orgName,
@@ -94,6 +112,17 @@ export function parsePublicSettings(data: {
     kioskBackgroundAnimated: data.kioskBackgroundAnimated ?? true,
     kioskBackgroundStyle: data.kioskBackgroundStyle ?? defaultKioskBackgroundStyle,
     kioskBackgroundImageUrl: data.kioskBackgroundImageUrl ?? null,
+    newsletterEnabled: data.newsletterEnabled ?? true,
+    newsletterTitle: data.newsletterTitle ?? "Newsletter",
+    newsletterBody: data.newsletterBody ?? "Stay connected. Sign up for our newsletter.",
+    newsletterUrl: data.newsletterUrl ?? "",
+    newsletterButtonLabel: data.newsletterButtonLabel ?? "Sign up",
+    givingEnabled: data.givingEnabled ?? true,
+    givingTitle: data.givingTitle ?? "Give",
+    givingBody:
+      data.givingBody ?? "Share your contact information and we will follow up with ways to give.",
+    givingSuccessMessage:
+      data.givingSuccessMessage ?? "Thank you. We will follow up with giving information.",
   };
 }
 

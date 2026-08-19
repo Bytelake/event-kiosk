@@ -66,10 +66,40 @@ model Settings {
   kioskBackgroundStyle    String   @default("gradient")
   kioskBackgroundImageUrl String?
   registrationDomainEnforcement Boolean @default(true)
+
+  newsletterEnabled     Boolean @default(true)
+  newsletterTitle       String  @default("Newsletter")
+  newsletterBody        String  @default("Stay connected. Sign up for our newsletter.")
+  newsletterUrl         String  @default("")
+  newsletterButtonLabel String  @default("Sign up")
+
+  givingEnabled              Boolean @default(true)
+  givingTitle                String  @default("Give")
+  givingBody                 String  @default("Share your contact information and we will follow up with ways to give.")
+  givingSuccessMessage       String  @default("Thank you. We will follow up with giving information.")
+  givingNotifyEmail          String  @default("")
+  givingVisitorEmailSubject  String  @default("How to give")
+  givingVisitorEmailBody     String  @default("Thank you for your interest in giving. We will follow up with information about how to give.")
+
   updatedAt              DateTime @updatedAt
 }
 
 model AllowedDomain {
   id     String @id @default(cuid())
   domain String @unique
+}
+
+model Inquiry {
+  id          String   @id @default(cuid())
+  kind        String   @default("giving")
+  name        String
+  email       String
+  phone       String?
+  message     String?
+  emailStatus String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind, createdAt])
+  @@index([emailStatus])
 }
