@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +43,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
   const [domainEnforcement, setDomainEnforcement] = useState(true);
   const [addingDomain, setAddingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -91,6 +92,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   }, [initial]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,10 +133,24 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
 
   function handleImagePick(file: File) {
     setPendingImageFile(file);
+    setUploadError("");
     setImagePreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
     });
+  }
+
+  function handleRemoveImage() {
+    setPendingImageFile(null);
+    setUploadError("");
+    setImagePreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setForm((f) => ({ ...f, imageUrl: "" }));
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   }
 
   const displayImageUrl = imagePreviewUrl ?? (form.imageUrl || null);
@@ -313,6 +331,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
           <div>
             <label className="mb-1 block text-sm font-medium">Event image</label>
             <Input
+              ref={imageInputRef}
               type="file"
               accept="image/*"
               onChange={(e) => {
@@ -324,10 +343,15 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             {uploadError && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{uploadError}</p>
             )}
-            {displayImageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
-            )}
+            {displayImageUrl ? (
+              <div className="mt-3 flex items-start gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={displayImageUrl} alt="Preview" className="h-40 rounded-xl object-cover" />
+                <Button type="button" variant="ghost" onClick={handleRemoveImage}>
+                  Remove
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
