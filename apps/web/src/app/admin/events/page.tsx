@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatWallClockDateTime } from "@/lib/utils";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export default function AdminEventsPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
           <AdminPageHeader title="Events" />
 
           <div className="mb-6 flex flex-wrap gap-2">
@@ -99,7 +100,7 @@ export default function AdminEventsPage() {
               ))}
             </CardContent>
           </Card>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

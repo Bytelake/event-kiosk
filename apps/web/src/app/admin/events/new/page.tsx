@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { EventForm } from "@/components/admin/event-form";
@@ -30,12 +31,12 @@ export default function NewEventPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
           <AdminPageHeader title="New Event" />
           <div className="mx-auto max-w-4xl">
           <EventForm onSave={handleSave} saving={saving} />
           </div>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

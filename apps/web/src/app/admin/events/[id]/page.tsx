@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { EventForm } from "@/components/admin/event-form";
@@ -53,11 +54,11 @@ export default function EditEventPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
           <AdminPageHeader
             title="Edit Event"
             actions={
-              <Button variant="danger" onClick={handleDelete}>
+              <Button variant="danger" className="h-10 px-4 text-sm" onClick={handleDelete}>
                 Delete
               </Button>
             }
@@ -65,7 +66,7 @@ export default function EditEventPage() {
           <div className="mx-auto max-w-4xl">
           <EventForm initial={event} onSave={handleSave} saving={saving} />
           </div>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

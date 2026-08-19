@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ThemeSelector } from "@/components/admin/theme-selector";
 import { AuthGuard } from "@/components/admin/login-form";
@@ -184,7 +185,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
         <AdminPageHeader title="Settings" />
 
         <div className="mx-auto mb-6 max-w-4xl">
@@ -261,13 +262,13 @@ export default function AdminSettingsPage() {
                   </p>
                 </span>
               </label>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                 <Input
                   placeholder="signupgenius.com"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                 />
-                <Button type="button" onClick={addDomain}>
+                <Button type="button" onClick={addDomain} className="sm:shrink-0">
                   Add
                 </Button>
               </div>
@@ -275,9 +276,9 @@ export default function AdminSettingsPage() {
                 {domains.map((domain) => (
                   <div
                     key={domain.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2 dark:border-slate-700"
+                    className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-2 dark:border-slate-700"
                   >
-                    <span>{domain.domain}</span>
+                    <span className="min-w-0 break-all">{domain.domain}</span>
                     <Button type="button" variant="ghost" onClick={() => removeDomain(domain.id)}>
                       Remove
                     </Button>
@@ -364,7 +365,7 @@ export default function AdminSettingsPage() {
             {saving ? "Saving..." : "Save Settings"}
           </Button>
         </form>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

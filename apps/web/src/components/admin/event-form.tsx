@@ -329,7 +329,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
                 </p>
                 <Button
                   type="button"
-                  className="mt-2"
+                  className="mt-2 max-w-full"
                   disabled={addingDomain}
                   onClick={() => void addRegistrationDomain()}
                 >
@@ -381,9 +381,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{uploadError}</p>
             )}
             {displayImageUrl ? (
-              <div className="mt-3 flex items-start gap-4">
+              <div className="mt-3 flex min-w-0 items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={displayImageUrl} alt="Preview" className="h-40 rounded-xl object-cover" />
+                <img src={displayImageUrl} alt="Preview" className="h-40 max-w-full rounded-xl object-cover" />
                 <Button type="button" variant="ghost" onClick={handleRemoveImage}>
                   Remove
                 </Button>

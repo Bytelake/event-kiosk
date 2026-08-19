@@ -54,8 +54,8 @@ function UsageBar({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
-        <span className="text-slate-500 dark:text-slate-400">{detail}</span>
+        <span className="min-w-0 truncate font-medium text-slate-700 dark:text-slate-300">{label}</span>
+        <span className="shrink-0 text-right text-slate-500 dark:text-slate-400">{detail}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, percent)}%` }} />
@@ -201,7 +201,7 @@ export function SystemAboutSection() {
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">{value}</p>
+                <p className="mt-0.5 break-words font-medium text-slate-800 dark:text-slate-200">{value}</p>
               </div>
             ))}
           </div>
