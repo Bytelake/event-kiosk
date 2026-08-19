@@ -297,7 +297,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
                 </p>
                 <Button
                   type="button"
-                  className="mt-2"
+                  className="mt-2 max-w-full"
                   disabled={addingDomain}
                   onClick={() => void addRegistrationDomain()}
                 >
@@ -326,7 +326,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             )}
             {displayImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
+              <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 max-w-full rounded-xl object-cover" />
             )}
           </div>
 

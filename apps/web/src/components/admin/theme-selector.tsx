@@ -10,7 +10,7 @@ export function ThemeSelector({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "inline-flex rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900",
+        "flex max-w-full flex-wrap rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900",
         className,
       )}
       role="group"
