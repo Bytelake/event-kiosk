@@ -22,15 +22,19 @@ export default function EditEventPage() {
 
   async function handleSave(data: Record<string, unknown>) {
     setSaving(true);
-    const res = await fetch(`/api/events?id=${params.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setSaving(false);
-    if (res.ok) {
-      const updated = await res.json();
-      setEvent(updated);
+    try {
+      const res = await fetch(`/api/events?id=${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof body.error === "string" ? body.error : "Could not save event");
+      }
+      setEvent(body);
+    } finally {
+      setSaving(false);
     }
   }
 

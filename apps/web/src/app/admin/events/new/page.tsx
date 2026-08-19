@@ -13,15 +13,20 @@ export default function NewEventPage() {
 
   async function handleSave(data: Record<string, unknown>) {
     setSaving(true);
-    const res = await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setSaving(false);
-    if (!res.ok) return;
-    const event = await res.json();
-    router.push(`/admin/events/${event.id}`);
+    try {
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof body.error === "string" ? body.error : "Could not save event");
+      }
+      router.push(`/admin/events/${body.id}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
