@@ -15,11 +15,23 @@ export const manualEventSchema = z.object({
   location: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   registrationUrl: z.string().url().optional().nullable().or(z.literal("")),
+  urlLabel: z.enum(["register", "learn_more"]).optional(),
   featured: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   kioskVisible: z.boolean().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
 });
+
+export function formatValidationError(error: z.ZodError): string {
+  const { formErrors, fieldErrors } = error.flatten();
+  const parts = [
+    ...formErrors,
+    ...Object.entries(fieldErrors).flatMap(([field, messages]) =>
+      (messages ?? []).map((message) => `${field}: ${message}`),
+    ),
+  ];
+  return parts.join(". ") || "Invalid request";
+}
 
 export const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a hex color");
 

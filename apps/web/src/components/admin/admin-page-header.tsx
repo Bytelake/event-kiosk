@@ -8,9 +8,11 @@ export function AdminPageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8 flex items-center justify-between gap-x-6 gap-y-3">
-      <h1 className="min-w-0 text-3xl font-bold text-slate-900 dark:text-slate-100">{title}</h1>
-      <div className="flex shrink-0 items-center gap-3">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
+      <h1 className="min-w-0 truncate text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">
+        {title}
+      </h1>
+      <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 sm:gap-3">
         {actions}
         <AdminNav />
       </div>

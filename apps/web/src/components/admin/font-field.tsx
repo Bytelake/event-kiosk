@@ -113,7 +113,7 @@ export function FontField({
           </p>
         </div>
       )}
-      <p className="mt-3 text-lg text-slate-800 dark:text-slate-200" style={previewStyle}>
+      <p className="mt-3 break-words text-lg text-slate-800 dark:text-slate-200" style={previewStyle}>
         The quick brown fox jumps over the lazy dog
       </p>
     </div>

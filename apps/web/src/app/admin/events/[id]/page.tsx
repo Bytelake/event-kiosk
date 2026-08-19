@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { EventForm } from "@/components/admin/event-form";
@@ -21,15 +22,19 @@ export default function EditEventPage() {
 
   async function handleSave(data: Record<string, unknown>) {
     setSaving(true);
-    const res = await fetch(`/api/events?id=${params.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setSaving(false);
-    if (res.ok) {
-      const updated = await res.json();
-      setEvent(updated);
+    try {
+      const res = await fetch(`/api/events?id=${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof body.error === "string" ? body.error : "Could not save event");
+      }
+      setEvent(body);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -49,11 +54,11 @@ export default function EditEventPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
           <AdminPageHeader
             title="Edit Event"
             actions={
-              <Button variant="danger" onClick={handleDelete}>
+              <Button variant="danger" className="h-10 px-4 text-sm" onClick={handleDelete}>
                 Delete
               </Button>
             }
@@ -61,7 +66,7 @@ export default function EditEventPage() {
           <div className="mx-auto max-w-4xl">
           <EventForm initial={event} onSave={handleSave} saving={saving} />
           </div>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ColorField } from "@/components/admin/color-field";
 import { FontField } from "@/components/admin/font-field";
@@ -245,7 +246,7 @@ export default function AdminBrandingPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
         <AdminPageHeader title="Branding" />
 
         <form onSubmit={handleSave} className="mx-auto max-w-4xl space-y-6">
@@ -490,7 +491,7 @@ export default function AdminBrandingPage() {
             {saving ? "Saving..." : "Save Branding"}
           </Button>
         </form>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

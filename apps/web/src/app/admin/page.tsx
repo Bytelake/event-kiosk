@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminPage>
           <AdminPageHeader title="Dashboard" />
 
           <div className="grid gap-6 md:grid-cols-3">
@@ -59,7 +60,7 @@ export default function AdminDashboardPage() {
             <SystemMetricsPanel />
           </div>
 
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/admin/events">
               <Button>Manage Events</Button>
             </Link>
@@ -67,7 +68,7 @@ export default function AdminDashboardPage() {
               <Button variant="secondary">Settings</Button>
             </Link>
           </div>
-      </div>
+      </AdminPage>
     </AuthGuard>
   );
 }

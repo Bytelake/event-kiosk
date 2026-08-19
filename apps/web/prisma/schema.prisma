@@ -26,6 +26,7 @@ model Event {
   location         String?
   imageUrl         String?
   registrationUrl  String?
+  urlLabel         String   @default("register")
   breezeDescription String?
 
   featured         Boolean  @default(false)

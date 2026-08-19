@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { format } from "date-fns";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 import { uploadImageFile } from "@/lib/upload-client";
+import {
+  DEFAULT_EVENT_URL_LABEL,
+  EVENT_URL_LABELS,
+  EVENT_URL_LABEL_COPY,
+  isEventUrlLabel,
+} from "@/lib/event-url-label";
 import {
   extractRegistrationHostname,
   isRegistrationDomainAllowed,
@@ -30,6 +36,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     location: "",
     imageUrl: "",
     registrationUrl: "",
+    urlLabel: DEFAULT_EVENT_URL_LABEL,
     featured: false,
     status: "draft",
     sortOrder: 0,
@@ -43,6 +50,8 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
   const [domainEnforcement, setDomainEnforcement] = useState(true);
   const [addingDomain, setAddingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -77,6 +86,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       location: String(initial.location ?? ""),
       imageUrl: String(initial.imageUrl ?? ""),
       registrationUrl: String(initial.registrationUrl ?? ""),
+      urlLabel: isEventUrlLabel(initial.urlLabel) ? initial.urlLabel : DEFAULT_EVENT_URL_LABEL,
       featured: Boolean(initial.featured),
       status: String(initial.status ?? "draft"),
       sortOrder: Number(initial.sortOrder ?? 0),
@@ -91,10 +101,14 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   }, [initial]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSaveError("");
 
     let imageUrl = form.imageUrl || null;
     if (pendingImageFile) {
@@ -116,23 +130,41 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       setForm((f) => ({ ...f, imageUrl: result.url }));
     }
 
-    await onSave({
-      ...form,
-      imageUrl,
-      endAt: form.endAt || null,
-      registrationUrl: form.registrationUrl
-        ? normalizeRegistrationUrl(form.registrationUrl)
-        : null,
-      kioskVisible: form.status === "published",
-    });
+    try {
+      await onSave({
+        ...form,
+        imageUrl,
+        endAt: form.endAt || null,
+        registrationUrl: form.registrationUrl
+          ? normalizeRegistrationUrl(form.registrationUrl)
+          : null,
+        kioskVisible: form.status === "published",
+      });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not save event");
+    }
   }
 
   function handleImagePick(file: File) {
     setPendingImageFile(file);
+    setUploadError("");
     setImagePreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
     });
+  }
+
+  function handleRemoveImage() {
+    setPendingImageFile(null);
+    setUploadError("");
+    setImagePreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setForm((f) => ({ ...f, imageUrl: "" }));
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   }
 
   const displayImageUrl = imagePreviewUrl ?? (form.imageUrl || null);
@@ -272,7 +304,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Registration URL</label>
+            <label className="mb-1 block text-sm font-medium">Event URL</label>
             <Input
               value={form.registrationUrl}
               placeholder="signupgenius.com or https://..."
@@ -297,7 +329,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
                 </p>
                 <Button
                   type="button"
-                  className="mt-2"
+                  className="mt-2 max-w-full"
                   disabled={addingDomain}
                   onClick={() => void addRegistrationDomain()}
                 >
@@ -311,8 +343,32 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
           </div>
 
           <div>
+            <label className="mb-1 block text-sm font-medium">Button label</label>
+            <select
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              value={form.urlLabel}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  urlLabel: isEventUrlLabel(e.target.value) ? e.target.value : DEFAULT_EVENT_URL_LABEL,
+                })
+              }
+            >
+              {EVENT_URL_LABELS.map((label) => (
+                <option key={label} value={label}>
+                  {EVENT_URL_LABEL_COPY[label].admin}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Shown on the kiosk event page when a URL is set.
+            </p>
+          </div>
+
+          <div>
             <label className="mb-1 block text-sm font-medium">Event image</label>
             <Input
+              ref={imageInputRef}
               type="file"
               accept="image/*"
               onChange={(e) => {
@@ -324,10 +380,15 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             {uploadError && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{uploadError}</p>
             )}
-            {displayImageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={displayImageUrl} alt="Preview" className="mt-3 h-40 rounded-xl object-cover" />
-            )}
+            {displayImageUrl ? (
+              <div className="mt-3 flex min-w-0 items-start gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={displayImageUrl} alt="Preview" className="h-40 max-w-full rounded-xl object-cover" />
+                <Button type="button" variant="ghost" onClick={handleRemoveImage}>
+                  Remove
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -368,6 +429,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             </p>
           ) : null}
 
+          {saveError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+          )}
           <Button type="submit" disabled={saving || uploading}>
             {saving || uploading ? "Saving..." : "Save Event"}
           </Button>
