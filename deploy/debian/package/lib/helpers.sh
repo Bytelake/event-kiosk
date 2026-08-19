@@ -34,12 +34,12 @@ debian_check_os() {
 }
 
 debian_install_node() {
-  if command -v node >/dev/null 2>&1 && [[ "$(node -p "process.versions.node.split('.')[0]")" -ge 20 ]]; then
+  if command -v node >/dev/null 2>&1 && [[ "$(node -p "process.versions.node.split('.')[0]")" -ge 24 ]]; then
     echo "[debian] Node $(node -v)"
     return 0
   fi
-  echo "[debian] Installing Node.js 20..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  echo "[debian] Installing Node.js 24..."
+  curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
   DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
   echo "[debian] Node $(node -v)"
 }

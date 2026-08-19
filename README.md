@@ -116,7 +116,7 @@ su -c 'bash deploy/alpine/install.sh'
 
 ## Development
 
-Requires Node.js 20.9+.
+Requires Node.js 24.19.0+.
 
 ```bash
 npm install
