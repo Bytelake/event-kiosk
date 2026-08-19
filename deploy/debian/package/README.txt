@@ -18,6 +18,7 @@ OPTIONS
   --display=wayland       Headless cage (default)
   --display=x11           Electron on X11 session
   --rotation left         Portrait monitor
+  HDMI sleep is configured later in Admin → Settings → Display output.
 
 UPDATE
   Extract a newer tarball, then: sudo bash update.sh

@@ -17,6 +17,7 @@ import {
   injectRegistrationInputScript,
   REGISTRATION_KEYBOARD_CSS,
 } from "./inject-registration-input";
+import { noteDisplayActivity, startDisplayPowerControl } from "./display-power";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
 const API_BASE = new URL(KIOSK_URL).origin;
@@ -150,8 +151,21 @@ function createWindow() {
 
   if (!desktopMode) {
     mainWindow.webContents.on("before-input-event", (event, input) => {
+      noteDisplayActivity();
       if (input.alt || input.control || input.meta) {
         event.preventDefault();
+      }
+    });
+    mainWindow.webContents.on("input-event", (_event, inputEvent) => {
+      const type = String(inputEvent.type);
+      if (
+        type === "mouseDown" ||
+        type === "keyDown" ||
+        type === "rawKeyDown" ||
+        type === "mouseWheel" ||
+        type === "gestureScrollBegin"
+      ) {
+        noteDisplayActivity();
       }
     });
   }
@@ -450,6 +464,9 @@ app.whenReady().then(async () => {
 
   await refreshAllowedDomains(API_BASE);
   startAllowedDomainsPolling(API_BASE);
+  if (!desktopMode) {
+    startDisplayPowerControl(API_BASE);
+  }
   createWindow();
   registerShortcuts();
 
@@ -474,20 +491,28 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.on("kiosk-user-activity", () => {
+    noteDisplayActivity();
     notifyMainWindowUserActivity();
   });
 
+  ipcMain.on("kiosk-display-activity", () => {
+    noteDisplayActivity();
+  });
+
   ipcMain.on("keyboard-key", (_event, key: string) => {
+    noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToRegistrationTyping("insertText", key);
   });
 
   ipcMain.on("keyboard-backspace", () => {
+    noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToRegistrationTyping("backspace");
   });
 
   ipcMain.on("keyboard-enter", () => {
+    noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToRegistrationTyping("enter");
   });

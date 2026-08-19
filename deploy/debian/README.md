@@ -22,6 +22,8 @@ sudo systemctl restart kiosk-web
 | `--display=x11` | Electron on X11 (`DISPLAY=:0`) |
 | `--rotation left` | Portrait monitor (`right`, `inverted`, `normal`) |
 
+After install, **Admin → Settings → Display output** can sleep HDMI on a weekly schedule so the monitor can power down while the PC stays on. Restart `kiosk-display` once after updating so display-power permissions are applied.
+
 ## Install from source
 
 ```bash
