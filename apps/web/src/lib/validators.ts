@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EVENT_URL_LABELS } from "@/lib/event-url-label";
 import { KIOSK_BACKGROUND_STYLES } from "@/lib/kiosk-background";
 
 export const loginSchema = z.object({
@@ -15,6 +16,7 @@ export const manualEventSchema = z.object({
   location: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   registrationUrl: z.string().url().optional().nullable().or(z.literal("")),
+  urlLabel: z.enum(EVENT_URL_LABELS).optional(),
   featured: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   kioskVisible: z.boolean().optional(),

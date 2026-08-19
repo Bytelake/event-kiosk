@@ -10,6 +10,7 @@ import {
   wallClockNow,
   wallClockStartOfDay,
 } from "@/lib/utils";
+import { DEFAULT_EVENT_URL_LABEL } from "@/lib/event-url-label";
 import { manualEventSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
       location: data.location ?? null,
       imageUrl: data.imageUrl ?? null,
       registrationUrl: data.registrationUrl || null,
+      urlLabel: data.urlLabel ?? DEFAULT_EVENT_URL_LABEL,
       featured: data.featured ?? false,
       sortOrder: data.sortOrder ?? 0,
       kioskVisible: data.kioskVisible ?? true,
@@ -123,6 +125,7 @@ export async function PATCH(request: NextRequest) {
       location: data.location ?? null,
       imageUrl: data.imageUrl ?? null,
       registrationUrl: data.registrationUrl || null,
+      urlLabel: data.urlLabel,
       featured: data.featured,
       sortOrder: data.sortOrder,
       kioskVisible: data.kioskVisible,

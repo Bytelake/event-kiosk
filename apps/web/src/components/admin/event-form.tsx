@@ -9,6 +9,12 @@ import { format } from "date-fns";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 import { uploadImageFile } from "@/lib/upload-client";
 import {
+  DEFAULT_EVENT_URL_LABEL,
+  EVENT_URL_LABELS,
+  EVENT_URL_LABEL_COPY,
+  isEventUrlLabel,
+} from "@/lib/event-url-label";
+import {
   extractRegistrationHostname,
   isRegistrationDomainAllowed,
   normalizeRegistrationUrl,
@@ -30,6 +36,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     location: "",
     imageUrl: "",
     registrationUrl: "",
+    urlLabel: DEFAULT_EVENT_URL_LABEL,
     featured: false,
     status: "draft",
     sortOrder: 0,
@@ -77,6 +84,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       location: String(initial.location ?? ""),
       imageUrl: String(initial.imageUrl ?? ""),
       registrationUrl: String(initial.registrationUrl ?? ""),
+      urlLabel: isEventUrlLabel(initial.urlLabel) ? initial.urlLabel : DEFAULT_EVENT_URL_LABEL,
       featured: Boolean(initial.featured),
       status: String(initial.status ?? "draft"),
       sortOrder: Number(initial.sortOrder ?? 0),
@@ -272,7 +280,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Registration URL</label>
+            <label className="mb-1 block text-sm font-medium">Event URL</label>
             <Input
               value={form.registrationUrl}
               placeholder="signupgenius.com or https://..."
@@ -308,6 +316,29 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
             {domainMessage && (
               <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{domainMessage}</p>
             )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Button label</label>
+            <select
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              value={form.urlLabel}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  urlLabel: isEventUrlLabel(e.target.value) ? e.target.value : DEFAULT_EVENT_URL_LABEL,
+                })
+              }
+            >
+              {EVENT_URL_LABELS.map((label) => (
+                <option key={label} value={label}>
+                  {EVENT_URL_LABEL_COPY[label].admin}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Shown on the kiosk event page when a URL is set.
+            </p>
           </div>
 
           <div>
