@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Put the kiosk monitor to sleep (or wake it) while the PC stays on.
-# Prefers DRM DPMS so HDMI signal actually stops without disabling the compositor.
+# Prefer the kiosk compositor (wlr-randr on cage, xrandr on X11). Cage is the
+# DRM master, so /sys/class/drm/*/dpms often does nothing. xset DPMS is skipped
+# unless the X server actually supports it — otherwise it can "succeed" falsely.
 set -euo pipefail
 
 KIOSK_ROOT="${KIOSK_ROOT:-/opt/kiosk}"
@@ -10,23 +12,56 @@ ROTATION_SCRIPT="${KIOSK_ROOT}/bin/set-display-rotation.sh"
 log() { echo "[display-power] $*"; }
 warn() { echo "[display-power] WARNING: $*" >&2; }
 
-discover_wayland() {
-  local uid dir sock
-  uid="$(id -u)"
+read_proc_env() {
+  local pid="$1"
+  local key="$2"
+  local file="/proc/${pid}/environ"
+  [[ -r "${file}" ]] || return 1
+  tr '\0' '\n' < "${file}" 2>/dev/null | awk -F= -v k="${key}" '$1 == k { print substr($0, length(k) + 2); exit }'
+}
 
-  if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
-    if [[ -d "/run/user/${uid}" && -w "/run/user/${uid}" ]]; then
-      export XDG_RUNTIME_DIR="/run/user/${uid}"
-    elif [[ -d "/run/kiosk-wayland" ]]; then
-      export XDG_RUNTIME_DIR="/run/kiosk-wayland"
+kiosk_pids() {
+  pgrep -u kiosk -x cage 2>/dev/null || true
+  pgrep -u kiosk -f '/opt/kiosk/shell' 2>/dev/null || true
+  pgrep -u kiosk -f 'electron' 2>/dev/null || true
+}
+
+discover_wayland_from_proc() {
+  local pid runtime display
+  local -a pids=()
+  mapfile -t pids < <(kiosk_pids)
+  for pid in "${pids[@]}"; do
+    [[ -n "${pid}" ]] || continue
+    runtime="$(read_proc_env "${pid}" XDG_RUNTIME_DIR || true)"
+    display="$(read_proc_env "${pid}" WAYLAND_DISPLAY || true)"
+    if [[ -n "${runtime}" && -n "${display}" && -S "${runtime}/${display}" ]]; then
+      export XDG_RUNTIME_DIR="${runtime}"
+      export WAYLAND_DISPLAY="${display}"
+      log "Wayland from pid ${pid}: ${runtime}/${display}"
+      return 0
     fi
-  fi
+  done
+  return 1
+}
 
-  if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+discover_wayland() {
+  local uid kiosk_uid dir sock
+  uid="$(id -u)"
+  kiosk_uid="$(id -u kiosk 2>/dev/null || true)"
+
+  if [[ -n "${WAYLAND_DISPLAY:-}" && -n "${XDG_RUNTIME_DIR:-}" && -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]]; then
     return 0
   fi
 
-  for dir in ${XDG_RUNTIME_DIR:+"${XDG_RUNTIME_DIR}"} "/run/user/${uid}" "/run/kiosk-wayland"; do
+  if discover_wayland_from_proc; then
+    return 0
+  fi
+
+  for dir in \
+    ${XDG_RUNTIME_DIR:+"${XDG_RUNTIME_DIR}"} \
+    "/run/kiosk-wayland" \
+    "/run/user/${uid}" \
+    ${kiosk_uid:+"/run/user/${kiosk_uid}"}; do
     [[ -d "${dir}" ]] || continue
     for sock in "${dir}"/wayland-*; do
       [[ -S "${sock}" ]] || continue
@@ -34,10 +69,35 @@ discover_wayland() {
       export XDG_RUNTIME_DIR="${dir}"
       export WAYLAND_DISPLAY
       WAYLAND_DISPLAY="$(basename "${sock}")"
+      log "Wayland socket ${dir}/${WAYLAND_DISPLAY}"
       return 0
     done
   done
   return 1
+}
+
+discover_x11() {
+  local pid display
+  if [[ -n "${DISPLAY:-}" ]] && xrandr --query >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local -a pids=()
+  mapfile -t pids < <(kiosk_pids)
+  for pid in "${pids[@]}"; do
+    [[ -n "${pid}" ]] || continue
+    display="$(read_proc_env "${pid}" DISPLAY || true)"
+    if [[ -n "${display}" ]]; then
+      export DISPLAY="${display}"
+      if xrandr --query >/dev/null 2>&1; then
+        log "X11 DISPLAY from pid ${pid}: ${display}"
+        return 0
+      fi
+    fi
+  done
+
+  export DISPLAY="${DISPLAY:-:0}"
+  xrandr --query >/dev/null 2>&1
 }
 
 drm_connectors() {
@@ -97,7 +157,7 @@ drm_status() {
 
 set_drm() {
   local want="$1"
-  local value conn wrote=0
+  local value conn wrote=0 state
   if [[ "${want}" == "on" ]]; then
     value="On"
   else
@@ -107,8 +167,11 @@ set_drm() {
   while IFS= read -r conn; do
     [[ -n "${conn}" ]] || continue
     if [[ -w "${conn}/dpms" ]] && printf '%s\n' "${value}" > "${conn}/dpms" 2>/dev/null; then
-      log "DRM $(basename "${conn}") dpms=${value}"
-      wrote=1
+      state="$(read_dpms "${conn}/dpms")"
+      log "DRM $(basename "${conn}") dpms=${state:-write-failed}"
+      if [[ "${want}" == "on" && "${state}" == "On" ]] || [[ "${want}" == "off" && "${state}" != "On" && -n "${state}" ]]; then
+        wrote=1
+      fi
     fi
   done < <(drm_connectors)
   [[ "${wrote}" -eq 1 ]]
@@ -123,11 +186,12 @@ set_wlopm() {
   command -v wlopm >/dev/null 2>&1 || return 1
   discover_wayland || return 1
   if [[ "${want}" == "on" ]]; then
-    wlopm --on '*' >/dev/null
+    wlopm --on '*' >/dev/null || return 1
   else
-    wlopm --off '*' >/dev/null
+    wlopm --off '*' >/dev/null || return 1
   fi
   log "wlopm ${want}"
+  return 0
 }
 
 wayland_output_enabled() {
@@ -150,28 +214,36 @@ set_wlr_randr() {
   ((${#outputs[@]} > 0)) || return 1
   for output in "${outputs[@]}"; do
     if [[ "${want}" == "on" ]]; then
-      wlr-randr --output "${output}" --on
+      wlr-randr --output "${output}" --on || return 1
     else
-      wlr-randr --output "${output}" --off
+      wlr-randr --output "${output}" --off || return 1
     fi
     log "wlr-randr ${output} ${want}"
   done
   if [[ "${want}" == "on" && -x "${ROTATION_SCRIPT}" ]]; then
     "${ROTATION_SCRIPT}" --apply-wayland || true
   fi
+  return 0
+}
+
+x11_has_dpms() {
+  command -v xset >/dev/null 2>&1 || return 1
+  xset q 2>/dev/null | grep -q "DPMS (Energy Star)"
 }
 
 set_xset() {
   local want="$1"
   command -v xset >/dev/null 2>&1 || return 1
-  export DISPLAY="${DISPLAY:-:0}"
+  discover_x11 || return 1
+  x11_has_dpms || return 1
   xset +dpms >/dev/null 2>&1 || true
   if [[ "${want}" == "on" ]]; then
-    xset dpms force on
+    xset dpms force on >/dev/null || return 1
   else
-    xset dpms force off
+    xset dpms force off >/dev/null || return 1
   fi
   log "xset dpms force ${want}"
+  return 0
 }
 
 list_x11_outputs() {
@@ -182,37 +254,47 @@ set_xrandr() {
   local want="$1"
   local output
   command -v xrandr >/dev/null 2>&1 || return 1
-  export DISPLAY="${DISPLAY:-:0}"
+  discover_x11 || return 1
   local -a outputs=()
   mapfile -t outputs < <(list_x11_outputs)
   ((${#outputs[@]} > 0)) || return 1
   for output in "${outputs[@]}"; do
     if [[ "${want}" == "on" ]]; then
-      xrandr --output "${output}" --auto
+      xrandr --output "${output}" --auto || return 1
     else
-      xrandr --output "${output}" --off
+      xrandr --output "${output}" --off || return 1
     fi
     log "xrandr ${output} ${want}"
   done
   if [[ "${want}" == "on" && -x "${ROTATION_SCRIPT}" ]]; then
     "${ROTATION_SCRIPT}" --apply-x11 || true
   fi
+  return 0
 }
 
 set_vcgencmd() {
   local want="$1"
   command -v vcgencmd >/dev/null 2>&1 || return 1
   if [[ "${want}" == "on" ]]; then
-    vcgencmd display_power 1 >/dev/null
+    vcgencmd display_power 1 >/dev/null || return 1
   else
-    vcgencmd display_power 0 >/dev/null
+    vcgencmd display_power 0 >/dev/null || return 1
   fi
   log "vcgencmd display_power ${want}"
+  return 0
+}
+
+xrandr_is_on() {
+  command -v xrandr >/dev/null 2>&1 || return 2
+  discover_x11 || return 2
+  local connected
+  connected="$(xrandr --query 2>/dev/null | awk '/ connected/{print}')"
+  [[ -n "${connected}" ]] || return 2
+  echo "${connected}" | grep -qv ' connected ('
 }
 
 xset_is_on() {
-  command -v xset >/dev/null 2>&1 || return 2
-  export DISPLAY="${DISPLAY:-:0}"
+  x11_has_dpms || return 2
   local info
   info="$(xset q 2>/dev/null || true)"
   [[ -n "${info}" ]] || return 2
@@ -229,20 +311,8 @@ vcgencmd_is_on() {
 
 apply() {
   local want="$1"
-  if set_drm "${want}"; then
-    echo "method=drm"
-    return 0
-  fi
   if set_wlopm "${want}"; then
     echo "method=wlopm"
-    return 0
-  fi
-  if set_xset "${want}"; then
-    echo "method=xset"
-    return 0
-  fi
-  if set_vcgencmd "${want}"; then
-    echo "method=vcgencmd"
     return 0
   fi
   if set_wlr_randr "${want}"; then
@@ -253,30 +323,43 @@ apply() {
     echo "method=xrandr"
     return 0
   fi
-  warn "No display power method succeeded (need DRM dpms write access, wlopm, xset, vcgencmd, wlr-randr, or xrandr)."
+  if set_xset "${want}"; then
+    echo "method=xset"
+    return 0
+  fi
+  if set_vcgencmd "${want}"; then
+    echo "method=vcgencmd"
+    return 0
+  fi
+  if set_drm "${want}"; then
+    echo "method=drm"
+    return 0
+  fi
+  warn "No display power method succeeded."
+  warn "Check: systemctl status kiosk-display kiosk-shell; pgrep -a cage; pgrep -a electron"
   return 1
 }
 
 print_status() {
-  if drm_status; then
-    echo "on"
-    echo "method=drm"
-    return 0
-  fi
-  local drm_rc=$?
-  if [[ "${drm_rc}" -eq 1 ]]; then
-    echo "off"
-    echo "method=drm"
-    return 0
-  fi
-
-  if discover_wayland && command -v wlr-randr >/dev/null 2>&1; then
+  if discover_wayland && command -v wlr-randr >/dev/null 2>&1 && [[ -n "$(list_wayland_outputs)" ]]; then
     if wayland_output_enabled; then
       echo "on"
     else
       echo "off"
     fi
     echo "method=wlr-randr"
+    return 0
+  fi
+
+  if xrandr_is_on; then
+    echo "on"
+    echo "method=xrandr"
+    return 0
+  fi
+  local xr_rc=$?
+  if [[ "${xr_rc}" -eq 1 ]]; then
+    echo "off"
+    echo "method=xrandr"
     return 0
   fi
 
@@ -289,6 +372,18 @@ print_status() {
   if [[ "${xset_rc}" -eq 1 ]]; then
     echo "off"
     echo "method=xset"
+    return 0
+  fi
+
+  if drm_status; then
+    echo "on"
+    echo "method=drm"
+    return 0
+  fi
+  local drm_rc=$?
+  if [[ "${drm_rc}" -eq 1 ]]; then
+    echo "off"
+    echo "method=drm"
     return 0
   fi
 

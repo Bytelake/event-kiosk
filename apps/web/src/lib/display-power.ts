@@ -60,7 +60,6 @@ function settingsToDisplayPower(
     kioskDisplayOnDays: parseDisplayOnDays(settings.kioskDisplayOnDays),
     kioskDisplayOnTime: settings.kioskDisplayOnTime,
     kioskDisplayOffTime: settings.kioskDisplayOffTime,
-    kioskDisplayIdleOffSeconds: settings.kioskDisplayIdleOffSeconds,
   };
 }
 

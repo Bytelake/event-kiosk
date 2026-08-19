@@ -16,7 +16,6 @@ export interface DisplayPowerSettings {
   kioskDisplayOnDays: number[];
   kioskDisplayOnTime: string;
   kioskDisplayOffTime: string;
-  kioskDisplayIdleOffSeconds: number;
 }
 
 const defaults: DisplayPowerSettings = {
@@ -25,11 +24,9 @@ const defaults: DisplayPowerSettings = {
   kioskDisplayOnDays: [0],
   kioskDisplayOnTime: "07:00",
   kioskDisplayOffTime: "22:00",
-  kioskDisplayIdleOffSeconds: 0,
 };
 
 let settings: DisplayPowerSettings = { ...defaults };
-let lastActivityAt: number | null = null;
 let appliedOn: boolean | null = null;
 let applying = false;
 
@@ -72,27 +69,11 @@ function isInDisplayHours(onTime: string, offTime: string, now = new Date()): bo
 
 function desiredDisplayOn(now = new Date()): boolean {
   if (!settings.kioskDisplayEnabled) return false;
-
-  const idleMs = settings.kioskDisplayIdleOffSeconds * 1000;
-  const idleExpired =
-    idleMs > 0 && lastActivityAt != null && Date.now() - lastActivityAt >= idleMs;
-
-  if (settings.kioskDisplayScheduleEnabled) {
-    const scheduledDay = settings.kioskDisplayOnDays.includes(now.getDay());
-    const inHours = isInDisplayHours(
-      settings.kioskDisplayOnTime,
-      settings.kioskDisplayOffTime,
-      now,
-    );
-
-    if (scheduledDay && inHours) return true;
-    if (scheduledDay && !inHours) return false;
-    if (idleMs <= 0 || lastActivityAt == null) return false;
-    return !idleExpired;
-  }
-
-  if (lastActivityAt != null && idleExpired) return false;
-  return true;
+  if (!settings.kioskDisplayScheduleEnabled) return true;
+  return (
+    settings.kioskDisplayOnDays.includes(now.getDay()) &&
+    isInDisplayHours(settings.kioskDisplayOnTime, settings.kioskDisplayOffTime, now)
+  );
 }
 
 function displayPowerScriptPath(): string {
@@ -131,10 +112,7 @@ export async function syncDisplayPower(): Promise<void> {
 }
 
 export function noteDisplayActivity(): void {
-  lastActivityAt = Date.now();
-  if (appliedOn === false) {
-    void syncDisplayPower();
-  }
+  // HDMI sleep also powers down the panel touch, so there is no wake-on-touch.
 }
 
 function parseSettings(data: Partial<DisplayPowerSettings>): DisplayPowerSettings {
@@ -156,11 +134,6 @@ function parseSettings(data: Partial<DisplayPowerSettings>): DisplayPowerSetting
       typeof data.kioskDisplayOffTime === "string" && parseHhMm(data.kioskDisplayOffTime) !== null
         ? data.kioskDisplayOffTime
         : defaults.kioskDisplayOffTime,
-    kioskDisplayIdleOffSeconds:
-      typeof data.kioskDisplayIdleOffSeconds === "number" &&
-      Number.isFinite(data.kioskDisplayIdleOffSeconds)
-        ? Math.max(0, Math.floor(data.kioskDisplayIdleOffSeconds))
-        : defaults.kioskDisplayIdleOffSeconds,
   };
 }
 
@@ -170,8 +143,7 @@ function settingsEqual(a: DisplayPowerSettings, b: DisplayPowerSettings): boolea
     a.kioskDisplayScheduleEnabled === b.kioskDisplayScheduleEnabled &&
     a.kioskDisplayOnDays.join(",") === b.kioskDisplayOnDays.join(",") &&
     a.kioskDisplayOnTime === b.kioskDisplayOnTime &&
-    a.kioskDisplayOffTime === b.kioskDisplayOffTime &&
-    a.kioskDisplayIdleOffSeconds === b.kioskDisplayIdleOffSeconds
+    a.kioskDisplayOffTime === b.kioskDisplayOffTime
   );
 }
 

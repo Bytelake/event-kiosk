@@ -13,12 +13,10 @@ import { parseDisplayOnDays, WEEKDAYS } from "@/lib/display-schedule";
 interface SettingsForm {
   kioskIdleTimeoutSeconds: number;
   registrationDomainEnforcement: boolean;
-  kioskDisplayEnabled: boolean;
   kioskDisplayScheduleEnabled: boolean;
   kioskDisplayOnDays: number[];
   kioskDisplayOnTime: string;
   kioskDisplayOffTime: string;
-  kioskDisplayIdleOffMinutes: number;
 }
 
 interface DisplayPowerStatus {
@@ -38,22 +36,18 @@ function toHhMm(value: string): string {
 function settingsFromApi(settingsData: {
   kioskIdleTimeoutSeconds?: number;
   registrationDomainEnforcement?: boolean;
-  kioskDisplayEnabled?: boolean;
   kioskDisplayScheduleEnabled?: boolean;
   kioskDisplayOnDays?: number[] | string;
   kioskDisplayOnTime?: string;
   kioskDisplayOffTime?: string;
-  kioskDisplayIdleOffSeconds?: number;
 }): SettingsForm {
   return {
     kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
     registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
-    kioskDisplayEnabled: settingsData.kioskDisplayEnabled ?? true,
     kioskDisplayScheduleEnabled: settingsData.kioskDisplayScheduleEnabled ?? false,
     kioskDisplayOnDays: parseDisplayOnDays(settingsData.kioskDisplayOnDays),
     kioskDisplayOnTime: settingsData.kioskDisplayOnTime ?? "07:00",
     kioskDisplayOffTime: settingsData.kioskDisplayOffTime ?? "22:00",
-    kioskDisplayIdleOffMinutes: Math.round((settingsData.kioskDisplayIdleOffSeconds ?? 0) / 60),
   };
 }
 
@@ -117,12 +111,10 @@ export default function AdminSettingsPage() {
     const payload: Record<string, unknown> = {
       kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
       registrationDomainEnforcement: settings.registrationDomainEnforcement,
-      kioskDisplayEnabled: settings.kioskDisplayEnabled,
       kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
       kioskDisplayOnDays: settings.kioskDisplayOnDays,
       kioskDisplayOnTime: toHhMm(settings.kioskDisplayOnTime) || "07:00",
       kioskDisplayOffTime: toHhMm(settings.kioskDisplayOffTime) || "22:00",
-      kioskDisplayIdleOffSeconds: Math.max(0, settings.kioskDisplayIdleOffMinutes) * 60,
     };
 
     const res = await fetch("/api/settings", {
@@ -308,8 +300,11 @@ export default function AdminSettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Sleep the HDMI monitor while the kiosk PC stays on. This stops the video signal so
-                the panel can power down and avoid burn-in.
+                Sleep HDMI so the monitor can power down while the kiosk PC stays on. Sleeping the
+                output also typically powers down the touchscreen, so the display cannot be woken
+                from the panel — use{" "}
+                <span className="font-medium text-slate-700 dark:text-slate-300">Wake Display</span>{" "}
+                at the top of the page, or wait for the next scheduled on time.
               </p>
               {displayStatus && (
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -329,23 +324,6 @@ export default function AdminSettingsPage() {
                 <input
                   type="checkbox"
                   className="mt-1"
-                  checked={settings.kioskDisplayEnabled}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, kioskDisplayEnabled: e.target.checked } : s))
-                  }
-                />
-                <span>
-                  <span className="font-medium">HDMI output enabled</span>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Uncheck, then save, to sleep the monitor immediately. The PC and admin site
-                    keep running. Check and save again to wake the display.
-                  </p>
-                </span>
-              </label>
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1"
                   checked={settings.kioskDisplayScheduleEnabled}
                   onChange={(e) =>
                     setSettings((s) =>
@@ -356,8 +334,9 @@ export default function AdminSettingsPage() {
                 <span>
                   <span className="font-medium">Use a weekly schedule</span>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Keep the monitor on during the hours below on selected days (defaults to
-                    Sunday). Other days stay off unless someone touches the screen.
+                    Keep the monitor on during the hours below on selected days (Sunday by default).
+                    Outside those hours it stays off until the next scheduled window or you use Wake
+                    Display.
                   </p>
                 </span>
               </label>
@@ -429,32 +408,6 @@ export default function AdminSettingsPage() {
                     }
                   />
                 </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Sleep after idle (minutes)
-                </label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={1440}
-                  value={settings.kioskDisplayIdleOffMinutes}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s
-                        ? {
-                            ...s,
-                            kioskDisplayIdleOffMinutes: Math.max(0, Number(e.target.value) || 0),
-                          }
-                        : s,
-                    )
-                  }
-                />
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  On unscheduled days the monitor stays off until someone touches it, then sleeps
-                  again after this many minutes. During scheduled on hours it stays on. Set to 0 to
-                  leave the monitor off on unscheduled days.
-                </p>
               </div>
             </CardContent>
           </Card>

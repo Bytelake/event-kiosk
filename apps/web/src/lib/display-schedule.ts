@@ -83,7 +83,6 @@ export interface DisplayPowerSettings {
   kioskDisplayOnDays: number[];
   kioskDisplayOnTime: string;
   kioskDisplayOffTime: string;
-  kioskDisplayIdleOffSeconds: number;
 }
 
 export const defaultDisplayPowerSettings: DisplayPowerSettings = {
@@ -92,46 +91,25 @@ export const defaultDisplayPowerSettings: DisplayPowerSettings = {
   kioskDisplayOnDays: [0],
   kioskDisplayOnTime: "07:00",
   kioskDisplayOffTime: "22:00",
-  kioskDisplayIdleOffSeconds: 0,
 };
 
 /**
  * Desired HDMI state from settings.
  *
- * When a weekly schedule is enabled:
- * - Selected days, during wake/sleep hours: stay on (idle does not blank the screen).
- * - Selected days, outside those hours: stay off (touch does not wake).
- * - Other days: stay off unless `lastActivityAt` is recent, then sleep again after idle.
- *
- * Pass `lastActivityAt: null` from the web app so weekday touch-wake is left to Electron.
+ * When a weekly schedule is enabled, the monitor is on only during wake/sleep
+ * hours on selected days. Otherwise it stays off. Sleeping HDMI also typically
+ * powers down the panel touchscreen, so there is no wake-on-touch.
  */
 export function desiredDisplayOn(
   settings: DisplayPowerSettings,
-  options?: { now?: Date; lastActivityAt?: number | null },
+  options?: { now?: Date },
 ): boolean {
   if (!settings.kioskDisplayEnabled) return false;
+  if (!settings.kioskDisplayScheduleEnabled) return true;
 
   const now = options?.now ?? new Date();
-  const lastActivityAt = options?.lastActivityAt;
-  const idleMs = settings.kioskDisplayIdleOffSeconds * 1000;
-  const idleExpired =
-    idleMs > 0 && lastActivityAt != null && Date.now() - lastActivityAt >= idleMs;
-
-  if (settings.kioskDisplayScheduleEnabled) {
-    const scheduledDay = isDisplayOnDay(settings.kioskDisplayOnDays, now);
-    const inHours = isInDisplayHours(
-      settings.kioskDisplayOnTime,
-      settings.kioskDisplayOffTime,
-      now,
-    );
-
-    if (scheduledDay && inHours) return true;
-    if (scheduledDay && !inHours) return false;
-
-    if (idleMs <= 0 || lastActivityAt == null) return false;
-    return !idleExpired;
-  }
-
-  if (lastActivityAt != null && idleExpired) return false;
-  return true;
+  return (
+    isDisplayOnDay(settings.kioskDisplayOnDays, now) &&
+    isInDisplayHours(settings.kioskDisplayOnTime, settings.kioskDisplayOffTime, now)
+  );
 }

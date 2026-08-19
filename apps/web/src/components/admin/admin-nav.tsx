@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -16,6 +16,31 @@ export function AdminNav() {
   const pathname = usePathname();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState("");
+  const [displayEnabled, setDisplayEnabled] = useState<boolean | null>(null);
+  const [togglingDisplay, setTogglingDisplay] = useState(false);
+  const [displayMessage, setDisplayMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDisplay() {
+      try {
+        const res = await fetch("/api/display/power");
+        if (!res.ok) return;
+        const data = (await res.json()) as { enabled?: boolean };
+        if (!cancelled && typeof data.enabled === "boolean") {
+          setDisplayEnabled(data.enabled);
+        }
+      } catch {
+        // Ignore; button stays in default until the next action.
+      }
+    }
+
+    void loadDisplay();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function refreshDisplay() {
     setRefreshing(true);
@@ -33,6 +58,33 @@ export function AdminNav() {
     } finally {
       setRefreshing(false);
       window.setTimeout(() => setRefreshMessage(""), 3000);
+    }
+  }
+
+  async function toggleDisplay() {
+    if (displayEnabled === null) return;
+    const nextEnabled = !displayEnabled;
+    setTogglingDisplay(true);
+    setDisplayMessage("");
+
+    try {
+      const res = await fetch("/api/display/power", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+      if (!res.ok) {
+        setDisplayMessage(nextEnabled ? "Wake failed" : "Sleep failed");
+        return;
+      }
+      const data = (await res.json()) as { enabled?: boolean; error?: string | null };
+      setDisplayEnabled(data.enabled ?? nextEnabled);
+      setDisplayMessage(nextEnabled ? "Display waking" : "Display sleeping");
+    } catch {
+      setDisplayMessage(nextEnabled ? "Wake failed" : "Sleep failed");
+    } finally {
+      setTogglingDisplay(false);
+      window.setTimeout(() => setDisplayMessage(""), 3000);
     }
   }
 
@@ -63,12 +115,29 @@ export function AdminNav() {
       </nav>
       <button
         type="button"
+        onClick={toggleDisplay}
+        disabled={togglingDisplay || displayEnabled === null}
+        className="rounded-lg bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900"
+      >
+        {togglingDisplay
+          ? displayEnabled
+            ? "Sleeping..."
+            : "Waking..."
+          : displayEnabled === false
+            ? "Wake Display"
+            : "Sleep Display"}
+      </button>
+      <button
+        type="button"
         onClick={refreshDisplay}
         disabled={refreshing}
         className="rounded-lg bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
       >
         {refreshing ? "Refreshing..." : "Refresh Display"}
       </button>
+      {displayMessage ? (
+        <span className="text-sm text-amber-800 dark:text-amber-200">{displayMessage}</span>
+      ) : null}
       {refreshMessage ? (
         <span className="text-sm text-violet-700 dark:text-violet-300">{refreshMessage}</span>
       ) : null}

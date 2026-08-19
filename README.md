@@ -15,7 +15,7 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also
 
 - Touch-friendly kiosk UI for large displays
 - Admin panel for managing events, branding, and settings
-- HDMI display sleep (manual, scheduled, or idle) so the monitor can power down while the PC stays on
+- HDMI display sleep (manual or weekly schedule) so the monitor can power down while the PC stays on
 - Fullscreen Electron shell with registration domain whitelist
 
 ## Supported platforms
@@ -146,9 +146,8 @@ Desktop mode disables hidden cursor styling. The idle timeout still follows the 
 
 On a deployed Linux kiosk, **Admin → Settings → Display output** can sleep the monitor while the PC keeps running:
 
-- Uncheck **HDMI output enabled** to sleep the display immediately (admin on a phone still works).
-- Enable **Use a weekly schedule** to keep the monitor on during set hours on selected days (Sunday by default). Other days stay off.
-- **Sleep after idle** on unscheduled days: a touch wakes the monitor, then it sleeps again so it is not left on all week.
+- Use **Sleep Display** / **Wake Display** at the top of Admin to sleep the monitor immediately (admin on a phone still works). Sleeping HDMI typically also powers down the touchscreen, so wake from Admin or the next scheduled on time.
+- Enable **Use a weekly schedule** to keep the monitor on during set hours on selected days (Sunday by default). Outside those hours it stays off.
 
 The kiosk writes DRM DPMS so HDMI actually stops signaling, which lets most monitors enter their own power-save mode and reduces burn-in. After updating, restart `kiosk-display` (or `kiosk-shell` on X11) once so the helper can grant the kiosk user permission to control the outputs.
 
