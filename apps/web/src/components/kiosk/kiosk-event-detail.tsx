@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin, ExternalLink } from "lucide-react";
+import { eventUrlLabelCopy } from "@/lib/event-url-label";
 import { fetchKioskEvent, type KioskEvent } from "@/lib/kiosk-api";
 import { openRegistration } from "@/lib/kiosk-shell";
 import { preloadImageUrls } from "@/lib/preload-images";
@@ -12,7 +13,7 @@ import { formatKioskEventScheduleDisplay } from "@/lib/utils";
 export function KioskEventDetail() {
   const params = useParams<{ id: string }>();
   const [event, setEvent] = useState<KioskEvent | null>(null);
-  const [registering, setRegistering] = useState(false);
+  const [openingLink, setOpeningLink] = useState(false);
 
   useEffect(() => {
     fetchKioskEvent(params.id).then((event) => {
@@ -21,11 +22,11 @@ export function KioskEventDetail() {
     });
   }, [params.id]);
 
-  const handleRegister = () => {
+  const handleOpenLink = () => {
     if (!event?.registrationUrl) return;
-    setRegistering(true);
+    setOpeningLink(true);
     openRegistration(event.registrationUrl);
-    setTimeout(() => setRegistering(false), 2000);
+    setTimeout(() => setOpeningLink(false), 2000);
   };
 
   if (!event) {
@@ -37,6 +38,7 @@ export function KioskEventDetail() {
   }
 
   const schedule = formatKioskEventScheduleDisplay(event.startAt, event.endAt, event.allDay);
+  const urlCopy = eventUrlLabelCopy(event.urlLabel);
 
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-8">
@@ -94,25 +96,25 @@ export function KioskEventDetail() {
       {event.registrationUrl && (
         <button
           type="button"
-          onClick={handleRegister}
-          disabled={registering}
+          onClick={handleOpenLink}
+          disabled={openingLink}
           className="flex h-[72px] w-full items-center justify-center gap-3 rounded-[20px] text-xl font-semibold text-white transition active:scale-[0.98] disabled:opacity-80"
           style={{
-            background: registering
+            background: openingLink
               ? "color-mix(in srgb, var(--brand) 80%, transparent)"
               : "linear-gradient(135deg, var(--brand) 0%, var(--brand-secondary) 100%)",
             boxShadow: "0 8px 24px var(--kiosk-brand-glow)",
           }}
         >
-          {registering ? (
+          {openingLink ? (
             <>
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Opening registration…
+              {urlCopy.opening}
             </>
           ) : (
             <>
               <ExternalLink className="h-[22px] w-[22px]" />
-              Register for This Event
+              {urlCopy.button}
             </>
           )}
         </button>

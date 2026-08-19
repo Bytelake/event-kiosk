@@ -16,6 +16,7 @@ export interface KioskEvent {
   location: string | null;
   imageUrl: string | null;
   registrationUrl: string | null;
+  urlLabel?: string | null;
   featured: boolean;
 }
 
