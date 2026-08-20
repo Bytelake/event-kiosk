@@ -61,9 +61,10 @@ async function maybeOptimizeUpload(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const segments = params.path ?? [];
+  const { path: pathSegments } = await params;
+  const segments = pathSegments ?? [];
   const filename = path.basename(segments.join("/"));
   if (!filename || filename !== segments.join("/")) {
     return NextResponse.json({ error: "Invalid path" }, { status: 400 });

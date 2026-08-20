@@ -7,7 +7,7 @@ Install Event Kiosk on **Alpine Linux 3.20+** on **arm64** or **amd64**. Support
 - **Root access.** Minimal Alpine images have no `sudo` package; run install scripts as root (`su` or `doas`).
 - **community** repository enabled (install scripts uncomment or add this automatically).
 - **electron** from the testing repo (musl build). On newer releases (e.g. 3.24) where versioned `testing` is empty, the installer adds **edge/testing** automatically.
-- Node.js 20+ (`nodejs` apk or pre-installed).
+- Node.js 24+ (`nodejs` apk or pre-installed).
 
 ## Release package (recommended)
 

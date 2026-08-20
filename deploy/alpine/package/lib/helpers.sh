@@ -103,7 +103,7 @@ SCRIPT
 }
 
 alpine_install_node() {
-  if command -v node >/dev/null 2>&1 && [[ "$(node -p "process.versions.node.split('.')[0]")" -ge 20 ]]; then
+  if command -v node >/dev/null 2>&1 && [[ "$(node -p "process.versions.node.split('.')[0]")" -ge 24 ]]; then
     echo "[alpine] Node $(node -v)"
     return 0
   fi
@@ -113,8 +113,8 @@ alpine_install_node() {
     echo "[alpine] ERROR: nodejs package did not provide node" >&2
     return 1
   fi
-  if [[ "$(node -p "process.versions.node.split('.')[0]")" -lt 20 ]]; then
-    echo "[alpine] ERROR: Node $(node -v) is too old; need 20+" >&2
+  if [[ "$(node -p "process.versions.node.split('.')[0]")" -lt 24 ]]; then
+    echo "[alpine] ERROR: Node $(node -v) is too old; need 24+" >&2
     return 1
   fi
   echo "[alpine] Node $(node -v)"
