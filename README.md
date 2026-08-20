@@ -134,7 +134,7 @@ npx prisma db push --schema apps/web/prisma/schema.prisma
 npm run db:push --workspace=web
 ```
 
-Do **not** delete `apps/web/prisma/dev.db`. `npm run dev` also runs `db push` before starting Next.js.
+Do **not** delete `apps/web/prisma/dev.db`. `npm run dev` also runs `db push` before starting Next.js. The local URL `file:./dev.db` is resolved to that file (not `apps/web/dev.db`). Production `DATABASE_URL` is an absolute path (`file:/var/lib/kiosk/kiosk.db`) so schema updates cannot create a second database next to the app.
 
 Optional Electron shell: `npm run dev:shell`
 

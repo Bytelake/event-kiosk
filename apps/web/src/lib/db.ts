@@ -5,14 +5,14 @@ import {
   trackQueryEnd,
   trackQueryStart,
 } from "@/lib/database-maintenance";
+import { resolveDatabaseUrl } from "@/lib/database-path";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
 function createPrismaClient() {
-  const databaseUrl = process.env.DATABASE_URL || "file:./dev.db";
-  const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
+  const adapter = new PrismaBetterSqlite3({ url: resolveDatabaseUrl() });
   
   const client = new PrismaClient({
     adapter,
