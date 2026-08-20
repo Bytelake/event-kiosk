@@ -9,6 +9,7 @@ import {
   type KioskDestinationId,
 } from "@/lib/kiosk-destinations";
 import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
+import { openRegistration } from "@/lib/kiosk-shell";
 import { cn } from "@/lib/utils";
 
 const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
@@ -53,18 +54,29 @@ export function KioskNav() {
         {destinations.map((destination) => {
           const Icon = destinationIcons[destination.id];
           const active = isDestinationActive(pathname, destination);
+          const itemClassName = cn(
+            "inline-flex h-12 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition active:scale-95",
+            active
+              ? "bg-[var(--brand)] text-white shadow-[0_4px_16px_var(--kiosk-brand-glow)]"
+              : "kiosk-glass-panel text-[var(--kiosk-text)]",
+          );
+
+          if (destination.registrationUrl) {
+            return (
+              <button
+                key={destination.id}
+                type="button"
+                onClick={() => openRegistration(destination.registrationUrl!)}
+                className={itemClassName}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                {destination.label}
+              </button>
+            );
+          }
 
           return (
-            <Link
-              key={destination.id}
-              href={destination.href}
-              className={cn(
-                "inline-flex h-12 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition active:scale-95",
-                active
-                  ? "bg-[var(--brand)] text-white shadow-[0_4px_16px_var(--kiosk-brand-glow)]"
-                  : "kiosk-glass-panel text-[var(--kiosk-text)]",
-              )}
-            >
+            <Link key={destination.id} href={destination.href} className={itemClassName}>
               <Icon className="h-4 w-4 shrink-0" aria-hidden />
               {destination.label}
             </Link>

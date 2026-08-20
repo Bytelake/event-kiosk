@@ -16,7 +16,6 @@ export interface PagesFormValues {
   newsletterTitle: string;
   newsletterBody: string;
   newsletterUrl: string;
-  newsletterButtonLabel: string;
   givingEnabled: boolean;
   givingTitle: string;
   givingBody: string;
@@ -167,13 +166,6 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
             {domainMessage && (
               <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{domainMessage}</p>
             )}
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Button label</label>
-            <Input
-              value={form.newsletterButtonLabel}
-              onChange={(e) => setForm({ ...form, newsletterButtonLabel: e.target.value })}
-            />
           </div>
         </CardContent>
       </Card>
