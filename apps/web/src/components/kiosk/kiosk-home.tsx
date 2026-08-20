@@ -17,6 +17,8 @@ import {
   cn,
 } from "@/lib/utils";
 import { preloadImageUrls } from "@/lib/preload-images";
+import { kioskShowsHub } from "@/lib/kiosk-destinations";
+import { KioskBackButton } from "@/components/kiosk/kiosk-back-button";
 
 export function KioskHome() {
   const [events, setEvents] = useState<KioskEvent[]>(
@@ -59,7 +61,11 @@ export function KioskHome() {
   const regular = events.filter((e) => !e.featured);
 
   return (
-    <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-8">
+    <div className="relative mx-auto max-w-[1400px] px-5 py-10 md:px-8">
+      {settings && kioskShowsHub(settings) ? (
+        <KioskBackButton href="/kiosk" label="Back to home" overlay />
+      ) : null}
+
       <header className="mb-10 flex flex-col items-center text-center">
         {settings?.kioskShowLogo && settings.orgLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

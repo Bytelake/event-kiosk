@@ -5,11 +5,14 @@ import Link from "next/link";
 import { Calendar, Mail, Heart, type LucideIcon } from "lucide-react";
 import {
   getKioskDestinations,
+  kioskShowsHub,
   type KioskDestination,
   type KioskDestinationId,
 } from "@/lib/kiosk-destinations";
 import type { KioskSettings } from "@/lib/kiosk-api";
 import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
+import { KioskHome } from "@/components/kiosk/kiosk-home";
+import { openRegistration } from "@/lib/kiosk-shell";
 import { preloadImageUrls } from "@/lib/preload-images";
 
 const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
@@ -44,8 +47,20 @@ export function KioskHub() {
 
   const destinations = settings ? getKioskDestinations(settings) : [];
 
+  if (!settings) {
+    return (
+      <div className="kiosk-on-bg kiosk-on-bg-muted flex min-h-[50vh] items-center justify-center text-xl">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!kioskShowsHub(settings)) {
+    return <KioskHome />;
+  }
+
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-[1400px] flex-col px-5 py-10 md:px-8">
+    <div className="mx-auto flex min-h-[100dvh] max-w-[1400px] flex-col px-5 py-10 md:px-8">
       <header className="mb-8 flex shrink-0 flex-col items-center text-center">
         {settings?.kioskShowLogo && settings.orgLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -73,12 +88,11 @@ export function KioskHub() {
             ? destinationDescription(destination, settings)
             : destinationDescriptions[destination.id];
 
-          return (
-            <Link
-              key={destination.id}
-              href={destination.href}
-              className="kiosk-glass group flex min-h-[240px] flex-1 flex-col justify-between rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition active:scale-[0.985]"
-            >
+          const tileClassName =
+            "kiosk-glass group flex min-h-[240px] flex-1 flex-col justify-between rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition active:scale-[0.985]";
+
+          const tileContent = (
+            <>
               <div
                 className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl text-white"
                 style={{
@@ -97,6 +111,25 @@ export function KioskHub() {
                   {description}
                 </p>
               </div>
+            </>
+          );
+
+          if (destination.registrationUrl) {
+            return (
+              <button
+                key={destination.id}
+                type="button"
+                onClick={() => openRegistration(destination.registrationUrl!)}
+                className={`${tileClassName} w-full text-left`}
+              >
+                {tileContent}
+              </button>
+            );
+          }
+
+          return (
+            <Link key={destination.id} href={destination.href} className={tileClassName}>
+              {tileContent}
             </Link>
           );
         })}
