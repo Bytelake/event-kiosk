@@ -15,7 +15,6 @@ function pagesFromApi(settingsData: Record<string, unknown>): PagesFormValues {
       settingsData.newsletterBody ?? "Stay connected. Sign up for our newsletter.",
     ),
     newsletterUrl: String(settingsData.newsletterUrl ?? ""),
-    newsletterButtonLabel: String(settingsData.newsletterButtonLabel ?? "Sign up"),
     givingEnabled: Boolean(settingsData.givingEnabled ?? true),
     givingTitle: String(settingsData.givingTitle ?? "Give"),
     givingBody: String(
@@ -69,7 +68,6 @@ export default function AdminPagesPage() {
         newsletterTitle: values.newsletterTitle,
         newsletterBody: values.newsletterBody,
         newsletterUrl: values.newsletterUrl,
-        newsletterButtonLabel: values.newsletterButtonLabel,
         givingEnabled: values.givingEnabled,
         givingTitle: values.givingTitle,
         givingBody: values.givingBody,

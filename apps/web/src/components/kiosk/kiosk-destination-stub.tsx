@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
 
 export function KioskDestinationStub({
   title,
@@ -37,16 +36,5 @@ export function KioskDestinationStub({
         </p>
       </div>
     </div>
-  );
-}
-
-export function KioskNewsletterStub() {
-  const settings = useKioskSettings();
-
-  return (
-    <KioskDestinationStub
-      title={settings?.newsletterTitle ?? "Newsletter"}
-      body={settings?.newsletterBody ?? "Stay connected. Sign up for our newsletter."}
-    />
   );
 }

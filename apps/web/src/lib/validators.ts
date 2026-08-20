@@ -72,10 +72,11 @@ export const settingsSchema = z.object({
   newsletterBody: z.string().optional(),
   newsletterUrl: z.preprocess(
     (val) => {
+      if (val === undefined) return undefined;
       if (typeof val !== "string" || !val.trim()) return "";
       return normalizeRegistrationUrl(val);
     },
-    z.string().url().or(z.literal("")),
+    z.string().url().or(z.literal("")).optional(),
   ),
   newsletterButtonLabel: z.string().optional(),
   givingEnabled: z.boolean().optional(),
