@@ -17,6 +17,7 @@ import {
   cn,
 } from "@/lib/utils";
 import { preloadImageUrls } from "@/lib/preload-images";
+import { cssImageUrl, isSafeDisplayUrl } from "@/lib/media-url";
 import { kioskShowsHub } from "@/lib/kiosk-destinations";
 import { KioskBackButton } from "@/components/kiosk/kiosk-back-button";
 
@@ -67,7 +68,7 @@ export function KioskHome() {
       ) : null}
 
       <header className="mb-10 flex flex-col items-center text-center">
-        {settings?.kioskShowLogo && settings.orgLogoUrl ? (
+        {settings?.kioskShowLogo && settings.orgLogoUrl && isSafeDisplayUrl(settings.orgLogoUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={settings.orgLogoUrl}
@@ -192,11 +193,11 @@ function EventCard({ event, featured = false }: { event: KioskEvent; featured?: 
         featured ? "min-h-[360px]" : "min-h-[220px]",
       )}
     >
-      {hasImage ? (
+      {hasImage && cssImageUrl(event.imageUrl) ? (
         <>
           <div
             className="absolute inset-0 bg-slate-700 bg-cover bg-center"
-            style={{ backgroundImage: `url(${event.imageUrl})` }}
+            style={{ backgroundImage: cssImageUrl(event.imageUrl) }}
           />
           <div
             className="absolute inset-0"

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSettings, prisma } from "@/lib/db";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, requireApiAuth } from "@/lib/auth";
 import { applyScheduledDisplayPower } from "@/lib/display-power";
 import { parseDisplayOnDays, stringifyDisplayOnDays } from "@/lib/display-schedule";
 import { normalizeRegistrationUrl } from "@/lib/registration-domains";
@@ -83,10 +83,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const body = await request.json();
   const parsed = settingsSchema.safeParse(body);

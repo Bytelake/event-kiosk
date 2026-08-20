@@ -43,6 +43,13 @@ function extFromFilename(filename: string): OptimizedImageExt | null {
   }
 }
 
+/** Max decoded pixels (width * height * frames) accepted by sharp. */
+const MAX_INPUT_PIXELS = MAX_UPLOAD_IMAGE_WIDTH * MAX_UPLOAD_IMAGE_WIDTH;
+
+function sharpOptions(animated = false) {
+  return { animated, limitInputPixels: MAX_INPUT_PIXELS };
+}
+
 function resizeIfNeeded(
   pipeline: Sharp,
   width: number | undefined,
@@ -62,7 +69,7 @@ async function encodeAnimatedGif(
   input: Buffer,
   width: number | undefined,
 ): Promise<Buffer> {
-  let pipeline = sharp(input, { animated: true }).rotate();
+  let pipeline = sharp(input, sharpOptions(true)).rotate();
   pipeline = resizeIfNeeded(pipeline, width);
   return pipeline.gif().toBuffer();
 }
@@ -74,7 +81,7 @@ async function encodeAsExt(
   width: number | undefined,
   hasAlpha: boolean,
 ): Promise<Buffer> {
-  let pipeline = sharp(input).rotate();
+  let pipeline = sharp(input, sharpOptions()).rotate();
   pipeline = resizeIfNeeded(pipeline, width);
 
   switch (ext) {
@@ -113,7 +120,7 @@ export async function optimizeUploadedImage(
   options: OptimizeOptions = {},
 ): Promise<{ buffer: Buffer; ext: OptimizedImageExt }> {
   const sharp = await loadSharp();
-  const metadata = await sharp(input, { animated: sourceExt === ".gif" }).metadata();
+  const metadata = await sharp(input, sharpOptions(sourceExt === ".gif")).metadata();
   const outputExt = pickOutputExt(sourceExt, metadata, options.preserveExt);
 
   if (outputExt === ".gif" && (metadata.pages ?? 1) > 1) {

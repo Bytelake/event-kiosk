@@ -88,6 +88,7 @@ export async function GET(
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
+        "X-Content-Type-Options": "nosniff",
         "Content-Type": contentTypeForUpload(filename),
         "Cache-Control": "public, max-age=31536000, immutable",
         ETag: etag,

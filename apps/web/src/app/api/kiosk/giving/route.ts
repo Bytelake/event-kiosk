@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getSettings, prisma } from "@/lib/db";
 import { formatValidationError, kioskGivingSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_MAX = 8;
 
 export async function POST(request: Request) {
+  const settings = await getSettings();
+  if (!settings.givingEnabled) {
+    return NextResponse.json({ error: "Giving is not available" }, { status: 404 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const inquiry = await prisma.inquiry.create({
+  await prisma.inquiry.create({
     data: {
       kind: "giving",
       name,
@@ -68,5 +73,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, id: inquiry.id }, { status: 201 });
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

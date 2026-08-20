@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import { optimizeUploadedImage } from "@/lib/image-optimize";
 import { detectImageFormat, MAX_UPLOAD_BYTES } from "@/lib/upload-validation";
 import { uploadPublicUrl, writeUploadedImage } from "@/lib/uploads";
 
 export async function POST(request: NextRequest) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const formData = await request.formData();
   const file = formData.get("file");

@@ -53,7 +53,7 @@ sudo bash install.sh
 # sudo bash install.sh --display=x11
 ```
 
-Set your admin password:
+Set your admin password (installers generate `SESSION_SECRET` automatically):
 
 ```bash
 sudo nano /var/lib/kiosk/.env
@@ -153,7 +153,7 @@ While `dev:desktop` is running, navigate to the kiosk screen you want, then pres
 
 ### Environment variables
 
-Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Set `COOKIE_SECURE=false` when using HTTP on a kiosk. Set `KIOSK_DESKTOP_MODE=true` for local desktop dev (see above).
+Copy `apps/web/.env.example` to `apps/web/.env`. Required: `ADMIN_PASSWORD`, `SESSION_SECRET`. Production installs generate `SESSION_SECRET`; change `ADMIN_PASSWORD` away from `changeme` before exposing admin on the network. Set `COOKIE_SECURE=false` when using HTTP on a kiosk. Set `KIOSK_DESKTOP_MODE=true` for local desktop dev (see above).
 
 ### Release packages
 

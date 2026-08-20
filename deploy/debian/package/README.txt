@@ -8,7 +8,7 @@ Supported: Debian 12+, Ubuntu 22.04+, Raspberry Pi OS (Lite or Desktop), arm64 a
 INSTALL
   1. Extract the tarball on the target system
   2. sudo bash install.sh
-  3. sudo nano /var/lib/kiosk/.env
+  3. sudo nano /var/lib/kiosk/.env   # change ADMIN_PASSWORD; SESSION_SECRET is generated
   4. sudo systemctl restart kiosk-web
 
   Admin: http://<host-ip>:3000/admin

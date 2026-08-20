@@ -1,17 +1,15 @@
 import { readFile, stat } from "fs/promises";
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import { DatabaseBackupError } from "@/lib/database-backup";
 import { backupFilename, getDatabaseFilePath } from "@/lib/database-path";
 import { createFullBackupBuffer, fullBackupFilename } from "@/lib/full-backup";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function POST(request: Request) {
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const format = new URL(request.url).searchParams.get("format");
 

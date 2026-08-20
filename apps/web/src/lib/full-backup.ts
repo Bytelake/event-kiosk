@@ -4,6 +4,7 @@ import os from "os";
 import path from "path";
 import { DatabaseBackupError, isSqliteFile, validateKioskDatabaseFile } from "@/lib/database-backup";
 import { backupFilename, getDatabaseFilePath } from "@/lib/database-path";
+import { detectImageFormat } from "@/lib/upload-validation";
 import { getUploadsDir, listUploadFilenames } from "@/lib/uploads";
 
 export const BACKUP_FORMAT_VERSION = 1;
@@ -11,6 +12,8 @@ export const BACKUP_DB_ENTRY = "kiosk.db";
 export const BACKUP_MANIFEST_ENTRY = "manifest.json";
 export const BACKUP_UPLOADS_DIR = "uploads";
 export const MAX_FULL_BACKUP_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_BACKUP_ENTRIES = 4_000;
+const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
 
 const ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 
@@ -91,9 +94,41 @@ export async function extractFullBackup(buffer: Buffer): Promise<{
   }
 
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "kiosk-backup-import-"));
-  const entries = unzipSync(new Uint8Array(buffer));
+  let uncompressedBytes = 0;
+  let entryCount = 0;
+  let entries: Record<string, Uint8Array>;
+  try {
+    entries = unzipSync(new Uint8Array(buffer), {
+      filter(file) {
+        entryCount += 1;
+        if (entryCount > MAX_BACKUP_ENTRIES) {
+          throw new DatabaseBackupError("Invalid backup: too many files in archive");
+        }
+
+        const size = file.originalSize || 0;
+        if (size > MAX_BACKUP_FILE_BYTES) {
+          throw new DatabaseBackupError("Invalid backup: a file in the archive is too large");
+        }
+
+        uncompressedBytes += size;
+        if (uncompressedBytes > MAX_FULL_BACKUP_BYTES) {
+          throw new DatabaseBackupError("Invalid backup: uncompressed archive is too large");
+        }
+
+        return true;
+      },
+    });
+  } catch (error) {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
+    if (error instanceof DatabaseBackupError) throw error;
+    throw new DatabaseBackupError("Invalid backup archive");
+  }
 
   for (const [entryPath, content] of Object.entries(entries)) {
+    if (content.byteLength > MAX_BACKUP_FILE_BYTES) {
+      await rm(tempDir, { recursive: true, force: true });
+      throw new DatabaseBackupError("Invalid backup: a file in the archive is too large");
+    }
     const targetPath = resolveSafeEntryPath(tempDir, entryPath);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, content);
@@ -143,10 +178,22 @@ export async function restoreUploadsFromBackup(sourceDir: string): Promise<numbe
     if (!entry.isFile()) {
       continue;
     }
+    if (
+      !entry.name ||
+      entry.name.includes("..") ||
+      entry.name.includes("/") ||
+      entry.name.includes("\\")
+    ) {
+      continue;
+    }
 
     const sourcePath = path.join(sourceDir, entry.name);
-    const targetPath = path.join(uploadsDir, entry.name);
+    const targetPath = path.join(uploadsDir, path.basename(entry.name));
     const fileBuffer = await readFile(sourcePath);
+    const detected = detectImageFormat(fileBuffer);
+    if (!detected) {
+      continue;
+    }
 
     const ext = path.extname(entry.name).toLowerCase();
     const sourceExt =
@@ -154,18 +201,14 @@ export async function restoreUploadsFromBackup(sourceDir: string): Promise<numbe
         ? ".jpg"
         : ext === ".jpg" || ext === ".png" || ext === ".gif" || ext === ".webp"
           ? ext
-          : null;
+          : detected.ext;
 
-    if (sourceExt) {
-      try {
-        const optimized = await optimizeUploadedImage(fileBuffer, sourceExt, {
-          preserveExt: sourceExt,
-        });
-        await writeFile(targetPath, optimized.buffer);
-      } catch {
-        await writeFile(targetPath, fileBuffer);
-      }
-    } else {
+    try {
+      const optimized = await optimizeUploadedImage(fileBuffer, sourceExt, {
+        preserveExt: sourceExt,
+      });
+      await writeFile(targetPath, optimized.buffer);
+    } catch {
       await writeFile(targetPath, fileBuffer);
     }
 

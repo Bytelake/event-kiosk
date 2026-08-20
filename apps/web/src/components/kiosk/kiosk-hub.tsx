@@ -14,6 +14,7 @@ import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
 import { KioskHome } from "@/components/kiosk/kiosk-home";
 import { openRegistration } from "@/lib/kiosk-shell";
 import { preloadImageUrls } from "@/lib/preload-images";
+import { isSafeDisplayUrl } from "@/lib/media-url";
 
 const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
   events: Calendar,
@@ -62,7 +63,7 @@ export function KioskHub() {
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-[1400px] flex-col px-5 py-10 md:px-8">
       <header className="mb-8 flex shrink-0 flex-col items-center text-center">
-        {settings?.kioskShowLogo && settings.orgLogoUrl ? (
+        {settings?.kioskShowLogo && settings.orgLogoUrl && isSafeDisplayUrl(settings.orgLogoUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={settings.orgLogoUrl}

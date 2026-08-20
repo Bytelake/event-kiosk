@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import { formatWallClockDateTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +16,9 @@ function toCsvRow(values: string[]): string {
   return values.map(csvCell).join(",");
 }
 
-export async function GET() {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function POST() {
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const inquiries = await prisma.inquiry.findMany({
     orderBy: { createdAt: "desc" },

@@ -19,6 +19,8 @@ log "Updating Event Kiosk at ${INSTALL_DIR}..."
 log "Data directory ${KIOSK_DATA_DIR} will not be modified."
 
 ensure_data_dir
+ensure_session_secret
+warn_if_default_admin_password
 
 log "Installing updated application files..."
 rsync -a --delete \

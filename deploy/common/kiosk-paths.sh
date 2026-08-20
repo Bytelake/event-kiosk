@@ -7,6 +7,8 @@
 
 KIOSK_INSTALL_DIR="${KIOSK_INSTALL_DIR:-/opt/kiosk}"
 KIOSK_DATA_DIR="${KIOSK_DATA_DIR:-/var/lib/kiosk}"
+DEFAULT_ADMIN_PASSWORD="changeme"
+DEFAULT_SESSION_SECRET="change-this-to-a-long-random-string"
 
 kiosk_env_file() { echo "${KIOSK_DATA_DIR}/.env"; }
 kiosk_db_file() { echo "${KIOSK_DATA_DIR}/kiosk.db"; }
@@ -29,12 +31,79 @@ normalize_env_file_quotes() {
     "${env_file}"
 }
 
+env_file_value() {
+  local env_file="$1"
+  local key="$2"
+  [[ -f "${env_file}" ]] || return 0
+  grep "^${key}=" "${env_file}" | tail -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"
+}
+
+set_env_file_value() {
+  local env_file="$1"
+  local key="$2"
+  local value="$3"
+  if grep -q "^${key}=" "${env_file}"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "${env_file}"
+  else
+    echo "${key}=${value}" >>"${env_file}"
+  fi
+}
+
+generate_session_secret() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 32
+    return 0
+  fi
+  dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n'
+}
+
+# Replace missing/default SESSION_SECRET values. Safe to run on updates.
+ensure_session_secret() {
+  local env_file
+  env_file="$(kiosk_env_file)"
+  [[ -f "${env_file}" ]] || return 0
+
+  local current
+  current="$(env_file_value "${env_file}" SESSION_SECRET)"
+  if [[ -n "${current}" && "${current}" != "${DEFAULT_SESSION_SECRET}" && ${#current} -ge 16 ]]; then
+    return 0
+  fi
+
+  local secret
+  secret="$(generate_session_secret)"
+  if [[ -z "${secret}" || ${#secret} -lt 16 ]]; then
+    echo "[data] ERROR: could not generate SESSION_SECRET" >&2
+    return 1
+  fi
+
+  set_env_file_value "${env_file}" SESSION_SECRET "${secret}"
+  chown kiosk:kiosk "${env_file}"
+  chmod 640 "${env_file}"
+  echo "[data] Generated a random SESSION_SECRET in ${env_file}"
+}
+
+warn_if_default_admin_password() {
+  local env_file
+  env_file="$(kiosk_env_file)"
+  [[ -f "${env_file}" ]] || return 0
+
+  local current
+  current="$(env_file_value "${env_file}" ADMIN_PASSWORD)"
+  if [[ "${current}" == "${DEFAULT_ADMIN_PASSWORD}" ]]; then
+    echo "[data] WARNING: ADMIN_PASSWORD is still '${DEFAULT_ADMIN_PASSWORD}'."
+    echo "[data]          Change it in ${env_file} before exposing admin on the network."
+  fi
+}
+
 write_env_if_missing() {
   local template="${1:-}"
   local env_file
   env_file="$(kiosk_env_file)"
 
-  [[ -f "${env_file}" ]] && return 0
+  if [[ -f "${env_file}" ]]; then
+    ensure_session_secret
+    return 0
+  fi
 
   if [[ -n "${template}" && -f "${template}" ]]; then
     cp "${template}" "${env_file}"
@@ -42,8 +111,8 @@ write_env_if_missing() {
     cat >"${env_file}" <<EOF
 DATABASE_URL=file:$(kiosk_db_file)
 UPLOADS_DIR=$(kiosk_uploads_dir)
-ADMIN_PASSWORD=changeme
-SESSION_SECRET=change-this-to-a-long-random-string
+ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+SESSION_SECRET=${DEFAULT_SESSION_SECRET}
 COOKIE_SECURE=false
 EOF
   fi
@@ -63,6 +132,7 @@ EOF
   fi
 
   normalize_env_file_quotes "${env_file}"
+  ensure_session_secret
 
   chown kiosk:kiosk "${env_file}"
   chmod 640 "${env_file}"

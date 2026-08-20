@@ -7,6 +7,7 @@ import {
   type KioskBackgroundStyle,
 } from "@/lib/kiosk-background";
 import { shouldUseLightKioskText } from "@/lib/kiosk-background-luminance";
+import { cssImageUrl } from "@/lib/media-url";
 import {
   kioskColorSchemeStyle,
   resolveKioskColorScheme,
@@ -26,7 +27,8 @@ export function KioskBackground({
   animated?: boolean;
   children: React.ReactNode;
 }) {
-  const useImage = style === "image" && Boolean(imageUrl);
+  const photoUrl = cssImageUrl(imageUrl);
+  const useImage = style === "image" && Boolean(photoUrl);
   const scheme = resolveKioskColorScheme(colors);
   const [lightText, setLightText] = useState(false);
 
@@ -72,7 +74,7 @@ export function KioskBackground({
           <>
             <div
               className="kiosk-bg-photo"
-              style={{ backgroundImage: `url(${imageUrl})` }}
+              style={{ backgroundImage: photoUrl }}
             />
             <div className="kiosk-bg-scrim absolute inset-0" />
           </>

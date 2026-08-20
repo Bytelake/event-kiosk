@@ -25,6 +25,21 @@ export function KioskGivingForm() {
     );
   }
 
+  if (!settings.givingEnabled) {
+    return (
+      <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-8">
+        <Link
+          href="/kiosk"
+          className="kiosk-glass-panel mb-6 inline-flex h-16 items-center gap-2 rounded-2xl px-5 text-lg font-semibold text-[var(--kiosk-text)] transition active:scale-95"
+        >
+          <ArrowLeft className="h-[22px] w-[22px]" />
+          Back to Home
+        </Link>
+        <p className="kiosk-on-bg kiosk-on-bg-muted text-xl">Giving is not available right now.</p>
+      </div>
+    );
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -115,6 +130,7 @@ export function KioskGivingForm() {
             type="text"
             required
             autoComplete="name"
+            maxLength={120}
             value={name}
             onChange={(event) => setName(event.target.value)}
             className={fieldClass}
@@ -131,6 +147,7 @@ export function KioskGivingForm() {
             type="email"
             required
             autoComplete="email"
+            maxLength={254}
             inputMode="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -147,6 +164,7 @@ export function KioskGivingForm() {
             name="phone"
             type="tel"
             autoComplete="tel"
+            maxLength={40}
             inputMode="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}

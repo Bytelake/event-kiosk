@@ -30,7 +30,9 @@ export async function refreshAllowedDomains(apiBase: string) {
       registrationDomainEnforcement?: boolean;
     };
     if (Array.isArray(data.allowedDomains)) {
-      extraDomains = data.allowedDomains;
+      extraDomains = data.allowedDomains.filter(
+        (domain): domain is string => typeof domain === "string",
+      );
     }
     if (typeof data.registrationDomainEnforcement === "boolean") {
       enforcementEnabled = data.registrationDomainEnforcement;

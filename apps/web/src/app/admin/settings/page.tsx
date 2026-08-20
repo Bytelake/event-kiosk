@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
     setBackupMessage("");
 
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setBackupMessage(body.error || "Export failed");

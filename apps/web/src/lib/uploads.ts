@@ -44,6 +44,10 @@ export async function writeUploadedImage(buffer: Buffer, ext: string): Promise<s
 }
 
 export async function deleteUploadByFilename(filename: string): Promise<void> {
+  if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+    return;
+  }
+
   const filePath = path.join(getUploadsDir(), filename);
   try {
     await unlink(filePath);
