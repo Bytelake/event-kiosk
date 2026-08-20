@@ -139,10 +139,12 @@ function createWindow() {
 
   mainWindow.loadURL(KIOSK_URL);
 
-  setupKioskInputMonitoring(mainWindow.webContents, {
-    coveredByKeyboard: true,
-  });
-  dismissKeyboardOnNavigation(mainWindow.webContents, { includeInPage: true });
+  if (usesOnScreenKeyboard()) {
+    setupKioskInputMonitoring(mainWindow.webContents, {
+      coveredByKeyboard: true,
+    });
+    dismissKeyboardOnNavigation(mainWindow.webContents, { includeInPage: true });
+  }
 
   if (!desktopMode) {
     mainWindow.webContents.on("did-finish-load", () => {
@@ -200,13 +202,18 @@ function setupKeyboardCrashRecovery(view: BrowserView) {
 
 const KEYBOARD_BACKGROUND = "#1e293b";
 
+// Production kiosk uses the on-screen keyboard. Desktop dev keeps the OS keyboard.
+function usesOnScreenKeyboard() {
+  return !desktopMode;
+}
+
 function raiseKeyboardView() {
   if (!mainWindow || !keyboardView) return;
   mainWindow.setTopBrowserView(keyboardView);
 }
 
 function showKeyboard(target: KeyboardTarget) {
-  if (!mainWindow) return;
+  if (!mainWindow || !usesOnScreenKeyboard()) return;
 
   keyboardTarget = target;
   keyboardVisible = true;
@@ -306,6 +313,8 @@ function setupKioskInputMonitoring(
   webContents: WebContents,
   options?: { coveredByKeyboard?: boolean },
 ) {
+  if (!usesOnScreenKeyboard()) return;
+
   const inject = () => {
     void webContents.insertCSS(KIOSK_KEYBOARD_CSS);
     if (options?.coveredByKeyboard) {
