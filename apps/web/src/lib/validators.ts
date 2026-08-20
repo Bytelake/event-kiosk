@@ -66,12 +66,35 @@ export const settingsSchema = z.object({
   kioskBackgroundStyle: z.enum(KIOSK_BACKGROUND_STYLES).optional(),
   kioskBackgroundImageUrl: z.string().optional().nullable(),
   registrationDomainEnforcement: z.boolean().optional(),
+  newsletterEnabled: z.boolean().optional(),
+  newsletterTitle: z.string().optional(),
+  newsletterBody: z.string().optional(),
+  newsletterUrl: z.string().url().optional().or(z.literal("")),
+  newsletterButtonLabel: z.string().optional(),
+  givingEnabled: z.boolean().optional(),
+  givingTitle: z.string().optional(),
+  givingBody: z.string().optional(),
+  givingSuccessMessage: z.string().optional(),
+  givingNotifyEmail: z.string().email().optional().or(z.literal("")),
+  givingVisitorEmailSubject: z.string().optional(),
+  givingVisitorEmailBody: z.string().optional(),
   kioskDisplayEnabled: z.boolean().optional(),
   kioskDisplayScheduleEnabled: z.boolean().optional(),
   kioskDisplayOnDays: z.array(z.number().int().min(0).max(6)).min(1).max(7).optional(),
   kioskDisplayOnTime: hhMmSchema.optional(),
   kioskDisplayOffTime: hhMmSchema.optional(),
   kioskDisplayIdleOffSeconds: z.number().int().min(0).max(86_400).optional(),
+});
+
+export const inquiryEmailStatuses = ["pending", "sent", "failed", "skipped"] as const;
+
+export const inquirySchema = z.object({
+  kind: z.string().min(1).default("giving"),
+  name: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().optional().nullable(),
+  message: z.string().optional().nullable(),
+  emailStatus: z.enum(inquiryEmailStatuses).optional(),
 });
 
 export const allowedDomainSchema = z.object({

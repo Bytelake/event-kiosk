@@ -126,6 +126,16 @@ npm run db:seed --workspace=web
 npm run dev
 ```
 
+This repo uses `prisma db push` (no migration history). After pulling schema changes onto an existing local `dev.db`, apply them with:
+
+```bash
+npx prisma db push --schema apps/web/prisma/schema.prisma
+# or
+npm run db:push --workspace=web
+```
+
+Do **not** delete `apps/web/prisma/dev.db`. `npm run dev` also runs `db push` before starting Next.js.
+
 Optional Electron shell: `npm run dev:shell`
 
 ### Desktop dev mode

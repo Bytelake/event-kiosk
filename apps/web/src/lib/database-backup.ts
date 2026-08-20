@@ -7,7 +7,7 @@ import { backupFilename, getDatabaseFilePath } from "@/lib/database-path";
 import { withDatabaseMaintenance } from "@/lib/database-maintenance";
 
 const SQLITE_MAGIC = "SQLite format 3\u0000";
-const REQUIRED_TABLES = ["Event", "Settings", "AllowedDomain"] as const;
+const REQUIRED_TABLES = ["Event", "Settings", "AllowedDomain", "Inquiry"] as const;
 const MAX_IMPORT_BYTES = 50 * 1024 * 1024;
 
 export class DatabaseBackupError extends Error {
