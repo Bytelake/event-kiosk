@@ -198,6 +198,13 @@ function setupKeyboardCrashRecovery(view: BrowserView) {
   });
 }
 
+const KEYBOARD_BACKGROUND = "#1e293b";
+
+function raiseKeyboardView() {
+  if (!mainWindow || !keyboardView) return;
+  mainWindow.setTopBrowserView(keyboardView);
+}
+
 function showKeyboard(target: KeyboardTarget) {
   if (!mainWindow) return;
 
@@ -213,14 +220,28 @@ function showKeyboard(target: KeyboardTarget) {
         sandbox: true,
       },
     });
+    keyboardView.setBackgroundColor(KEYBOARD_BACKGROUND);
     setupKeyboardCrashRecovery(keyboardView);
     mainWindow.addBrowserView(keyboardView);
-    keyboardView.webContents.loadFile(path.join(__dirname, "keyboard.html"));
-  } else {
-    mainWindow.setTopBrowserView(keyboardView);
+
+    const keyboardPath = path.join(__dirname, "keyboard.html");
+    keyboardView.webContents.on(
+      "did-fail-load",
+      (_event, errorCode, errorDescription, validatedURL) => {
+        console.error(
+          "[kiosk] keyboard.html failed to load:",
+          errorCode,
+          errorDescription,
+          validatedURL,
+          `(expected ${keyboardPath})`,
+        );
+      },
+    );
+    void keyboardView.webContents.loadFile(keyboardPath);
   }
 
   layoutKioskViews();
+  raiseKeyboardView();
   setKeyboardOpenClass(true);
 }
 
