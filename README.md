@@ -2,21 +2,27 @@
 
 # Event Kiosk
 
-Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links.
+Free, self-hosted touchscreen hub for churches and similar venues. Visitors pick **Events**, **Newsletter**, or **Give** on a portrait display. Admins manage content from a browser.
 
 Runs on **Debian/Ubuntu** (including Raspberry Pi OS). Also runs locally for development on macOS, Linux, or Windows.
 
 <p align="center">
-  <img src="media/kiosk-home-20260608-204733.png" alt="Kiosk home screen listing upcoming events" width="320" />
-  <img src="media/kiosk-events-cmq61ci2t000132pxqp32g0hm-20260608-204729.png" alt="Kiosk event detail screen" width="320" />
+  <img src="media/kiosk-hub.png" alt="Kiosk hub with Events, Newsletter, and Give" width="280" />
+  <img src="media/kiosk-give.png" alt="Giving contact form on the kiosk" width="280" />
+  <img src="media/kiosk-events.png" alt="Kiosk events list" width="280" />
 </p>
 
 ## Features
 
-- Touch-friendly kiosk UI for large displays
-- Admin panel for managing events, branding, and settings
+- Home hub with Events, Newsletter, and Give (hide unused destinations in Admin → Pages)
+- Touch-friendly events list and detail; visitors sign up through any registration site you allow
+- Newsletter opens your existing sign-up URL in the same overlay as event registration
+- Giving contact form (name, email, optional phone) — **no card payments on the kiosk**; staff follow up from Admin → Inquiries
+- Admin panel for events, pages, inquiries, branding, and settings
 - HDMI display sleep (manual or weekly schedule) so the monitor can power down while the PC stays on
-- Fullscreen Electron shell with registration domain whitelist
+- Fullscreen Electron shell with an on-screen keyboard for any focused text field, plus a registration domain whitelist
+
+QR / barcode scanning is not included in this release. Automated SMTP follow-up for giving inquiries is not included yet; submissions are stored in Admin → Inquiries.
 
 ## Supported platforms
 
@@ -75,9 +81,9 @@ In **Admin → Settings → Backup & Restore** you can export or import kiosk da
 | Export type | File | Includes | Best for |
 |-------------|------|----------|----------|
 | **Full backup** | `.zip` (up to 2 GB) | SQLite database + all uploaded images (event photos, org logo, kiosk background) | Moving to a new machine, disaster recovery, cloning a kiosk |
-| **Database only** | `.db` | Events, settings, and registration domains only | Quick snapshots, inspecting data, when media files are unchanged or copied separately |
+| **Database only** | `.db` | Events, pages settings, inquiries, and registration domains | Quick snapshots, inspecting data, when media files are unchanged or copied separately |
 
-**Import** accepts either format. A full backup restores everything in one step. A database-only import replaces events and settings but does not restore image files — event and branding images will appear broken unless you also copy `/var/lib/kiosk/uploads/` (production) or `apps/web/public/uploads/` (local dev).
+**Import** accepts either format. A full backup restores everything in one step. A database-only import replaces events, settings, and inquiries but does not restore image files — event and branding images will appear broken unless you also copy `/var/lib/kiosk/uploads/` (production) or `apps/web/public/uploads/` (local dev).
 
 On production systems, persistent data lives in `/var/lib/kiosk/` (`kiosk.db` and `uploads/`). A full backup is the recommended way to migrate that data to a fresh install.
 
@@ -119,7 +125,9 @@ This starts the Next.js dev server and Electron shell together. Admin is still a
 
 Alternatively, set `KIOSK_DESKTOP_MODE=true` in `apps/web/.env` for web-only desktop behavior (visible cursor) when using `npm run dev` without the shell.
 
-Desktop mode disables hidden cursor styling. The idle timeout still follows the value in Admin → Settings (set to `0` to disable during local dev). Production kiosk behavior is unchanged when the flag is unset or `false`.
+Desktop mode disables hidden cursor styling and uses the OS keyboard. To preview the production on-screen keyboard (`keyboard.html`, used for the giving form and registration overlay), run `npm run dev:desktop:keyboard`. Production kiosk behavior is unchanged when the desktop flag is unset or `false`.
+
+The idle timeout still follows the value in Admin → Settings (set to `0` to disable during local dev).
 
 ### Display sleep (HDMI)
 
@@ -132,12 +140,16 @@ The kiosk writes DRM DPMS so HDMI actually stops signaling, which lets most moni
 
 #### Screenshots for docs
 
-While `dev:desktop` is running, navigate to the kiosk screen you want, then press **Cmd+Shift+S** (Mac) or **Ctrl+Shift+S** (Linux/Windows). This saves an exact **1080×1920** PNG to `screenshots/` at the repo root (e.g. `kiosk-home-20250608-143022.png`). The shortcut is ignored while a registration overlay is open.
+While `dev:desktop` is running, navigate to the kiosk screen you want, then press **Cmd+Shift+S** (Mac) or **Ctrl+Shift+S** (Linux/Windows). This saves an exact **1080×1920** PNG to `screenshots/` at the repo root. Copy keepers into `media/` for README. The shortcut is ignored while a registration overlay is open (including newsletter sign-up).
 
 | URL | Purpose |
 |-----|---------|
-| http://localhost:3000/kiosk | Preview Kiosk UI |
+| http://localhost:3000/kiosk | Hub (or events list if only Events is enabled) |
+| http://localhost:3000/kiosk/give | Giving contact form |
+| http://localhost:3000/kiosk/events | Events list |
 | http://localhost:3000/admin | Admin panel (default password: `changeme`) |
+| http://localhost:3000/admin/pages | Newsletter URL vs giving form |
+| http://localhost:3000/admin/inquiries | Giving submissions |
 
 ### Environment variables
 
@@ -153,7 +165,7 @@ npm run package:debian amd64    # explicit arch label
 npm run package:debian arm64
 ```
 
-For local testing (not an official release), use a pre-release build so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-amd64-0.0.5-prerelease.abc1234.tar.gz`). The installed version shown in Admin → About uses the same label.
+This close-out ships as **0.1.0-pre.1** so the `v0.1.0` GitHub tag stays free for the real release. For extra local test builds on top of a stable version number, `package:debian:prerelease` adds a `prerelease.<git>` suffix (e.g. `event-kiosk-debian-amd64-0.1.0-prerelease.abc1234.tar.gz`). The installed version shown in Admin → About uses the package label.
 
 ```bash
 npm run package:debian:prerelease -- amd64
