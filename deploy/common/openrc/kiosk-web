@@ -20,6 +20,7 @@ start_pre() {
     export HOSTNAME=0.0.0.0
     export PORT=3000
     export KIOSK_DATA_DIR=/var/lib/kiosk
+    export KIOSK_ROOT=/opt/kiosk
     if [ -f /var/lib/kiosk/.env ]; then
         set -a
         # shellcheck disable=SC1091

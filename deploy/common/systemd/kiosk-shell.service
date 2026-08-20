@@ -13,6 +13,7 @@ Environment=DISPLAY=:0
 EnvironmentFile=-/var/lib/kiosk/display.env
 WorkingDirectory=/opt/kiosk/shell
 ExecStartPre=/bin/sleep 5
+ExecStartPre=+/opt/kiosk/bin/set-display-power.sh --configure-system
 ExecStartPre=/opt/kiosk/bin/set-display-rotation.sh --apply-x11
 ExecStart=/usr/bin/npm run start
 Restart=always

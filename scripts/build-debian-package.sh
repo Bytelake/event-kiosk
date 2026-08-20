@@ -116,7 +116,7 @@ stage_package_version_file
 cp -R "${ROOT}/apps/shell/dist/." "${PACKAGE_ROOT}/shell/dist/"
 cp "${ROOT}/apps/shell/package.json" "${PACKAGE_ROOT}/shell/package.json"
 cp "${ROOT}/apps/shell/src/registration-chrome.html" "${PACKAGE_ROOT}/shell/dist/registration-chrome.html"
-cp "${ROOT}/apps/shell/src/registration-keyboard.html" "${PACKAGE_ROOT}/shell/dist/registration-keyboard.html"
+cp "${ROOT}/apps/shell/src/keyboard.html" "${PACKAGE_ROOT}/shell/dist/keyboard.html"
 
 cp "${ROOT}/deploy/common/bin/"*.sh "${PACKAGE_ROOT}/bin/"
 cp "${ROOT}/deploy/common/systemd/"*.service "${PACKAGE_ROOT}/systemd/"

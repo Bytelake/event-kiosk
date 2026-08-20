@@ -12,6 +12,7 @@ Environment=KIOSK_URL=http://127.0.0.1:3000/kiosk
 EnvironmentFile=-/var/lib/kiosk/display.env
 WorkingDirectory=/opt/kiosk
 ExecStartPre=+/opt/kiosk/bin/set-display-rotation.sh --configure-system
+ExecStartPre=+/opt/kiosk/bin/set-display-power.sh --configure-system
 ExecStart=/opt/kiosk/bin/launch-kiosk-display.sh
 Restart=always
 RestartSec=5

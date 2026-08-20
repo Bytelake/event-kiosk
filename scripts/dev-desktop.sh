@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 # Start Next.js dev server and Electron shell in desktop mode (9:16 window).
+#
+# Usage:
+#   npm run dev:desktop              # OS keyboard (default)
+#   npm run dev:desktop -- --keyboard # on-screen keyboard (touch-kiosk preview)
+#   npm run dev:desktop:keyboard      # same as --keyboard
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KIOSK_URL="${KIOSK_URL:-http://localhost:3000/kiosk}"
 export KIOSK_DESKTOP_MODE=true
+
+for arg in "$@"; do
+  case "${arg}" in
+    --keyboard | -k)
+      export KIOSK_ONSCREEN_KEYBOARD=true
+      ;;
+  esac
+done
 
 cleanup() {
   if [[ -n "${WEB_PID:-}" ]] && kill -0 "${WEB_PID}" 2>/dev/null; then
@@ -27,5 +40,9 @@ until curl -sf "${KIOSK_URL}" >/dev/null 2>&1; do
   sleep 1
 done
 
-echo "[dev:desktop] Starting Electron shell..."
+if [[ "${KIOSK_ONSCREEN_KEYBOARD:-}" == "true" ]]; then
+  echo "[dev:desktop] Starting Electron shell (on-screen keyboard enabled)..."
+else
+  echo "[dev:desktop] Starting Electron shell (OS keyboard)..."
+fi
 npm run dev --workspace=shell

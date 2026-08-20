@@ -4,6 +4,13 @@ contextBridge.exposeInMainWorld("kioskShell", {
   isElectron: true,
   openRegistration: (url: string) => ipcRenderer.send("open-registration", url),
   closeRegistration: () => ipcRenderer.send("close-registration"),
+  notifyActivity: () => ipcRenderer.send("kiosk-display-activity"),
+});
+
+contextBridge.exposeInMainWorld("__kioskInput", {
+  notifyFocus: () => ipcRenderer.send("kiosk-input-focus"),
+  notifyDismiss: () => ipcRenderer.send("keyboard-hide"),
+  notifyActivity: () => ipcRenderer.send("kiosk-user-activity"),
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {

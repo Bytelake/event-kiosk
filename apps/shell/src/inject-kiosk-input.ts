@@ -1,7 +1,7 @@
 import type { WebContents } from "electron";
 
 /** Keeps autocomplete / select dropdowns usable above the virtual keyboard. */
-export const REGISTRATION_KEYBOARD_CSS = `
+export const KIOSK_KEYBOARD_CSS = `
   html.kiosk-keyboard-open {
     scroll-padding-bottom: 380px;
   }
@@ -18,8 +18,15 @@ export const REGISTRATION_KEYBOARD_CSS = `
   }
 `;
 
-/** Injected into registration pages to track focused inputs and handle virtual-keyboard typing. */
-export const REGISTRATION_INPUT_SCRIPT = `
+/** Extra space when the keyboard overlays the page instead of shrinking a BrowserView. */
+export const KIOSK_KEYBOARD_COVER_CSS = `
+  html.kiosk-keyboard-open body {
+    padding-bottom: 380px;
+  }
+`;
+
+/** Injected into kiosk pages (main window or overlay) to track focused inputs and handle virtual-keyboard typing. */
+export const KIOSK_INPUT_SCRIPT = `
 (function () {
   if (window.__kioskInputReady) return;
   window.__kioskInputReady = true;
@@ -381,6 +388,6 @@ export const REGISTRATION_INPUT_SCRIPT = `
 })();
 `;
 
-export function injectRegistrationInputScript(webContents: WebContents) {
-  return webContents.executeJavaScript(REGISTRATION_INPUT_SCRIPT, true);
+export function injectKioskInputScript(webContents: WebContents) {
+  return webContents.executeJavaScript(KIOSK_INPUT_SCRIPT, true);
 }

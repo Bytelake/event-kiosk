@@ -7,7 +7,7 @@ Install Event Kiosk on **Alpine Linux 3.20+** on **arm64** or **amd64**. Support
 - **Root access.** Minimal Alpine images have no `sudo` package; run install scripts as root (`su` or `doas`).
 - **community** repository enabled (install scripts uncomment or add this automatically).
 - **electron** from the testing repo (musl build). On newer releases (e.g. 3.24) where versioned `testing` is empty, the installer adds **edge/testing** automatically.
-- Node.js 20+ (`nodejs` apk or pre-installed).
+- Node.js 24+ (`nodejs` apk or pre-installed).
 
 ## Release package (recommended)
 
@@ -41,6 +41,8 @@ su -c 'rc-service kiosk-display restart'
 | `--display=wayland` | Headless cage on tty1 (default) |
 | `--display=x11` | Electron on X11 (`DISPLAY=:0`) |
 | `--rotation left` | Portrait monitor (`right`, `inverted`, `normal`) |
+
+After install, **Admin → Settings → Display output** can sleep HDMI on a weekly schedule so the monitor can power down while the PC stays on.
 
 ## Install from source
 

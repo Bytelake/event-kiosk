@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { copyFile, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/db";
@@ -24,9 +25,8 @@ export async function validateKioskDatabaseFile(filePath: string): Promise<{
   eventCount: number;
   domainCount: number;
 }> {
-  const client = new PrismaClient({
-    datasources: { db: { url: `file:${filePath}` } },
-  });
+  const adapter = new PrismaBetterSqlite3({ url: `file:${filePath}` });
+  const client = new PrismaClient({ adapter });
 
   try {
     const tables = await client.$queryRaw<Array<{ name: string }>>`

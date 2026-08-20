@@ -26,6 +26,7 @@ start_pre() {
         . /var/lib/kiosk/display.env
         set +a
     fi
+    /opt/kiosk/bin/set-display-power.sh --configure-system || true
     /opt/kiosk/bin/set-display-rotation.sh --apply-x11 || true
     sleep 5
 }

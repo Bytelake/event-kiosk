@@ -5,6 +5,7 @@ declare global {
     kioskShell?: {
       openRegistration: (url: string) => void;
       closeRegistration: () => void;
+      notifyActivity?: () => void;
       isElectron: boolean;
     };
   }

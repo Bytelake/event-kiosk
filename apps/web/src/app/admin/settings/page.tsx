@@ -9,10 +9,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SystemAboutSection } from "@/components/admin/system-about-section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { parseDisplayOnDays, WEEKDAYS } from "@/lib/display-schedule";
 
 interface SettingsForm {
   kioskIdleTimeoutSeconds: number;
   registrationDomainEnforcement: boolean;
+  kioskDisplayScheduleEnabled: boolean;
+  kioskDisplayOnDays: number[];
+  kioskDisplayOnTime: string;
+  kioskDisplayOffTime: string;
+}
+
+interface DisplayPowerStatus {
+  desiredOn: boolean;
+  hardwareOn: boolean | null;
+  available: boolean;
+  method: string | null;
+  error: string | null;
+}
+
+function toHhMm(value: string): string {
+  const match = /^([01]?\d|2[0-3]):([0-5]\d)/.exec(value.trim());
+  if (!match) return value;
+  return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}`;
+}
+
+function settingsFromApi(settingsData: {
+  kioskIdleTimeoutSeconds?: number;
+  registrationDomainEnforcement?: boolean;
+  kioskDisplayScheduleEnabled?: boolean;
+  kioskDisplayOnDays?: number[] | string;
+  kioskDisplayOnTime?: string;
+  kioskDisplayOffTime?: string;
+}): SettingsForm {
+  return {
+    kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
+    registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
+    kioskDisplayScheduleEnabled: settingsData.kioskDisplayScheduleEnabled ?? false,
+    kioskDisplayOnDays: parseDisplayOnDays(settingsData.kioskDisplayOnDays),
+    kioskDisplayOnTime: settingsData.kioskDisplayOnTime ?? "07:00",
+    kioskDisplayOffTime: settingsData.kioskDisplayOffTime ?? "22:00",
+  };
 }
 
 export default function AdminSettingsPage() {
@@ -24,18 +61,38 @@ export default function AdminSettingsPage() {
   const [importing, setImporting] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
   const [message, setMessage] = useState("");
+  const [displayStatus, setDisplayStatus] = useState<DisplayPowerStatus | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/settings").then((r) => r.json()),
       fetch("/api/domains").then((r) => r.json()),
     ]).then(([settingsData, domainData]) => {
-      setSettings({
-        kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
-        registrationDomainEnforcement: settingsData.registrationDomainEnforcement ?? true,
-      });
+      setSettings(settingsFromApi(settingsData));
       setDomains(domainData);
     });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDisplayStatus() {
+      try {
+        const res = await fetch("/api/display/power");
+        if (!res.ok) return;
+        const data = (await res.json()) as DisplayPowerStatus;
+        if (!cancelled) setDisplayStatus(data);
+      } catch {
+        // Ignore; status is informational.
+      }
+    }
+
+    void loadDisplayStatus();
+    const interval = setInterval(() => void loadDisplayStatus(), 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   if (!settings) {
@@ -55,6 +112,10 @@ export default function AdminSettingsPage() {
     const payload: Record<string, unknown> = {
       kioskIdleTimeoutSeconds: settings.kioskIdleTimeoutSeconds,
       registrationDomainEnforcement: settings.registrationDomainEnforcement,
+      kioskDisplayScheduleEnabled: settings.kioskDisplayScheduleEnabled,
+      kioskDisplayOnDays: settings.kioskDisplayOnDays,
+      kioskDisplayOnTime: toHhMm(settings.kioskDisplayOnTime) || "07:00",
+      kioskDisplayOffTime: toHhMm(settings.kioskDisplayOffTime) || "22:00",
     };
 
     const res = await fetch("/api/settings", {
@@ -66,6 +127,10 @@ export default function AdminSettingsPage() {
     setSaving(false);
     if (res.ok) {
       setMessage("Settings saved");
+      const powerRes = await fetch("/api/display/power");
+      if (powerRes.ok) {
+        setDisplayStatus((await powerRes.json()) as DisplayPowerStatus);
+      }
     }
   }
 
@@ -167,14 +232,7 @@ export default function AdminSettingsPage() {
       const settingsData = await settingsRes.json();
       const domainData = await domainRes.json();
 
-      setSettings((current) =>
-        current
-          ? {
-              ...current,
-              kioskIdleTimeoutSeconds: settingsData.kioskIdleTimeoutSeconds ?? 60,
-            }
-          : current,
-      );
+      setSettings((current) => (current ? { ...current, ...settingsFromApi(settingsData) } : current));
       setDomains(domainData);
     } catch {
       setBackupMessage("Import failed");
@@ -233,6 +291,124 @@ export default function AdminSettingsPage() {
                   Return to the events home screen after this many seconds without touch or scroll
                   input. Set to 0 to disable.
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h2 className="font-semibold">Display output</h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Sleep HDMI so the monitor can power down while the kiosk PC stays on. Sleeping the
+                output also typically powers down the touchscreen, so the display cannot be woken
+                from the panel — use{" "}
+                <span className="font-medium text-slate-700 dark:text-slate-300">Wake Display</span>{" "}
+                at the top of the page, or wait for the next scheduled on time.
+              </p>
+              {displayStatus && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {displayStatus.available
+                    ? `Monitor is currently ${
+                        displayStatus.hardwareOn === true
+                          ? "on"
+                          : displayStatus.hardwareOn === false
+                            ? "asleep"
+                            : "in an unknown state"
+                      }${displayStatus.method ? ` (${displayStatus.method})` : ""}.`
+                    : "Hardware display control is not available on this machine (normal during local development)."}
+                  {displayStatus.error ? ` ${displayStatus.error}` : ""}
+                </p>
+              )}
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={settings.kioskDisplayScheduleEnabled}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, kioskDisplayScheduleEnabled: e.target.checked } : s,
+                    )
+                  }
+                />
+                <span>
+                  <span className="font-medium">Use a weekly schedule</span>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Keep the monitor on during the hours below on selected days (Sunday by default).
+                    Outside those hours it stays off until the next scheduled window or you use Wake
+                    Display.
+                  </p>
+                </span>
+              </label>
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  On these days
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map((day) => {
+                    const checked = settings.kioskDisplayOnDays.includes(day.value);
+                    return (
+                      <label
+                        key={day.value}
+                        className={`inline-flex items-center rounded-lg border px-3 py-2 text-sm ${
+                          settings.kioskDisplayScheduleEnabled
+                            ? "cursor-pointer border-slate-200 dark:border-slate-700"
+                            : "cursor-not-allowed border-slate-100 text-slate-400 dark:border-slate-800"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="mr-2"
+                          disabled={!settings.kioskDisplayScheduleEnabled}
+                          checked={checked}
+                          onChange={(e) =>
+                            setSettings((s) => {
+                              if (!s) return s;
+                              const next = e.target.checked
+                                ? [...s.kioskDisplayOnDays, day.value]
+                                : s.kioskDisplayOnDays.filter((value) => value !== day.value);
+                              return {
+                                ...s,
+                                kioskDisplayOnDays:
+                                  next.length > 0 ? next.sort((a, b) => a - b) : s.kioskDisplayOnDays,
+                              };
+                            })
+                          }
+                        />
+                        {day.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Wake at
+                  </label>
+                  <Input
+                    type="time"
+                    value={settings.kioskDisplayOnTime}
+                    disabled={!settings.kioskDisplayScheduleEnabled}
+                    onChange={(e) =>
+                      setSettings((s) => (s ? { ...s, kioskDisplayOnTime: e.target.value } : s))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Sleep at
+                  </label>
+                  <Input
+                    type="time"
+                    value={settings.kioskDisplayOffTime}
+                    disabled={!settings.kioskDisplayScheduleEnabled}
+                    onChange={(e) =>
+                      setSettings((s) => (s ? { ...s, kioskDisplayOffTime: e.target.value } : s))
+                    }
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

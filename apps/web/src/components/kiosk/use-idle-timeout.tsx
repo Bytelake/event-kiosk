@@ -14,13 +14,13 @@ const ACTIVITY_EVENTS = [
 
 export function useIdleTimeout(onTimeout: () => void, ms: number | null) {
   useEffect(() => {
-    if (ms === null) return;
-
     const timeoutMs = ms;
-    let timer: ReturnType<typeof setTimeout>;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     function reset() {
-      clearTimeout(timer);
+      window.kioskShell?.notifyActivity?.();
+      if (timeoutMs === null) return;
+      if (timer) clearTimeout(timer);
       timer = setTimeout(onTimeout, timeoutMs);
     }
 
@@ -30,7 +30,7 @@ export function useIdleTimeout(onTimeout: () => void, ms: number | null) {
     reset();
 
     return () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       ACTIVITY_EVENTS.forEach((event) =>
         window.removeEventListener(event, reset),
       );

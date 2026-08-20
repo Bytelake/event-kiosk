@@ -45,6 +45,10 @@ export const googleFontFamilySchema = z
     "Must be a valid Google Font family name",
   );
 
+export const hhMmSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Must be HH:MM (24-hour)");
+
 export const settingsSchema = z.object({
   orgName: z.string().min(1).optional(),
   orgLogoUrl: z.string().optional().nullable(),
@@ -74,6 +78,12 @@ export const settingsSchema = z.object({
   givingNotifyEmail: z.string().email().optional().or(z.literal("")),
   givingVisitorEmailSubject: z.string().optional(),
   givingVisitorEmailBody: z.string().optional(),
+  kioskDisplayEnabled: z.boolean().optional(),
+  kioskDisplayScheduleEnabled: z.boolean().optional(),
+  kioskDisplayOnDays: z.array(z.number().int().min(0).max(6)).min(1).max(7).optional(),
+  kioskDisplayOnTime: hhMmSchema.optional(),
+  kioskDisplayOffTime: hhMmSchema.optional(),
+  kioskDisplayIdleOffSeconds: z.number().int().min(0).max(86_400).optional(),
 });
 
 export const inquiryEmailStatuses = ["pending", "sent", "failed", "skipped"] as const;

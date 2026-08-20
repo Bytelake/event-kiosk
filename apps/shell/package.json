@@ -4,15 +4,16 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "tsc && electron .",
-    "build": "tsc && cp src/registration-chrome.html src/registration-keyboard.html dist/",
+    "copy:assets": "cp src/registration-chrome.html src/keyboard.html dist/",
+    "dev": "tsc && npm run copy:assets && electron .",
+    "build": "tsc && npm run copy:assets",
     "start": "electron ."
   },
   "dependencies": {
-    "electron": "^35.1.2"
+    "electron": "^43.4.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^24",
     "typescript": "^5"
   }
 }
