@@ -56,8 +56,8 @@ export function KioskHub() {
   const destinations = settings ? getKioskDestinations(settings) : [];
 
   return (
-    <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-8">
-      <header className="mb-10 flex flex-col items-center text-center">
+    <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-[1400px] flex-col px-5 py-10 md:px-8">
+      <header className="mb-8 flex shrink-0 flex-col items-center text-center">
         {settings?.kioskShowLogo && settings.orgLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -77,7 +77,7 @@ export function KioskHub() {
         <p className="kiosk-on-bg kiosk-on-bg-muted mt-2 text-lg">Choose where you would like to go</p>
       </header>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+      <div className="flex flex-1 flex-col gap-5">
         {destinations.map((destination) => {
           const Icon = destinationIcons[destination.id];
           const description = settings
@@ -88,23 +88,23 @@ export function KioskHub() {
             <Link
               key={destination.id}
               href={destination.href}
-              className="kiosk-glass group flex min-h-[220px] flex-col justify-between rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition active:scale-[0.985]"
+              className="kiosk-glass group flex min-h-[240px] flex-1 flex-col justify-between rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition active:scale-[0.985]"
             >
               <div
-                className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white"
+                className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl text-white"
                 style={{
                   background:
                     "linear-gradient(135deg, var(--brand) 0%, var(--brand-secondary) 100%)",
                   boxShadow: "0 8px 24px var(--kiosk-brand-glow)",
                 }}
               >
-                <Icon className="h-7 w-7" aria-hidden />
+                <Icon className="h-8 w-8" aria-hidden />
               </div>
               <div>
-                <h2 className="kiosk-display mb-2 text-[clamp(1.5rem,3vw,2rem)] font-bold text-[var(--kiosk-text)]">
+                <h2 className="kiosk-display mb-3 text-[clamp(1.75rem,4vw,2.5rem)] font-bold text-[var(--kiosk-text)]">
                   {destination.label}
                 </h2>
-                <p className="text-base leading-snug text-[color-mix(in_srgb,var(--kiosk-text)_75%,transparent)]">
+                <p className="text-lg leading-snug text-[color-mix(in_srgb,var(--kiosk-text)_75%,transparent)]">
                   {description}
                 </p>
               </div>
