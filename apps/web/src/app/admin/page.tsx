@@ -15,21 +15,24 @@ interface DashboardData {
     published: number;
     hidden: number;
   };
+  inquiryCount: number;
 }
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetch("/api/events")
-      .then((res) => res.json())
-      .then((events) => {
+    Promise.all([fetch("/api/events"), fetch("/api/inquiries")])
+      .then(async ([eventsRes, inquiriesRes]) => {
+        const events = await eventsRes.json();
+        const inquiries = inquiriesRes.ok ? await inquiriesRes.json() : [];
         setData({
           eventCounts: {
             total: events.length,
             published: events.filter((e: { status: string }) => e.status === "published").length,
             hidden: events.filter((e: { kioskVisible: boolean }) => !e.kioskVisible).length,
           },
+          inquiryCount: Array.isArray(inquiries) ? inquiries.length : 0,
         });
       });
   }, []);
@@ -39,11 +42,12 @@ export default function AdminDashboardPage() {
       <AdminPage>
           <AdminPageHeader title="Dashboard" />
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               ["Total Events", data?.eventCounts.total],
               ["Published", data?.eventCounts.published],
               ["Hidden", data?.eventCounts.hidden],
+              ["Inquiries", data?.inquiryCount],
             ].map(([label, value]) => (
               <Card key={label as string}>
                 <CardContent>
@@ -63,6 +67,9 @@ export default function AdminDashboardPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/admin/events">
               <Button>Manage Events</Button>
+            </Link>
+            <Link href="/admin/inquiries">
+              <Button variant="secondary">View Inquiries</Button>
             </Link>
             <Link href="/admin/settings">
               <Button variant="secondary">Settings</Button>

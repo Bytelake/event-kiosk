@@ -1,5 +1,5 @@
-import { KioskGiveStub } from "@/components/kiosk/kiosk-destination-stub";
+import { KioskGivingForm } from "@/components/kiosk/kiosk-giving-form";
 
 export default function KioskGivePage() {
-  return <KioskGiveStub />;
+  return <KioskGivingForm />;
 }
