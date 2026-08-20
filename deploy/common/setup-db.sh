@@ -69,6 +69,36 @@ if [[ "${MODE}" == "--generate-only" ]]; then
   exit 0
 fi
 
+# Refuse relative SQLite URLs. Prisma 7 resolves file:./dev.db next to the app,
+# which would create a second empty database instead of updating kiosk.db.
+db_url=""
+if [[ -f "${ENV_FILE}" ]]; then
+  db_url="$(grep -E '^DATABASE_URL=' "${ENV_FILE}" | tail -1 | cut -d= -f2- || true)"
+  db_url="${db_url#\"}"
+  db_url="${db_url%\"}"
+  db_url="${db_url#\'}"
+  db_url="${db_url%\'}"
+fi
+db_url="${db_url:-file:${DB_FILE}}"
+db_path="${db_url#file:}"
+db_path="${db_path#//}"
+if [[ "${db_path}" != /* ]]; then
+  log "ERROR: DATABASE_URL must be an absolute SQLite path (got ${db_url})"
+  log "Refusing schema push so a second empty database is not created."
+  exit 1
+fi
+
+SEED_NEW_DB=0
+if [[ ! -f "${DB_FILE}" ]]; then
+  SEED_NEW_DB=1
+fi
+
+if [[ -f "${DB_FILE}" ]]; then
+  cp -a "${DB_FILE}" "${DB_FILE}.pre-schema-push"
+  chown kiosk:kiosk "${DB_FILE}.pre-schema-push"
+  log "Backed up existing database to ${DB_FILE}.pre-schema-push"
+fi
+
 log "Generating client and applying schema to ${DB_FILE}..."
 sudo -u kiosk bash -lc "
   set -euo pipefail
@@ -84,9 +114,10 @@ sudo -u kiosk bash -lc "
   export PRISMA_GENERATE_SKIP_AUTOINSTALL=1
 
   '${PRISMA_BIN}' generate --schema=prisma/schema.prisma
+  # Additive only. Never pass --force-reset or --accept-data-loss.
   '${PRISMA_BIN}' db push --schema=prisma/schema.prisma
 
-  if [[ ! -f '${DB_FILE}' ]]; then
+  if [[ '${SEED_NEW_DB}' == '1' ]]; then
     node prisma/seed.js
     echo '[setup-db] Seeded new database'
   else

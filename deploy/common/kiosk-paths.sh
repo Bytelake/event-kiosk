@@ -48,7 +48,8 @@ COOKIE_SECURE=false
 EOF
   fi
 
-  # Always use absolute paths for production data.
+  # Always use absolute paths for production data so Prisma cannot create a
+  # second SQLite file next to the app (as happened with file:./dev.db locally).
   if grep -q '^DATABASE_URL=' "${env_file}"; then
     sed -i "s|^DATABASE_URL=.*|DATABASE_URL=file:$(kiosk_db_file)|" "${env_file}"
   else
