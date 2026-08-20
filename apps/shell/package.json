@@ -4,8 +4,9 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "tsc && electron .",
-    "build": "tsc && cp src/registration-chrome.html src/registration-keyboard.html dist/",
+    "copy:assets": "cp src/registration-chrome.html src/keyboard.html dist/",
+    "dev": "tsc && npm run copy:assets && electron .",
+    "build": "tsc && npm run copy:assets",
     "start": "electron ."
   },
   "dependencies": {

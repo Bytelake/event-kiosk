@@ -4,6 +4,7 @@ import {
   BrowserWindow,
   globalShortcut,
   ipcMain,
+  type WebContents,
 } from "electron";
 import fs from "fs/promises";
 import path from "path";
@@ -14,9 +15,10 @@ import {
 } from "./allowed-domains";
 import { captureKioskScreenshot } from "./capture-kiosk-screenshot";
 import {
-  injectRegistrationInputScript,
-  REGISTRATION_KEYBOARD_CSS,
-} from "./inject-registration-input";
+  injectKioskInputScript,
+  KIOSK_KEYBOARD_COVER_CSS,
+  KIOSK_KEYBOARD_CSS,
+} from "./inject-kiosk-input";
 import { noteDisplayActivity, startDisplayPowerControl } from "./display-power";
 
 const KIOSK_URL = process.env.KIOSK_URL ?? "http://localhost:3000/kiosk";
@@ -26,6 +28,8 @@ function isTruthyEnv(v: string | undefined): boolean {
   const s = (v ?? "").toLowerCase();
   return s === "true" || s === "1" || s === "yes";
 }
+
+const onScreenKeyboardInDesktop = isTruthyEnv(process.env.KIOSK_ONSCREEN_KEYBOARD);
 
 // Desktop window mode is opt-in via KIOSK_DESKTOP_MODE (dev:desktop). Do not tie
 // this to app.isPackaged — production installs run unpackaged `electron .`.
@@ -44,11 +48,14 @@ function configureGpuForEmbeddedLinux() {
 
 configureGpuForEmbeddedLinux();
 
+type KeyboardTarget = "main" | "registration";
+
 let mainWindow: BrowserWindow | null = null;
 let registrationView: BrowserView | null = null;
 let chromeView: BrowserView | null = null;
 let keyboardView: BrowserView | null = null;
 let keyboardVisible = false;
+let keyboardTarget: KeyboardTarget = "main";
 let registrationOpening = false;
 
 function destroyBrowserView(view: BrowserView | null) {
@@ -134,22 +141,20 @@ function createWindow() {
 
   mainWindow.loadURL(KIOSK_URL);
 
+  if (usesOnScreenKeyboard()) {
+    setupKioskInputMonitoring(mainWindow.webContents, {
+      coveredByKeyboard: true,
+    });
+    dismissKeyboardOnNavigation(mainWindow.webContents, { includeInPage: true });
+  }
+
   if (!desktopMode) {
     mainWindow.webContents.on("did-finish-load", () => {
       void mainWindow?.webContents.insertCSS(
         "html, body, *, a, button, [role='button'] { cursor: none !important; }",
       );
     });
-  }
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isRegistrationUrlAllowed(url)) {
-      openRegistrationView(url);
-    }
-    return { action: "deny" };
-  });
-
-  if (!desktopMode) {
     mainWindow.webContents.on("before-input-event", (event, input) => {
       noteDisplayActivity();
       if (input.alt || input.control || input.meta) {
@@ -169,11 +174,52 @@ function createWindow() {
       }
     });
   }
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isRegistrationUrlAllowed(url)) {
+      openRegistrationView(url);
+    }
+    return { action: "deny" };
+  });
 }
 
-function showKeyboard() {
-  if (!mainWindow || !registrationView) return;
+function typingWebContents(): WebContents | null {
+  if (keyboardTarget === "registration") {
+    return registrationView?.webContents ?? null;
+  }
+  return mainWindow?.webContents ?? null;
+}
 
+function setupKeyboardCrashRecovery(view: BrowserView) {
+  view.webContents.on("render-process-gone", (_event, details) => {
+    console.error(
+      "[kiosk] On-screen keyboard renderer gone:",
+      details.reason,
+      "exitCode=",
+      details.exitCode,
+    );
+    hideKeyboard();
+  });
+}
+
+const KEYBOARD_BACKGROUND = "#1e293b";
+
+// Production kiosk always uses the on-screen keyboard. Desktop dev defaults to the
+// OS keyboard unless KIOSK_ONSCREEN_KEYBOARD is set (dev:desktop -- --keyboard).
+function usesOnScreenKeyboard() {
+  if (!desktopMode) return true;
+  return onScreenKeyboardInDesktop;
+}
+
+function raiseKeyboardView() {
+  if (!mainWindow || !keyboardView) return;
+  mainWindow.setTopBrowserView(keyboardView);
+}
+
+function showKeyboard(target: KeyboardTarget) {
+  if (!mainWindow || !usesOnScreenKeyboard()) return;
+
+  keyboardTarget = target;
   keyboardVisible = true;
 
   if (!keyboardView) {
@@ -185,64 +231,114 @@ function showKeyboard() {
         sandbox: true,
       },
     });
-    setupRegistrationCrashRecovery(keyboardView, "Registration keyboard");
+    keyboardView.setBackgroundColor(KEYBOARD_BACKGROUND);
+    setupKeyboardCrashRecovery(keyboardView);
     mainWindow.addBrowserView(keyboardView);
-    keyboardView.webContents.loadFile(
-      path.join(__dirname, "registration-keyboard.html"),
+
+    const keyboardPath = path.join(__dirname, "keyboard.html");
+    keyboardView.webContents.on(
+      "did-fail-load",
+      (_event, errorCode, errorDescription, validatedURL) => {
+        console.error(
+          "[kiosk] keyboard.html failed to load:",
+          errorCode,
+          errorDescription,
+          validatedURL,
+          `(expected ${keyboardPath})`,
+        );
+      },
     );
+    void keyboardView.webContents.loadFile(keyboardPath);
   }
 
-  layoutRegistrationViews();
-  setRegistrationKeyboardOpen(true);
+  layoutKioskViews();
+  raiseKeyboardView();
+  setKeyboardOpenClass(true);
 }
 
 function hideKeyboard() {
   if (!keyboardVisible && !keyboardView) return;
+  const previousTarget = typingWebContents();
   keyboardVisible = false;
   destroyBrowserView(keyboardView);
   keyboardView = null;
-  layoutRegistrationViews();
-  setRegistrationKeyboardOpen(false);
-  void registrationView?.webContents.executeJavaScript(
+  layoutKioskViews();
+  setKeyboardOpenClass(false);
+  endEditingIn(previousTarget);
+}
+
+function executeInWebContents(webContents: WebContents | null, script: string) {
+  if (!webContents || webContents.isDestroyed()) return;
+  void webContents.executeJavaScript(script, true);
+}
+
+function setKeyboardOpenClass(open: boolean) {
+  const mainScript = `document.documentElement.classList.toggle("kiosk-keyboard-open", ${
+    open && keyboardTarget === "main"
+  })`;
+  const overlayScript = `document.documentElement.classList.toggle("kiosk-keyboard-open", ${
+    open && keyboardTarget === "registration"
+  })`;
+  executeInWebContents(mainWindow?.webContents ?? null, mainScript);
+  executeInWebContents(registrationView?.webContents ?? null, overlayScript);
+}
+
+function endEditingIn(webContents: WebContents | null) {
+  executeInWebContents(
+    webContents,
     "window.__kioskEndEditing && window.__kioskEndEditing()",
-    true,
   );
 }
 
-function setRegistrationKeyboardOpen(open: boolean) {
-  if (!registrationView) return;
-  void registrationView.webContents.executeJavaScript(
-    `document.documentElement.classList.toggle("kiosk-keyboard-open", ${open})`,
-    true,
-  );
-}
-
-function sendToRegistrationTyping(method: string, arg?: string) {
-  if (!registrationView) return;
+function sendToFocusedTyping(method: string, arg?: string) {
   const script = arg
     ? `window.__kioskTyping && window.__kioskTyping.${method}(${JSON.stringify(arg)})`
     : `window.__kioskTyping && window.__kioskTyping.${method}()`;
-  void registrationView.webContents.executeJavaScript(script, true);
+  executeInWebContents(typingWebContents(), script);
+}
+
+function resolveKeyboardTarget(sender: WebContents): KeyboardTarget {
+  if (registrationView && sender === registrationView.webContents) {
+    return "registration";
+  }
+  return "main";
 }
 
 const KIOSK_USER_ACTIVITY_EVENT = "kiosk-user-activity";
 
 function notifyMainWindowUserActivity() {
-  if (!mainWindow) return;
-  void mainWindow.webContents.executeJavaScript(
+  executeInWebContents(
+    mainWindow?.webContents ?? null,
     `window.dispatchEvent(new Event(${JSON.stringify(KIOSK_USER_ACTIVITY_EVENT)}))`,
-    true,
   );
 }
 
-function setupRegistrationInputMonitoring(view: BrowserView) {
+function setupKioskInputMonitoring(
+  webContents: WebContents,
+  options?: { coveredByKeyboard?: boolean },
+) {
+  if (!usesOnScreenKeyboard()) return;
+
   const inject = () => {
-    void view.webContents.insertCSS(REGISTRATION_KEYBOARD_CSS);
-    void injectRegistrationInputScript(view.webContents);
+    void webContents.insertCSS(KIOSK_KEYBOARD_CSS);
+    if (options?.coveredByKeyboard) {
+      void webContents.insertCSS(KIOSK_KEYBOARD_COVER_CSS);
+    }
+    void injectKioskInputScript(webContents);
   };
 
-  view.webContents.on("did-finish-load", inject);
-  view.webContents.on("dom-ready", inject);
+  webContents.on("did-finish-load", inject);
+  webContents.on("dom-ready", inject);
+}
+
+function dismissKeyboardOnNavigation(
+  webContents: WebContents,
+  options?: { includeInPage?: boolean },
+) {
+  webContents.on("did-navigate", () => hideKeyboard());
+  if (options?.includeInPage) {
+    webContents.on("did-navigate-in-page", () => hideKeyboard());
+  }
 }
 
 function openRegistrationView(url: string) {
@@ -279,8 +375,9 @@ function openRegistrationView(url: string) {
 
     mainWindow.addBrowserView(chromeView);
     mainWindow.addBrowserView(registrationView);
-    setupRegistrationInputMonitoring(registrationView);
-    layoutRegistrationViews();
+    setupKioskInputMonitoring(registrationView.webContents);
+    dismissKeyboardOnNavigation(registrationView.webContents);
+    layoutKioskViews();
 
     chromeView.webContents.loadFile(path.join(__dirname, "registration-chrome.html"));
 
@@ -306,9 +403,6 @@ function openRegistrationView(url: string) {
 function closeRegistrationView() {
   hideKeyboard();
 
-  destroyBrowserView(keyboardView);
-  keyboardView = null;
-
   destroyBrowserView(registrationView);
   registrationView = null;
 
@@ -316,7 +410,7 @@ function closeRegistrationView() {
   chromeView = null;
 }
 
-function layoutRegistrationViews() {
+function layoutKioskViews() {
   if (!mainWindow) return;
   const bounds = mainWindow.getContentBounds();
   const keyboardHeight = keyboardVisible ? KEYBOARD_HEIGHT : 0;
@@ -459,7 +553,7 @@ function registerShortcuts() {
 
 app.whenReady().then(async () => {
   console.log(
-    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode}`,
+    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode} onScreenKeyboard=${usesOnScreenKeyboard()}`,
   );
 
   await refreshAllowedDomains(API_BASE);
@@ -486,8 +580,8 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.on("registration-input-focus", () => {
-    showKeyboard();
+  ipcMain.on("kiosk-input-focus", (event) => {
+    showKeyboard(resolveKeyboardTarget(event.sender));
   });
 
   ipcMain.on("kiosk-user-activity", () => {
@@ -502,26 +596,26 @@ app.whenReady().then(async () => {
   ipcMain.on("keyboard-key", (_event, key: string) => {
     noteDisplayActivity();
     notifyMainWindowUserActivity();
-    sendToRegistrationTyping("insertText", key);
+    sendToFocusedTyping("insertText", key);
   });
 
   ipcMain.on("keyboard-backspace", () => {
     noteDisplayActivity();
     notifyMainWindowUserActivity();
-    sendToRegistrationTyping("backspace");
+    sendToFocusedTyping("backspace");
   });
 
   ipcMain.on("keyboard-enter", () => {
     noteDisplayActivity();
     notifyMainWindowUserActivity();
-    sendToRegistrationTyping("enter");
+    sendToFocusedTyping("enter");
   });
 
   ipcMain.on("keyboard-hide", () => {
     hideKeyboard();
   });
 
-  mainWindow?.on("resize", layoutRegistrationViews);
+  mainWindow?.on("resize", layoutKioskViews);
 });
 
 app.on("window-all-closed", () => {

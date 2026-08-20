@@ -84,7 +84,7 @@ cp "${REPO_ROOT}/apps/web/.env.example" "${KIOSK_INSTALL_DIR}/web/.env.example"
 cp -R "${REPO_ROOT}/apps/shell/dist/." "${KIOSK_INSTALL_DIR}/shell/dist/"
 cp "${REPO_ROOT}/apps/shell/package.json" "${KIOSK_INSTALL_DIR}/shell/package.json"
 cp "${REPO_ROOT}/apps/shell/src/registration-chrome.html" "${KIOSK_INSTALL_DIR}/shell/dist/registration-chrome.html"
-cp "${REPO_ROOT}/apps/shell/src/registration-keyboard.html" "${KIOSK_INSTALL_DIR}/shell/dist/registration-keyboard.html"
+cp "${REPO_ROOT}/apps/shell/src/keyboard.html" "${KIOSK_INSTALL_DIR}/shell/dist/keyboard.html"
 
 debian_stage_common_files "${REPO_ROOT}" "${KIOSK_INSTALL_DIR}"
 

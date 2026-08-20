@@ -7,6 +7,12 @@ contextBridge.exposeInMainWorld("kioskShell", {
   notifyActivity: () => ipcRenderer.send("kiosk-display-activity"),
 });
 
+contextBridge.exposeInMainWorld("__kioskInput", {
+  notifyFocus: () => ipcRenderer.send("kiosk-input-focus"),
+  notifyDismiss: () => ipcRenderer.send("keyboard-hide"),
+  notifyActivity: () => ipcRenderer.send("kiosk-user-activity"),
+});
+
 contextBridge.exposeInMainWorld("electronAPI", {
   goBack: () => ipcRenderer.send("registration-go-back"),
   closeRegistration: () => ipcRenderer.send("close-registration"),
