@@ -4,7 +4,7 @@
 
 Free, self-hosted touchscreen software for listing events. Visitors browse on a display and sign up through any registration site you allow. Admins add images, descriptions, and links.
 
-Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also runs locally for development on macOS, Linux, or Windows.
+Runs on **Debian/Ubuntu** (including Raspberry Pi OS). Also runs locally for development on macOS, Linux, or Windows.
 
 <p align="center">
   <img src="media/kiosk-home-20260608-204733.png" alt="Kiosk home screen listing upcoming events" width="320" />
@@ -23,7 +23,6 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS) and **Alpine Linux**. Also
 | Platform | Install path | Architectures |
 |----------|--------------|---------------|
 | Debian, Ubuntu, Raspberry Pi OS | [deploy/debian/](deploy/debian/) | arm64, amd64 |
-| Alpine Linux | [deploy/alpine/](deploy/alpine/) | arm64, amd64 |
 
 ## Debian / Ubuntu (includes Raspberry Pi)
 
@@ -83,36 +82,6 @@ In **Admin → Settings → Backup & Restore** you can export or import kiosk da
 On production systems, persistent data lives in `/var/lib/kiosk/` (`kiosk.db` and `uploads/`). A full backup is the recommended way to migrate that data to a fresh install.
 
 To uninstall: `sudo bash /opt/kiosk/uninstall.sh` or press **Ctrl+Alt+F2**.
-
-## Alpine Linux
-
-Install from a **pre-built release package** or from source. See [deploy/alpine/README.md](deploy/alpine/README.md).
-
-### 1. Get the release package
-
-Download from [GitHub Releases](https://github.com/Bytelake/event-kiosk/releases):
-
-- `event-kiosk-alpine-amd64-*.tar.gz` — x86_64 PCs
-- `event-kiosk-alpine-arm64-*.tar.gz` — ARM SBCs
-
-### 2. Install
-
-```bash
-tar -xzf event-kiosk-alpine-*.tar.gz && cd event-kiosk-alpine-*
-su -c 'bash install.sh'                    # root required; Alpine has no sudo apk by default
-su -c 'nano /var/lib/kiosk/.env'
-su -c 'rc-service kiosk-web restart'         # systemd: systemctl restart kiosk-web
-```
-
-Portrait monitor: `su -c 'bash install.sh --rotation left'`
-
-### Install from source
-
-```bash
-git clone https://github.com/Bytelake/event-kiosk.git ~/event-kiosk
-cd ~/event-kiosk
-su -c 'bash deploy/alpine/install.sh'
-```
 
 ## Development
 
@@ -184,13 +153,6 @@ npm run package:debian amd64    # explicit arch label
 npm run package:debian arm64
 ```
 
-Build an Alpine tarball **on Alpine Linux** (musl):
-
-```bash
-npm run package:alpine amd64
-npm run package:alpine arm64
-```
-
 For local testing (not an official release), use a pre-release build so the tarball name includes a prerelease suffix and git commit (e.g. `event-kiosk-debian-amd64-0.0.5-prerelease.abc1234.tar.gz`). The installed version shown in Admin → About uses the same label.
 
 ```bash
@@ -220,7 +182,6 @@ apps/web/              Next.js kiosk UI, admin, and API
 apps/shell/            Electron kiosk shell
 deploy/common/         Shared install scripts, systemd units, paths
 deploy/debian/         Debian/Ubuntu installer and release package
-deploy/alpine/         Alpine Linux installer and release package
 deploy/pi-os-lite/     Deprecated wrappers (use deploy/debian/)
 archive/               Archived code (e.g. Breeze CHMS integration)
 scripts/               Build scripts
