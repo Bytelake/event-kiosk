@@ -3,13 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "prisma db push && next dev",
+    "dev": "prisma db push && prisma generate && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
+    "db:push": "prisma db push && prisma generate",
     "db:seed": "node prisma/seed.js",
     "postinstall": "prisma generate"
   },

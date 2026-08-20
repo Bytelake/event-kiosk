@@ -33,5 +33,9 @@ export function formatSettingsSaveError(
     return error;
   }
 
+  if (status >= 500) {
+    return "Server error while saving settings. If you recently pulled schema changes, stop the dev server, run npm run db:generate --workspace=web, then restart.";
+  }
+
   return "Could not save settings. Check your entries and try again.";
 }
