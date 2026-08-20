@@ -105,6 +105,17 @@ export const inquirySchema = z.object({
   emailStatus: z.enum(inquiryEmailStatuses).optional(),
 });
 
+export const kioskGivingSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: z.string().trim().email("Valid email is required"),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
+});
+
 export const allowedDomainSchema = z.object({
   domain: z.string().min(1),
 });
