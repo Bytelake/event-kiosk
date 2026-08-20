@@ -40,17 +40,6 @@ export function KioskDestinationStub({
   );
 }
 
-export function KioskNewsletterStub() {
-  const settings = useKioskSettings();
-
-  return (
-    <KioskDestinationStub
-      title={settings?.newsletterTitle ?? "Newsletter"}
-      body={settings?.newsletterBody ?? "Stay connected. Sign up for our newsletter."}
-    />
-  );
-}
-
 export function KioskGiveStub() {
   const settings = useKioskSettings();
 

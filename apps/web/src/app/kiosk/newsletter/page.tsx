@@ -1,5 +1,5 @@
-import { KioskNewsletterStub } from "@/components/kiosk/kiosk-destination-stub";
+import { KioskNewsletter } from "@/components/kiosk/kiosk-newsletter";
 
 export default function KioskNewsletterPage() {
-  return <KioskNewsletterStub />;
+  return <KioskNewsletter />;
 }
