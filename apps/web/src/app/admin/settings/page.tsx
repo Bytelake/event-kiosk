@@ -288,7 +288,7 @@ export default function AdminSettingsPage() {
                   }
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Return to the events home screen after this many seconds without touch or scroll
+                  Return to the kiosk home screen after this many seconds without touch or scroll
                   input. Set to 0 to disable.
                 </p>
               </div>

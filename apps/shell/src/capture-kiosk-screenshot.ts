@@ -57,10 +57,13 @@ async function waitForRenderReady(win: BrowserWindow): Promise<void> {
         const settingsDone = entries.some(
           (entry) => entry.name.includes("/api/settings") && entry.responseEnd > 0,
         );
-        const isEventDetail = /^\\/kiosk\\/events\\/[^/]+/.test(
-          window.location.pathname,
-        );
-        return isEventDetail ? eventsDone : eventsDone && settingsDone;
+        const pathname = window.location.pathname;
+        const isEventDetail = /^\\/kiosk\\/events\\/[^/]+/.test(pathname);
+        const isEventsList =
+          pathname === "/kiosk/events" || pathname === "/kiosk/events/";
+        if (isEventDetail) return eventsDone;
+        if (isEventsList) return eventsDone && settingsDone;
+        return settingsDone;
       };
 
       const isReady = () => {

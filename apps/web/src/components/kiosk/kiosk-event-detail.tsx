@@ -43,7 +43,7 @@ export function KioskEventDetail() {
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-8">
       <Link
-        href="/kiosk"
+        href="/kiosk/events"
         className="kiosk-glass-panel mb-6 inline-flex h-16 items-center gap-2 rounded-2xl px-5 text-lg font-semibold text-[var(--kiosk-text)] transition active:scale-95"
       >
         <ArrowLeft className="h-[22px] w-[22px]" />

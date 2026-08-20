@@ -468,6 +468,9 @@ function screenshotSlugFromUrl(url: string): string {
     if (pathname === "/kiosk" || pathname === "/kiosk/") {
       return "kiosk-home";
     }
+    if (pathname === "/kiosk/events" || pathname === "/kiosk/events/") {
+      return "kiosk-events";
+    }
     const match = pathname.match(/^\/kiosk\/events\/([^/]+)\/?$/);
     if (match) {
       return `kiosk-events-${match[1]}`;

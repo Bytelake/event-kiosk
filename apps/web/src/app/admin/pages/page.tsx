@@ -5,6 +5,7 @@ import { AdminPage } from "@/components/admin/admin-page";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AuthGuard } from "@/components/admin/login-form";
 import { PagesForm, type PagesFormValues } from "@/components/admin/pages-form";
+import { formatSettingsSaveError } from "@/lib/admin-api-errors";
 
 function pagesFromApi(settingsData: Record<string, unknown>): PagesFormValues {
   return {
@@ -38,9 +39,10 @@ export default function AdminPagesPage() {
   const [settings, setSettings] = useState<PagesFormValues | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/settings")
+    fetch("/api/settings", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((settingsData) => setSettings(pagesFromApi(settingsData)));
   }, []);
@@ -56,9 +58,11 @@ export default function AdminPagesPage() {
   async function handleSave(values: PagesFormValues): Promise<boolean> {
     setSaving(true);
     setMessage("");
+    setMessageIsError(false);
 
     const res = await fetch("/api/settings", {
       method: "PATCH",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         newsletterEnabled: values.newsletterEnabled,
@@ -81,8 +85,13 @@ export default function AdminPagesPage() {
       const saved = await res.json();
       setSettings(pagesFromApi(saved));
       setMessage("Pages saved");
+      setMessageIsError(false);
       return true;
     }
+
+    const body = (await res.json().catch(() => ({}))) as { error?: unknown };
+    setMessage(formatSettingsSaveError(res.status, body));
+    setMessageIsError(true);
     return false;
   }
 
@@ -95,6 +104,7 @@ export default function AdminPagesPage() {
           onSave={handleSave}
           saving={saving}
           message={message}
+          messageIsError={messageIsError}
         />
       </AdminPage>
     </AuthGuard>

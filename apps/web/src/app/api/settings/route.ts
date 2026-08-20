@@ -3,6 +3,7 @@ import { getSettings, prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 import { applyScheduledDisplayPower } from "@/lib/display-power";
 import { parseDisplayOnDays, stringifyDisplayOnDays } from "@/lib/display-schedule";
+import { normalizeRegistrationUrl } from "@/lib/registration-domains";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { settingsSchema } from "@/lib/validators";
 
@@ -58,6 +59,12 @@ function serializeSettings(
   return { ...serializePublicSettings(settings), ...serializeStaffSettings(settings) };
 }
 
+function definedSettingsFields<T extends Record<string, unknown>>(fields: T) {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined),
+  ) as Partial<T>;
+}
+
 export async function GET() {
   const settings = await getSettings();
   const domains = await prisma.allowedDomain.findMany({ orderBy: { domain: "asc" } });
@@ -91,49 +98,73 @@ export async function PATCH(request: Request) {
   const existing = await getSettings();
   const previousLogoUrl = existing.orgLogoUrl;
   const previousBackgroundImageUrl = existing.kioskBackgroundImageUrl;
-  const settings = await prisma.settings.update({
-    where: { id: "default" },
-    data: {
-      orgName: data.orgName,
-      orgLogoUrl: data.orgLogoUrl,
-      kioskShowLogo: data.kioskShowLogo,
-      kioskShowOrgName: data.kioskShowOrgName,
-      brandPrimaryColor: data.brandPrimaryColor,
-      brandSecondaryColor: data.brandSecondaryColor,
-      kioskBackgroundColor: data.kioskBackgroundColor,
-      kioskTextColor: data.kioskTextColor,
-      kioskMutedTextColor: data.kioskMutedTextColor,
-      kioskPrimaryFont: data.kioskPrimaryFont,
-      kioskSecondaryFont: data.kioskSecondaryFont,
-      kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
-      kioskBackgroundAnimated: data.kioskBackgroundAnimated,
-      kioskBackgroundStyle: data.kioskBackgroundStyle,
-      kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
-      registrationDomainEnforcement: data.registrationDomainEnforcement,
-      newsletterEnabled: data.newsletterEnabled,
-      newsletterTitle: data.newsletterTitle,
-      newsletterBody: data.newsletterBody,
-      newsletterUrl: data.newsletterUrl,
-      newsletterButtonLabel: data.newsletterButtonLabel,
-      givingEnabled: data.givingEnabled,
-      givingTitle: data.givingTitle,
-      givingBody: data.givingBody,
-      givingSuccessMessage: data.givingSuccessMessage,
-      givingNotifyEmail: data.givingNotifyEmail,
-      givingVisitorEmailSubject: data.givingVisitorEmailSubject,
-      givingVisitorEmailBody: data.givingVisitorEmailBody,
-      kioskDisplayEnabled: data.kioskDisplayEnabled,
-      kioskDisplayScheduleEnabled: data.kioskDisplayScheduleEnabled,
-      kioskDisplayOnDays:
-        data.kioskDisplayOnDays !== undefined
-          ? stringifyDisplayOnDays(data.kioskDisplayOnDays)
-          : undefined,
-      kioskDisplayOnTime: data.kioskDisplayOnTime,
-      kioskDisplayOffTime: data.kioskDisplayOffTime,
-      kioskDisplayIdleOffSeconds: data.kioskDisplayIdleOffSeconds,
-      settingsUpdatedAt: new Date(),
-    },
-  });
+
+  let settings: Awaited<ReturnType<typeof getSettings>>;
+  try {
+    settings = await prisma.settings.update({
+      where: { id: "default" },
+      data: {
+        ...definedSettingsFields({
+          orgName: data.orgName,
+          orgLogoUrl: data.orgLogoUrl,
+          kioskShowLogo: data.kioskShowLogo,
+          kioskShowOrgName: data.kioskShowOrgName,
+          brandPrimaryColor: data.brandPrimaryColor,
+          brandSecondaryColor: data.brandSecondaryColor,
+          kioskBackgroundColor: data.kioskBackgroundColor,
+          kioskTextColor: data.kioskTextColor,
+          kioskMutedTextColor: data.kioskMutedTextColor,
+          kioskPrimaryFont: data.kioskPrimaryFont,
+          kioskSecondaryFont: data.kioskSecondaryFont,
+          kioskIdleTimeoutSeconds: data.kioskIdleTimeoutSeconds,
+          kioskBackgroundAnimated: data.kioskBackgroundAnimated,
+          kioskBackgroundStyle: data.kioskBackgroundStyle,
+          kioskBackgroundImageUrl: data.kioskBackgroundImageUrl,
+          registrationDomainEnforcement: data.registrationDomainEnforcement,
+          newsletterEnabled: data.newsletterEnabled,
+          newsletterTitle: data.newsletterTitle,
+          newsletterBody: data.newsletterBody,
+          newsletterUrl:
+            data.newsletterUrl !== undefined
+              ? data.newsletterUrl
+                ? normalizeRegistrationUrl(data.newsletterUrl)
+                : ""
+              : undefined,
+          newsletterButtonLabel: data.newsletterButtonLabel,
+          givingEnabled: data.givingEnabled,
+          givingTitle: data.givingTitle,
+          givingBody: data.givingBody,
+          givingSuccessMessage: data.givingSuccessMessage,
+          givingNotifyEmail: data.givingNotifyEmail,
+          givingVisitorEmailSubject: data.givingVisitorEmailSubject,
+          givingVisitorEmailBody: data.givingVisitorEmailBody,
+          kioskDisplayEnabled: data.kioskDisplayEnabled,
+          kioskDisplayScheduleEnabled: data.kioskDisplayScheduleEnabled,
+          kioskDisplayOnDays:
+            data.kioskDisplayOnDays !== undefined
+              ? stringifyDisplayOnDays(data.kioskDisplayOnDays)
+              : undefined,
+          kioskDisplayOnTime: data.kioskDisplayOnTime,
+          kioskDisplayOffTime: data.kioskDisplayOffTime,
+          kioskDisplayIdleOffSeconds: data.kioskDisplayIdleOffSeconds,
+        }),
+        settingsUpdatedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to save settings";
+    console.error("[settings] PATCH failed:", err);
+    if (message.includes("Unknown argument")) {
+      return NextResponse.json(
+        {
+          error:
+            "Database client is out of date. Stop the dev server, run npm run db:generate --workspace=web, then restart.",
+        },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   if (previousLogoUrl !== settings.orgLogoUrl) {
     await deleteUploadIfUnreferenced(previousLogoUrl);
