@@ -91,3 +91,5 @@ Direct pushes to `main` should only be used for rare hotfixes by admins, and eve
 ## Local development
 
 See [README.md](README.md#development) for setup (`npm install`, `.env`, `npm run dev`).
+
+Kiosk destinations (Events, Newsletter, Give) are registered in `apps/web/src/lib/kiosk-destinations.ts`. Admin **Pages** configures Newsletter and Give copy/URLs; **Inquiries** lists giving-form submissions.

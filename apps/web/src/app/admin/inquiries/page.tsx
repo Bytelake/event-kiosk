@@ -72,6 +72,10 @@ export default function AdminInquiriesPage() {
     <AuthGuard>
       <AdminPage>
         <AdminPageHeader title="Inquiries" />
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
+          Submissions from the kiosk giving form. Email status stays skipped until SMTP follow-up
+          ships; use this list (or Export CSV) to contact visitors.
+        </p>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button onClick={handleExport} disabled={exporting} variant="secondary">

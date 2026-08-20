@@ -197,7 +197,7 @@ export default function AdminSettingsPage() {
   async function handleImportDatabase(file: File) {
     if (
       !window.confirm(
-        "Importing a backup replaces all events, settings, registration domains, and uploaded images. Continue?",
+        "Importing a backup replaces all events, settings, inquiries, registration domains, and uploaded images. Continue?",
       )
     ) {
       return;
@@ -432,9 +432,9 @@ export default function AdminSettingsPage() {
                 <span>
                   <span className="font-medium">Enforce registration domain whitelist</span>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    When enabled, the kiosk only opens HTTPS registration links from the domains
-                    below (plus common providers like SignUpGenius and Eventbrite). Turn off to
-                    allow any HTTPS registration URL.
+                    When enabled, the kiosk only opens HTTPS event registration and newsletter
+                    sign-up links from the domains below (plus common providers like SignUpGenius
+                    and Eventbrite). Turn off to allow any HTTPS overlay URL.
                   </p>
                 </span>
               </label>
@@ -477,7 +477,8 @@ export default function AdminSettingsPage() {
                 </p>
                 <p>
                   Use <span className="font-medium text-slate-700 dark:text-slate-300">Export Database Only</span>{" "}
-                  for a lightweight SQLite snapshot of events, settings, and registration domains.
+                  for a lightweight SQLite snapshot of events, settings, inquiries, and registration
+                  domains.
                   Image paths are stored in the database, but the files themselves are not included —
                   imported images will be missing unless the uploads folder is copied separately.
                 </p>

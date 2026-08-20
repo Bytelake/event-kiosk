@@ -97,6 +97,11 @@ export default function AdminPagesPage() {
     <AuthGuard>
       <AdminPage>
         <AdminPageHeader title="Pages" />
+        <p className="mx-auto mb-6 max-w-4xl text-sm text-slate-600 dark:text-slate-400">
+          Newsletter opens an existing sign-up URL in the same overlay as event registration. Give
+          is a contact form on the kiosk (no card payments). Submissions appear under Inquiries;
+          automated email is not sent in this release.
+        </p>
         <PagesForm
           initial={settings}
           onSave={handleSave}

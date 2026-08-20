@@ -131,6 +131,11 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Sign-up URL</label>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+              Link to your newsletter provider. The kiosk opens it in the registration overlay; it
+              does not collect addresses itself. Allow the domain under Settings if whitelist
+              enforcement is on.
+            </p>
             <Input
               value={form.newsletterUrl}
               placeholder="mailchimp.com or https://..."
@@ -194,6 +199,10 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Intro</label>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+              Shown above the contact form. The kiosk never takes card payments; visitors leave
+              name, email, and optional phone so staff can follow up.
+            </p>
             <Textarea
               value={form.givingBody}
               onChange={(e) => setForm({ ...form, givingBody: e.target.value })}
@@ -216,7 +225,8 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
         <CardHeader>
           <h2 className="font-semibold">Giving follow-up emails</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Staff-only settings. Not shown on the public kiosk.
+            Staff-only settings. Not shown on the public kiosk. Templates are stored for a future
+            SMTP follow-up; this release does not send mail. Check Inquiries for new submissions.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -229,8 +239,8 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
               onChange={(e) => setForm({ ...form, givingNotifyEmail: e.target.value })}
             />
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Receives a copy when someone submits the giving form. Leave blank to skip staff
-              notification.
+              Used when SMTP is configured (not in this release). Leave blank to skip staff
+              notification later.
             </p>
           </div>
           <div>
@@ -247,7 +257,7 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
               onChange={(e) => setForm({ ...form, givingVisitorEmailBody: e.target.value })}
             />
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Sent to visitors after they submit the giving form when SMTP is configured.
+              Visitor message for a future SMTP send. Not emailed in this release.
             </p>
           </div>
         </CardContent>
