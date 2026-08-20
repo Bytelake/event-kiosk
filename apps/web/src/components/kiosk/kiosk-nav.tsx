@@ -8,7 +8,7 @@ import {
   type KioskDestination,
   type KioskDestinationId,
 } from "@/lib/kiosk-destinations";
-import type { KioskSettings } from "@/lib/kiosk-api";
+import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
 import { cn } from "@/lib/utils";
 
 const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
@@ -25,8 +25,9 @@ function isDestinationActive(pathname: string, destination: KioskDestination): b
   return pathname === destination.href || pathname.startsWith(`${destination.href}/`);
 }
 
-export function KioskNav({ settings }: { settings: KioskSettings | null }) {
+export function KioskNav() {
   const pathname = usePathname();
+  const settings = useKioskSettings();
   if (!settings) return null;
 
   const destinations = getKioskDestinations(settings);

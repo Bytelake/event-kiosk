@@ -31,9 +31,10 @@ interface PagesFormProps {
   onSave: (values: PagesFormValues) => Promise<boolean>;
   saving: boolean;
   message: string;
+  messageIsError?: boolean;
 }
 
-export function PagesForm({ initial, onSave, saving, message }: PagesFormProps) {
+export function PagesForm({ initial, onSave, saving, message, messageIsError = false }: PagesFormProps) {
   const [form, setForm] = useState<PagesFormValues>(initial);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [domainEnforcement, setDomainEnforcement] = useState(true);
@@ -260,7 +261,17 @@ export function PagesForm({ initial, onSave, saving, message }: PagesFormProps) 
         </CardContent>
       </Card>
 
-      {message && <p className="text-sm text-emerald-700 dark:text-emerald-400">{message}</p>}
+      {message && (
+        <p
+          className={
+            messageIsError
+              ? "text-sm text-red-600 dark:text-red-400"
+              : "text-sm text-emerald-700 dark:text-emerald-400"
+          }
+        >
+          {message}
+        </p>
+      )}
       <Button type="submit" disabled={saving}>
         {saving ? "Saving..." : "Save Pages"}
       </Button>

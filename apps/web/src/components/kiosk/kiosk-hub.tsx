@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Calendar, Mail, Heart, type LucideIcon } from "lucide-react";
-import {
-  fetchPublicSettings,
-  getCachedKioskSettings,
-  type KioskSettings,
-} from "@/lib/kiosk-api";
 import {
   getKioskDestinations,
   type KioskDestination,
   type KioskDestinationId,
 } from "@/lib/kiosk-destinations";
+import type { KioskSettings } from "@/lib/kiosk-api";
+import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
 import { preloadImageUrls } from "@/lib/preload-images";
 
 const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
@@ -38,20 +35,12 @@ function destinationDescription(destination: KioskDestination, settings: KioskSe
 }
 
 export function KioskHub() {
-  const [settings, setSettings] = useState<KioskSettings | null>(
-    () => getCachedKioskSettings(),
-  );
+  const settings = useKioskSettings();
 
   useEffect(() => {
-    fetchPublicSettings()
-      .then((data) => {
-        setSettings(data);
-        preloadImageUrls([data.orgLogoUrl, data.kioskBackgroundImageUrl]);
-      })
-      .catch(() => {
-        /* keep cached settings if available */
-      });
-  }, []);
+    if (!settings) return;
+    preloadImageUrls([settings.orgLogoUrl, settings.kioskBackgroundImageUrl]);
+  }, [settings?.orgLogoUrl, settings?.kioskBackgroundImageUrl, settings]);
 
   const destinations = settings ? getKioskDestinations(settings) : [];
 

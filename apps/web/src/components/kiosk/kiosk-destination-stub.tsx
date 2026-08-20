@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import {
-  fetchPublicSettings,
-  getCachedKioskSettings,
-  type KioskSettings,
-} from "@/lib/kiosk-api";
+import { useKioskSettings } from "@/components/kiosk/kiosk-settings-context";
 
 export function KioskDestinationStub({
   title,
@@ -46,13 +41,7 @@ export function KioskDestinationStub({
 }
 
 export function KioskNewsletterStub() {
-  const [settings, setSettings] = useState<KioskSettings | null>(
-    () => getCachedKioskSettings(),
-  );
-
-  useEffect(() => {
-    fetchPublicSettings().then(setSettings).catch(() => undefined);
-  }, []);
+  const settings = useKioskSettings();
 
   return (
     <KioskDestinationStub
@@ -63,13 +52,7 @@ export function KioskNewsletterStub() {
 }
 
 export function KioskGiveStub() {
-  const [settings, setSettings] = useState<KioskSettings | null>(
-    () => getCachedKioskSettings(),
-  );
-
-  useEffect(() => {
-    fetchPublicSettings().then(setSettings).catch(() => undefined);
-  }, []);
+  const settings = useKioskSettings();
 
   return (
     <KioskDestinationStub

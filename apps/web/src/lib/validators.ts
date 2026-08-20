@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { KIOSK_BACKGROUND_STYLES } from "@/lib/kiosk-background";
+import { normalizeRegistrationUrl } from "@/lib/registration-domains";
 
 export const loginSchema = z.object({
   password: z.string().min(1),
@@ -69,7 +70,13 @@ export const settingsSchema = z.object({
   newsletterEnabled: z.boolean().optional(),
   newsletterTitle: z.string().optional(),
   newsletterBody: z.string().optional(),
-  newsletterUrl: z.string().url().optional().or(z.literal("")),
+  newsletterUrl: z.preprocess(
+    (val) => {
+      if (typeof val !== "string" || !val.trim()) return "";
+      return normalizeRegistrationUrl(val);
+    },
+    z.string().url().or(z.literal("")),
+  ),
   newsletterButtonLabel: z.string().optional(),
   givingEnabled: z.boolean().optional(),
   givingTitle: z.string().optional(),
