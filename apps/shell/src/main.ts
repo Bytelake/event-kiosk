@@ -29,6 +29,8 @@ function isTruthyEnv(v: string | undefined): boolean {
   return s === "true" || s === "1" || s === "yes";
 }
 
+const onScreenKeyboardInDesktop = isTruthyEnv(process.env.KIOSK_ONSCREEN_KEYBOARD);
+
 // Desktop window mode is opt-in via KIOSK_DESKTOP_MODE (dev:desktop). Do not tie
 // this to app.isPackaged — production installs run unpackaged `electron .`.
 const desktopMode = isTruthyEnv(process.env.KIOSK_DESKTOP_MODE);
@@ -202,9 +204,11 @@ function setupKeyboardCrashRecovery(view: BrowserView) {
 
 const KEYBOARD_BACKGROUND = "#1e293b";
 
-// Production kiosk uses the on-screen keyboard. Desktop dev keeps the OS keyboard.
+// Production kiosk always uses the on-screen keyboard. Desktop dev defaults to the
+// OS keyboard unless KIOSK_ONSCREEN_KEYBOARD is set (dev:desktop -- --keyboard).
 function usesOnScreenKeyboard() {
-  return !desktopMode;
+  if (!desktopMode) return true;
+  return onScreenKeyboardInDesktop;
 }
 
 function raiseKeyboardView() {
@@ -549,7 +553,7 @@ function registerShortcuts() {
 
 app.whenReady().then(async () => {
   console.log(
-    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode}`,
+    `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode} onScreenKeyboard=${usesOnScreenKeyboard()}`,
   );
 
   await refreshAllowedDomains(API_BASE);
