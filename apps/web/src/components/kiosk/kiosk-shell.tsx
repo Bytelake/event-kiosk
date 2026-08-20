@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useKioskRefresh } from "@/components/kiosk/use-kiosk-refresh";
 import { useIdleTimeout } from "@/components/kiosk/use-idle-timeout";
 import { KioskBackground } from "@/components/kiosk/kiosk-background";
+import { KioskNav } from "@/components/kiosk/kiosk-nav";
 import type { KioskSettings } from "@/lib/kiosk-api";
 import { defaultKioskColorScheme } from "@/lib/kiosk-colors";
 import { defaultKioskBackgroundStyle } from "@/lib/kiosk-background";
@@ -52,6 +53,7 @@ export function KioskShell({ children }: { children: React.ReactNode }) {
         imageUrl={settings?.kioskBackgroundImageUrl}
         animated={settings?.kioskBackgroundAnimated ?? true}
       >
+        <KioskNav settings={settings} />
         {children}
       </KioskBackground>
     </div>

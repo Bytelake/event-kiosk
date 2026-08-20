@@ -47,13 +47,21 @@ export function KioskBrandingPreview({
             fontFamily: "var(--font-kiosk-display)",
           }}
         >
-          Upcoming Events
+          Welcome
         </p>
-        <div
-          className="mt-4 inline-flex rounded-xl px-4 py-2 text-sm font-semibold text-white"
-          style={{ backgroundColor: colors.brandPrimaryColor }}
-        >
-          Register
+        <div className="mt-4 flex flex-wrap gap-2">
+          <div
+            className="inline-flex rounded-xl px-4 py-2 text-sm font-semibold text-white"
+            style={{ backgroundColor: colors.brandPrimaryColor }}
+          >
+            Events
+          </div>
+          <div
+            className="inline-flex rounded-xl px-4 py-2 text-sm font-semibold text-white/90"
+            style={{ backgroundColor: colors.brandSecondaryColor }}
+          >
+            Newsletter
+          </div>
         </div>
         <div
           className="mt-4 h-16 max-w-xs rounded-2xl"
