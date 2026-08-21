@@ -25,7 +25,10 @@ export async function validateKioskDatabaseFile(filePath: string): Promise<{
   eventCount: number;
   domainCount: number;
 }> {
-  const adapter = new PrismaBetterSqlite3({ url: `file:${filePath}` });
+  const adapter = new PrismaBetterSqlite3(
+    { url: `file:${filePath}` },
+    { timestampFormat: "unixepoch-ms" },
+  );
   const client = new PrismaClient({ adapter });
 
   try {

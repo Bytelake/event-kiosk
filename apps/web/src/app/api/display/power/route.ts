@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 function serializeDisplayPower(
   settings: Awaited<ReturnType<typeof getSettings>>,
-  hardware: { on: boolean | null; available: boolean; method: string | null; error: string | null },
+  hardware: { on: boolean | null; available: boolean; method: string | null; error: string | null } | null | undefined,
 ) {
   const displaySettings = {
     ...settings,
@@ -18,10 +18,10 @@ function serializeDisplayPower(
   return {
     enabled: settings.kioskDisplayEnabled,
     desiredOn: desiredDisplayOn(displaySettings),
-    hardwareOn: hardware.on,
-    available: hardware.available,
-    method: hardware.method,
-    error: hardware.error,
+    hardwareOn: hardware?.on ?? null,
+    available: hardware?.available ?? false,
+    method: hardware?.method ?? null,
+    error: hardware?.error ?? null,
   };
 }
 
