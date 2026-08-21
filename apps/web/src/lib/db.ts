@@ -12,8 +12,14 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaBetterSqlite3({ url: resolveDatabaseUrl() });
-  
+  // Existing kiosk DBs store DateTime as unix-ms integers. The adapter default
+  // (iso8601 text) makes SQL comparisons like `endAt >= $now` match nothing,
+  // so the kiosk shows "No upcoming events" while Admin still lists them.
+  const adapter = new PrismaBetterSqlite3(
+    { url: resolveDatabaseUrl() },
+    { timestampFormat: "unixepoch-ms" },
+  );
+
   const client = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],

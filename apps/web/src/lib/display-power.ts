@@ -23,8 +23,14 @@ function displayPowerScriptPath(): string {
   return path.join(process.env.KIOSK_ROOT || "/opt/kiosk", "bin", "set-display-power.sh");
 }
 
+/**
+ * Whether the host has the display-power helper. Do **not** gate on
+ * `process.platform === "linux"` here — Debian packages are built on macOS, and
+ * Turbopack DCE treats that check as always-false at build time, which strips
+ * the real Linux implementation from production bundles.
+ */
 async function scriptExists(): Promise<boolean> {
-  if (process.platform !== "linux") return false;
+  if (isDesktopMode()) return false;
   try {
     await access(displayPowerScriptPath());
     return true;
@@ -89,9 +95,6 @@ export async function readDisplayHardwareStatus(): Promise<DisplayPowerHardware>
 export async function applyScheduledDisplayPower(
   settings: Parameters<typeof settingsToDisplayPower>[0],
 ): Promise<DisplayPowerHardware> {
-  if (isDesktopMode() || process.platform !== "linux") {
-    return { on: null, method: null, available: false, error: null };
-  }
   if (!(await scriptExists())) {
     return { on: null, method: null, available: false, error: null };
   }
