@@ -21,7 +21,7 @@ interface InquiryRow {
 }
 
 async function downloadCsv() {
-  const res = await fetch("/api/inquiries/export");
+  const res = await fetch("/api/inquiries/export", { method: "POST" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || "Export failed");

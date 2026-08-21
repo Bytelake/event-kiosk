@@ -1,3 +1,5 @@
+import { isSafeDisplayUrl } from "@/lib/media-url";
+
 const preloaded = new Set<string>();
 
 /** Warm the browser cache for kiosk image URLs (backgrounds, cards, logos). */
@@ -7,7 +9,7 @@ export function preloadImageUrls(urls: Iterable<string | null | undefined>): voi
   }
 
   for (const url of urls) {
-    if (!url || preloaded.has(url)) {
+    if (!url || !isSafeDisplayUrl(url) || preloaded.has(url)) {
       continue;
     }
 

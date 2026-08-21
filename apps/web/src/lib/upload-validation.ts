@@ -1,4 +1,4 @@
-export const MAX_UPLOAD_BYTES = 250 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"] as const;
 

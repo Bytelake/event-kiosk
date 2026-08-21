@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import { getSettings, prisma } from "@/lib/db";
 import { applyScheduledDisplayPower, readDisplayHardwareStatus } from "@/lib/display-power";
 import { desiredDisplayOn, parseDisplayOnDays } from "@/lib/display-schedule";
@@ -26,10 +26,8 @@ function serializeDisplayPower(
 }
 
 export async function GET() {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const settings = await getSettings();
   const hardware = await readDisplayHardwareStatus();
@@ -37,10 +35,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   let enabled: boolean | undefined;
   const contentType = request.headers.get("content-type") ?? "";

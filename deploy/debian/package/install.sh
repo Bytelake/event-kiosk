@@ -85,6 +85,7 @@ chown -R kiosk:kiosk "${INSTALL_DIR}"
 
 ensure_data_dir
 write_env_if_missing "${INSTALL_DIR}/web/.env.example"
+warn_if_default_admin_password
 write_display_env_if_missing "${INSTALL_DIR}/display.env.example"
 
 if [[ "${DISPLAY_ROTATION}" != "normal" ]]; then
@@ -117,6 +118,7 @@ log "  Kiosk:  http://${IP}:3000/kiosk"
 log ""
 log "  Edit password:  sudo nano $(kiosk_env_file)"
 log "  Then restart:   sudo systemctl restart kiosk-web"
+log "  SESSION_SECRET is generated automatically; change ADMIN_PASSWORD if it is still the default."
 log ""
 log "  Diagnostics:    sudo bash ${INSTALL_DIR}/diagnose.sh"
 log "  Uninstall:      sudo bash ${INSTALL_DIR}/uninstall.sh"

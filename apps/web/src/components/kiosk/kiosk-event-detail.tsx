@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { eventUrlLabelCopy } from "@/lib/event-url-label";
 import { fetchKioskEvent, type KioskEvent } from "@/lib/kiosk-api";
+import { isSafeDisplayUrl } from "@/lib/media-url";
 import { openRegistration } from "@/lib/kiosk-shell";
 import { preloadImageUrls } from "@/lib/preload-images";
 import { formatKioskEventScheduleDisplay } from "@/lib/utils";
@@ -50,7 +51,7 @@ export function KioskEventDetail() {
         Back to Events
       </Link>
 
-      {event.imageUrl ? (
+      {event.imageUrl && isSafeDisplayUrl(event.imageUrl) ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={event.imageUrl}

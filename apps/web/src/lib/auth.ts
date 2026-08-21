@@ -1,9 +1,22 @@
+import { createHash, timingSafeEqual } from "crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
 const COOKIE_NAME = "kiosk_admin_session";
 const SESSION_DURATION = 60 * 60 * 24 * 7;
+const ADMIN_ROLE = "admin";
+const MIN_SESSION_SECRET_LENGTH = 16;
+
+const INSECURE_SESSION_SECRETS = new Set([
+  "change-this-to-a-long-random-string",
+  "changeme",
+  "secret",
+  "session_secret",
+]);
+
+const INSECURE_ADMIN_PASSWORDS = new Set(["changeme", "password", "admin", "kiosk"]);
 
 export { COOKIE_NAME };
 
@@ -32,12 +45,44 @@ function normalizeEnvValue(value: string): string {
   return trimmed;
 }
 
+function digestUtf8(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
+function secretsEqual(left: string, right: string): boolean {
+  return timingSafeEqual(digestUtf8(left), digestUtf8(right));
+}
+
+function isInsecureSessionSecret(secret: string): boolean {
+  return secret.length < MIN_SESSION_SECRET_LENGTH || INSECURE_SESSION_SECRETS.has(secret);
+}
+
 function getSecret() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET is not configured");
   }
   return new TextEncoder().encode(normalizeEnvValue(secret));
+}
+
+export function warnIfInsecureAuthConfig() {
+  const sessionSecret = process.env.SESSION_SECRET
+    ? normalizeEnvValue(process.env.SESSION_SECRET)
+    : "";
+  if (!sessionSecret || isInsecureSessionSecret(sessionSecret)) {
+    console.warn(
+      "[auth] SESSION_SECRET is missing, short, or using a default value. Generate a long random secret in /var/lib/kiosk/.env (or apps/web/.env).",
+    );
+  }
+
+  const adminPassword = process.env.ADMIN_PASSWORD
+    ? normalizeEnvValue(process.env.ADMIN_PASSWORD)
+    : "";
+  if (!adminPassword || INSECURE_ADMIN_PASSWORDS.has(adminPassword)) {
+    console.warn(
+      "[auth] ADMIN_PASSWORD is missing or still a default/common value. Change it before exposing admin on the network.",
+    );
+  }
 }
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
@@ -47,21 +92,23 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
   if (normalized.startsWith("$2")) {
     return bcrypt.compare(password, normalized);
   }
-  return password === normalized;
+  return secretsEqual(password, normalized);
 }
 
 export async function createSession(): Promise<string> {
-  return new SignJWT({ role: "admin" })
+  return new SignJWT({ role: ADMIN_ROLE })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
+    .setSubject(ADMIN_ROLE)
     .setExpirationTime(`${SESSION_DURATION}s`)
     .sign(getSecret());
 }
 
 export async function verifySession(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, getSecret());
-    return true;
+    const { payload } = await jwtVerify(token, getSecret());
+    const role = typeof payload.role === "string" ? payload.role : undefined;
+    return payload.sub === ADMIN_ROLE || role === ADMIN_ROLE;
   } catch {
     return false;
   }
@@ -84,9 +131,12 @@ export async function isAuthenticated(): Promise<boolean> {
   return verifySession(token);
 }
 
-export async function requireAuth(): Promise<void> {
+export async function unauthorizedResponse(): Promise<NextResponse> {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+export async function requireApiAuth(): Promise<NextResponse | null> {
   const ok = await isAuthenticated();
-  if (!ok) {
-    throw new Error("Unauthorized");
-  }
+  if (ok) return null;
+  return unauthorizedResponse();
 }

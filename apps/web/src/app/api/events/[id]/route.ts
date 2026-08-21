@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAuthenticated } from "@/lib/auth";
-import { serializeEvent } from "@/lib/event-serialize";
+import { requireApiAuth } from "@/lib/auth";
+import { serializeEvent, serializeKioskEvent } from "@/lib/event-serialize";
 import { eventIsActive, wallClockNow } from "@/lib/utils";
 
 export async function GET(
@@ -26,13 +26,11 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(serializeEvent(event));
+    return NextResponse.json(serializeKioskEvent(event));
   }
 
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   return NextResponse.json(serializeEvent(event));
 }

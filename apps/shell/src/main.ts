@@ -47,6 +47,54 @@ function configureGpuForEmbeddedLinux() {
 }
 
 configureGpuForEmbeddedLinux();
+app.enableSandbox();
+
+const kioskWebPreferences = {
+  contextIsolation: true,
+  nodeIntegration: false,
+  sandbox: true,
+  webSecurity: true,
+  allowRunningInsecureContent: false,
+  navigateOnDragDrop: false,
+} as const;
+
+function isSameKioskOrigin(urlString: string): boolean {
+  try {
+    return new URL(urlString).origin === new URL(KIOSK_URL).origin;
+  } catch {
+    return false;
+  }
+}
+
+function isBundledShellPage(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "file:") return false;
+    const base = path.basename(url.pathname);
+    return base === "keyboard.html" || base === "registration-chrome.html";
+  } catch {
+    return false;
+  }
+}
+
+function denySessionPermissions(webContents: WebContents) {
+  const { session } = webContents;
+  session.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(false);
+  });
+  session.setPermissionCheckHandler(() => false);
+}
+
+function blockDevTools(webContents: WebContents) {
+  if (desktopMode) return;
+  webContents.on("devtools-opened", () => {
+    webContents.closeDevTools();
+  });
+}
+
+function isKeyboardKey(key: unknown): key is string {
+  return typeof key === "string" && key.length > 0 && key.length <= 8;
+}
 
 type KeyboardTarget = "main" | "registration";
 
@@ -126,14 +174,14 @@ function createWindow() {
     autoHideMenuBar: true,
     alwaysOnTop: !desktopMode,
     webPreferences: {
+      ...kioskWebPreferences,
       preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
     },
   });
 
   setupMainWindowCrashRecovery(mainWindow);
+  denySessionPermissions(mainWindow.webContents);
+  blockDevTools(mainWindow.webContents);
 
   if (desktopMode) {
     mainWindow.setAspectRatio(DESKTOP_WIDTH / DESKTOP_HEIGHT);
@@ -225,14 +273,14 @@ function showKeyboard(target: KeyboardTarget) {
   if (!keyboardView) {
     keyboardView = new BrowserView({
       webPreferences: {
+        ...kioskWebPreferences,
         preload: path.join(__dirname, "preload.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
       },
     });
     keyboardView.setBackgroundColor(KEYBOARD_BACKGROUND);
     setupKeyboardCrashRecovery(keyboardView);
+    denySessionPermissions(keyboardView.webContents);
+    blockDevTools(keyboardView.webContents);
     mainWindow.addBrowserView(keyboardView);
 
     const keyboardPath = path.join(__dirname, "keyboard.html");
@@ -354,24 +402,24 @@ function openRegistrationView(url: string) {
 
     chromeView = new BrowserView({
       webPreferences: {
+        ...kioskWebPreferences,
         preload: path.join(__dirname, "preload.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
       },
     });
 
     registrationView = new BrowserView({
       webPreferences: {
+        ...kioskWebPreferences,
         preload: path.join(__dirname, "registration-preload.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
       },
     });
 
     setupRegistrationCrashRecovery(chromeView, "Registration chrome");
     setupRegistrationCrashRecovery(registrationView, "Registration page");
+    denySessionPermissions(chromeView.webContents);
+    denySessionPermissions(registrationView.webContents);
+    blockDevTools(chromeView.webContents);
+    blockDevTools(registrationView.webContents);
 
     mainWindow.addBrowserView(chromeView);
     mainWindow.addBrowserView(registrationView);
@@ -554,6 +602,26 @@ function registerShortcuts() {
   globalShortcut.register("CommandOrControl+Shift+I", block);
 }
 
+app.on("web-contents-created", (_event, contents) => {
+  contents.on("will-attach-webview", (event) => {
+    event.preventDefault();
+  });
+
+  contents.on("will-navigate", (event, url) => {
+    if (isSameKioskOrigin(url) || isBundledShellPage(url)) {
+      return;
+    }
+    if (
+      registrationView &&
+      contents === registrationView.webContents &&
+      isRegistrationUrlAllowed(url)
+    ) {
+      return;
+    }
+    event.preventDefault();
+  });
+});
+
 app.whenReady().then(async () => {
   console.log(
     `[kiosk] Starting shell platform=${process.platform} arch=${process.arch} desktop=${desktopMode} onScreenKeyboard=${usesOnScreenKeyboard()}`,
@@ -567,15 +635,27 @@ app.whenReady().then(async () => {
   createWindow();
   registerShortcuts();
 
-  ipcMain.on("open-registration", (_event, url: string) => {
+  ipcMain.on("open-registration", (event, url: unknown) => {
+    if (event.sender !== mainWindow?.webContents) return;
+    if (typeof url !== "string") return;
     openRegistrationView(url);
   });
 
-  ipcMain.on("close-registration", () => {
+  ipcMain.on("close-registration", (event) => {
+    if (
+      event.sender !== mainWindow?.webContents &&
+      event.sender !== chromeView?.webContents &&
+      event.sender !== registrationView?.webContents
+    ) {
+      return;
+    }
     closeRegistrationView();
   });
 
-  ipcMain.on("registration-go-back", () => {
+  ipcMain.on("registration-go-back", (event) => {
+    if (event.sender !== chromeView?.webContents && event.sender !== registrationView?.webContents) {
+      return;
+    }
     if (registrationView?.webContents.canGoBack()) {
       registrationView.webContents.goBack();
     } else {
@@ -584,37 +664,64 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.on("kiosk-input-focus", (event) => {
+    if (
+      event.sender !== mainWindow?.webContents &&
+      event.sender !== registrationView?.webContents
+    ) {
+      return;
+    }
     showKeyboard(resolveKeyboardTarget(event.sender));
   });
 
-  ipcMain.on("kiosk-user-activity", () => {
+  ipcMain.on("kiosk-user-activity", (event) => {
+    if (
+      event.sender !== mainWindow?.webContents &&
+      event.sender !== registrationView?.webContents &&
+      event.sender !== keyboardView?.webContents &&
+      event.sender !== chromeView?.webContents
+    ) {
+      return;
+    }
     noteDisplayActivity();
     notifyMainWindowUserActivity();
   });
 
-  ipcMain.on("kiosk-display-activity", () => {
+  ipcMain.on("kiosk-display-activity", (event) => {
+    if (event.sender !== mainWindow?.webContents) return;
     noteDisplayActivity();
   });
 
-  ipcMain.on("keyboard-key", (_event, key: string) => {
+  ipcMain.on("keyboard-key", (event, key: unknown) => {
+    if (event.sender !== keyboardView?.webContents) return;
+    if (!isKeyboardKey(key)) return;
     noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToFocusedTyping("insertText", key);
   });
 
-  ipcMain.on("keyboard-backspace", () => {
+  ipcMain.on("keyboard-backspace", (event) => {
+    if (event.sender !== keyboardView?.webContents) return;
     noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToFocusedTyping("backspace");
   });
 
-  ipcMain.on("keyboard-enter", () => {
+  ipcMain.on("keyboard-enter", (event) => {
+    if (event.sender !== keyboardView?.webContents) return;
     noteDisplayActivity();
     notifyMainWindowUserActivity();
     sendToFocusedTyping("enter");
   });
 
-  ipcMain.on("keyboard-hide", () => {
+  ipcMain.on("keyboard-hide", (event) => {
+    if (
+      event.sender !== keyboardView?.webContents &&
+      event.sender !== mainWindow?.webContents &&
+      event.sender !== registrationView?.webContents &&
+      event.sender !== chromeView?.webContents
+    ) {
+      return;
+    }
     hideKeyboard();
   });
 

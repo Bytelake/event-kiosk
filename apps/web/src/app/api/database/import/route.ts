@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import {
   DatabaseBackupError,
   importDatabaseFile,
@@ -19,10 +19,8 @@ import { pruneUnreferencedUploads } from "@/lib/upload-cleanup";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const formData = await request.formData();
   const file = formData.get("file");

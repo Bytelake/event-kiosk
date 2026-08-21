@@ -6,6 +6,8 @@ COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=kiosk-paths.sh
 source "${COMMON_DIR}/kiosk-paths.sh" 2>/dev/null || source "${INSTALL_DIR}/kiosk-paths.sh" 2>/dev/null || {
   KIOSK_DATA_DIR="/var/lib/kiosk"
+  DEFAULT_ADMIN_PASSWORD="changeme"
+  DEFAULT_SESSION_SECRET="change-this-to-a-long-random-string"
   kiosk_env_file() { echo "${KIOSK_DATA_DIR}/.env"; }
   kiosk_db_file() { echo "${KIOSK_DATA_DIR}/kiosk.db"; }
   kiosk_uploads_dir() { echo "${KIOSK_DATA_DIR}/uploads"; }
@@ -88,6 +90,12 @@ if [[ -f "${ENV_FILE}" ]]; then
   echo "-- .env --"
   grep -q '^ADMIN_PASSWORD=.\+' "${ENV_FILE}" && echo "  ADMIN_PASSWORD: set" || echo "  ADMIN_PASSWORD: missing"
   grep -q '^SESSION_SECRET=.\+' "${ENV_FILE}" && echo "  SESSION_SECRET: set" || echo "  SESSION_SECRET: missing"
+  if grep -Eq "^ADMIN_PASSWORD=(${DEFAULT_ADMIN_PASSWORD}|\"${DEFAULT_ADMIN_PASSWORD}\"|'${DEFAULT_ADMIN_PASSWORD}')$" "${ENV_FILE}"; then
+    echo "  WARNING: ADMIN_PASSWORD is still the default — change it in ${ENV_FILE}"
+  fi
+  if grep -Eq "^SESSION_SECRET=(${DEFAULT_SESSION_SECRET}|\"${DEFAULT_SESSION_SECRET}\"|'${DEFAULT_SESSION_SECRET}')$" "${ENV_FILE}"; then
+    echo "  WARNING: SESSION_SECRET is still the default — run update.sh or replace it in ${ENV_FILE}"
+  fi
   grep -q '^COOKIE_SECURE=true' "${ENV_FILE}" && echo "  COOKIE_SECURE=true (needs HTTPS)" || echo "  COOKIE_SECURE: false/unset (OK for HTTP)"
   echo ""
 fi

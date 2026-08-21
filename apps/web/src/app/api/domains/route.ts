@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAuthenticated } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
 import { allowedDomainSchema } from "@/lib/validators";
 
 export async function GET() {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const domains = await prisma.allowedDomain.findMany({ orderBy: { domain: "asc" } });
   return NextResponse.json(domains);
 }
 
 export async function POST(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const body = await request.json();
   const parsed = allowedDomainSchema.safeParse(body);
@@ -26,17 +22,15 @@ export async function POST(request: Request) {
   }
 
   const domain = await prisma.allowedDomain.create({
-    data: { domain: parsed.data.domain.toLowerCase() },
+    data: { domain: parsed.data.domain },
   });
 
   return NextResponse.json(domain, { status: 201 });
 }
 
 export async function DELETE(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");

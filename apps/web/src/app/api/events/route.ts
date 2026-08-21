@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAuthenticated } from "@/lib/auth";
-import { serializeEvent } from "@/lib/event-serialize";
+import { requireApiAuth } from "@/lib/auth";
+import { serializeEvent, serializeKioskEvent } from "@/lib/event-serialize";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { archivePastEventsIfDue } from "@/lib/archive-past-events";
 import {
@@ -53,13 +53,11 @@ export async function GET(request: NextRequest) {
     const events = candidates.filter((event) =>
       eventIsActive(event.startAt, event.endAt, event.allDay, now),
     );
-    return NextResponse.json(events.map(serializeEvent));
+    return NextResponse.json(events.map(serializeKioskEvent));
   }
 
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const where =
     status === "draft" || status === "archived" ? { status } : {};
@@ -73,10 +71,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const body = await request.json();
   const parsed = manualEventSchema.safeParse(body);
@@ -114,10 +110,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const id = request.nextUrl.searchParams.get("id");
   if (!id) {
@@ -169,10 +163,8 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authed = await isAuthenticated();
-  if (!authed) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = await requireApiAuth();
+  if (unauthorized) return unauthorized;
 
   const id = request.nextUrl.searchParams.get("id");
   if (!id) {
