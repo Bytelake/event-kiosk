@@ -14,15 +14,16 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS). Also runs locally for dev
 
 ## Features
 
-- Home hub with Events, Newsletter, and Give (hide unused destinations in Admin → Pages)
+- Home hub with Events, Newsletter, Give, and optional Scan QR (hide unused destinations in Admin → Pages)
 - Touch-friendly events list and detail; visitors sign up through any registration site you allow
 - Newsletter opens your existing sign-up URL in the same overlay as event registration
 - Giving contact form (name, email, optional phone) — **no card payments on the kiosk**; staff follow up from Admin → Inquiries
+- Scan QR for USB keyboard HID barcode readers (e.g. Elo EdgeConnect); opens scanned HTTPS links in the registration overlay
 - Admin panel for events, pages, inquiries, branding, and settings
 - HDMI display sleep (manual or weekly schedule) so the monitor can power down while the PC stays on
 - Fullscreen Electron shell with an on-screen keyboard for any focused text field, plus a registration domain whitelist
 
-QR / barcode scanning is not included in this release. Automated SMTP follow-up for giving inquiries is not included yet; submissions are stored in Admin → Inquiries.
+Automated SMTP follow-up for giving inquiries is not included yet; submissions are stored in Admin → Inquiries.
 
 ## Supported platforms
 

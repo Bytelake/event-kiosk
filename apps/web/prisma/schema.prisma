@@ -80,6 +80,10 @@ model Settings {
   givingVisitorEmailSubject  String  @default("How to give")
   givingVisitorEmailBody     String  @default("Thank you for your interest in giving. We will follow up with information about how to give.")
 
+  qrScanEnabled Boolean @default(false)
+  qrScanTitle   String  @default("Scan QR")
+  qrScanBody    String  @default("Hold a QR code up to the scanner to open the link.")
+
   kioskDisplayEnabled         Boolean @default(true)
   kioskDisplayScheduleEnabled Boolean @default(false)
   kioskDisplayOnDays          String  @default("[0]")

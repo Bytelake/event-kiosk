@@ -31,6 +31,11 @@ function pagesFromApi(settingsData: Record<string, unknown>): PagesFormValues {
       settingsData.givingVisitorEmailBody ??
         "Thank you for your interest in giving. We will follow up with information about how to give.",
     ),
+    qrScanEnabled: Boolean(settingsData.qrScanEnabled ?? false),
+    qrScanTitle: String(settingsData.qrScanTitle ?? "Scan QR"),
+    qrScanBody: String(
+      settingsData.qrScanBody ?? "Hold a QR code up to the scanner to open the link.",
+    ),
   };
 }
 
@@ -75,6 +80,9 @@ export default function AdminPagesPage() {
         givingNotifyEmail: values.givingNotifyEmail,
         givingVisitorEmailSubject: values.givingVisitorEmailSubject,
         givingVisitorEmailBody: values.givingVisitorEmailBody,
+        qrScanEnabled: values.qrScanEnabled,
+        qrScanTitle: values.qrScanTitle,
+        qrScanBody: values.qrScanBody,
       }),
     });
 
@@ -99,8 +107,9 @@ export default function AdminPagesPage() {
         <AdminPageHeader title="Pages" />
         <p className="mx-auto mb-6 max-w-4xl text-sm text-slate-600 dark:text-slate-400">
           Newsletter opens an existing sign-up URL in the same overlay as event registration. Give
-          is a contact form on the kiosk (no card payments). Submissions appear under Inquiries;
-          automated email is not sent in this release.
+          is a contact form on the kiosk (no card payments). Scan QR opens links from a USB keyboard
+          barcode reader. Submissions appear under Inquiries; automated email is not sent in this
+          release.
         </p>
         <PagesForm
           initial={settings}

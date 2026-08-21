@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Calendar, Mail, Heart, type LucideIcon } from "lucide-react";
+import { Calendar, Mail, Heart, QrCode, type LucideIcon } from "lucide-react";
 import {
   getKioskDestinations,
   kioskShowsHub,
@@ -19,12 +19,14 @@ const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
   events: Calendar,
   newsletter: Mail,
   give: Heart,
+  scan: QrCode,
 };
 
 const destinationDescriptions: Record<KioskDestinationId, string> = {
   events: "Browse upcoming events and sign up",
   newsletter: "Stay connected with our community",
   give: "Learn how you can support our mission",
+  scan: "Hold a QR code up to the scanner",
 };
 
 function destinationDescription(destination: KioskDestination, settings: KioskSettings): string {
@@ -33,6 +35,9 @@ function destinationDescription(destination: KioskDestination, settings: KioskSe
   }
   if (destination.id === "give") {
     return settings.givingBody;
+  }
+  if (destination.id === "scan") {
+    return settings.qrScanBody;
   }
   return destinationDescriptions.events;
 }

@@ -23,6 +23,9 @@ export interface PagesFormValues {
   givingNotifyEmail: string;
   givingVisitorEmailSubject: string;
   givingVisitorEmailBody: string;
+  qrScanEnabled: boolean;
+  qrScanTitle: string;
+  qrScanBody: string;
 }
 
 interface PagesFormProps {
@@ -217,6 +220,43 @@ export function PagesForm({ initial, onSave, saving, message, messageIsError = f
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Shown on the kiosk after a visitor submits the giving form.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-semibold">Scan QR</h2>
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={form.qrScanEnabled}
+                onChange={(e) => setForm({ ...form, qrScanEnabled: e.target.checked })}
+              />
+              Show on kiosk
+            </label>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            For Elo EdgeConnect (and similar) barcode readers in USB Keyboard HID mode. Scanned
+            HTTPS links open in the registration overlay. Domain whitelist does not apply to QR
+            scans.
+          </p>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Title</label>
+            <Input
+              value={form.qrScanTitle}
+              onChange={(e) => setForm({ ...form, qrScanTitle: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Intro</label>
+            <Textarea
+              value={form.qrScanBody}
+              onChange={(e) => setForm({ ...form, qrScanBody: e.target.value })}
+            />
           </div>
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import {
 import fs from "fs/promises";
 import path from "path";
 import {
+  isOpenableRegistrationUrl,
   isRegistrationUrlAllowed,
   refreshAllowedDomains,
   startAllowedDomainsPolling,
@@ -57,6 +58,8 @@ let keyboardView: BrowserView | null = null;
 let keyboardVisible = false;
 let keyboardTarget: KeyboardTarget = "main";
 let registrationOpening = false;
+/** When true, the open registration overlay skips domain whitelist checks (QR scan). */
+let registrationAllowAnyDomain = false;
 
 function destroyBrowserView(view: BrowserView | null) {
   if (!view || !mainWindow) return;
@@ -341,9 +344,11 @@ function dismissKeyboardOnNavigation(
   }
 }
 
-function openRegistrationView(url: string) {
+function openRegistrationView(url: string, options?: { allowAnyDomain?: boolean }) {
   if (!mainWindow || registrationOpening) return;
-  if (!isRegistrationUrlAllowed(url)) {
+
+  const allowAnyDomain = options?.allowAnyDomain === true;
+  if (!isOpenableRegistrationUrl(url, allowAnyDomain)) {
     console.warn("Blocked registration URL:", url);
     return;
   }
@@ -351,6 +356,7 @@ function openRegistrationView(url: string) {
   registrationOpening = true;
   try {
     closeRegistrationView();
+    registrationAllowAnyDomain = allowAnyDomain;
 
     chromeView = new BrowserView({
       webPreferences: {
@@ -382,14 +388,14 @@ function openRegistrationView(url: string) {
     chromeView.webContents.loadFile(path.join(__dirname, "registration-chrome.html"));
 
     registrationView.webContents.setWindowOpenHandler(({ url: newUrl }) => {
-      if (isRegistrationUrlAllowed(newUrl)) {
+      if (isOpenableRegistrationUrl(newUrl, registrationAllowAnyDomain)) {
         registrationView?.webContents.loadURL(newUrl);
       }
       return { action: "deny" };
     });
 
     registrationView.webContents.on("will-navigate", (event, navigationUrl) => {
-      if (!isRegistrationUrlAllowed(navigationUrl)) {
+      if (!isOpenableRegistrationUrl(navigationUrl, registrationAllowAnyDomain)) {
         event.preventDefault();
       }
     });
@@ -401,13 +407,24 @@ function openRegistrationView(url: string) {
 }
 
 function closeRegistrationView() {
+  const hadOverlay = Boolean(registrationView || chromeView);
+
   hideKeyboard();
+  registrationAllowAnyDomain = false;
 
   destroyBrowserView(registrationView);
   registrationView = null;
 
   destroyBrowserView(chromeView);
   chromeView = null;
+
+  // Return keyboard focus to the hub so HID scanners (e.g. QR wedge) work again.
+  // Skip notify while openRegistrationView is replacing an existing overlay.
+  if (hadOverlay && !registrationOpening && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.focus();
+    mainWindow.webContents.focus();
+    mainWindow.webContents.send("registration-closed");
+  }
 }
 
 function layoutKioskViews() {
@@ -567,9 +584,12 @@ app.whenReady().then(async () => {
   createWindow();
   registerShortcuts();
 
-  ipcMain.on("open-registration", (_event, url: string) => {
-    openRegistrationView(url);
-  });
+  ipcMain.on(
+    "open-registration",
+    (_event, url: string, options?: { allowAnyDomain?: boolean }) => {
+      openRegistrationView(url, options);
+    },
+  );
 
   ipcMain.on("close-registration", () => {
     closeRegistrationView();
