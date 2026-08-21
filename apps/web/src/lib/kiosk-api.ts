@@ -39,6 +39,9 @@ export type KioskSettings = KioskColorScheme &
     givingTitle: string;
     givingBody: string;
     givingSuccessMessage: string;
+    qrScanEnabled: boolean;
+    qrScanTitle: string;
+    qrScanBody: string;
   };
 
 /** In-memory cache so kiosk home can render instantly when navigating back. */
@@ -93,6 +96,9 @@ export function parsePublicSettings(data: {
   givingTitle?: string;
   givingBody?: string;
   givingSuccessMessage?: string;
+  qrScanEnabled?: boolean;
+  qrScanTitle?: string;
+  qrScanBody?: string;
 }): KioskSettings {
   return {
     orgName: data.orgName,
@@ -123,6 +129,9 @@ export function parsePublicSettings(data: {
       data.givingBody ?? "Share your contact information and we will follow up with ways to give.",
     givingSuccessMessage:
       data.givingSuccessMessage ?? "Thank you. We will follow up with giving information.",
+    qrScanEnabled: data.qrScanEnabled ?? false,
+    qrScanTitle: data.qrScanTitle ?? "Scan QR",
+    qrScanBody: data.qrScanBody ?? "Hold a QR code up to the scanner to open the link.",
   };
 }
 

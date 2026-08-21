@@ -243,11 +243,29 @@ body {
   }
 }
 
+@keyframes kiosk-scan-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+.kiosk-scan-cue {
+  animation: kiosk-scan-cue 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kiosk-bg-animated .kiosk-bg-photo,
   .kiosk-bg-animated .kiosk-bg-aurora,
   .kiosk-bg-animated .kiosk-bg-mesh-overlay {
     animation: none;
     inset: 0;
+  }
+
+  .kiosk-scan-cue {
+    animation: none;
   }
 }

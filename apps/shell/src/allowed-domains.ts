@@ -3,7 +3,7 @@ import { isAllowedRegistrationUrl } from "./domain-whitelist";
 let extraDomains: string[] = [];
 let enforcementEnabled = true;
 
-function isHttpsUrl(url: string) {
+export function isHttpsUrl(url: string) {
   try {
     return new URL(url).protocol === "https:";
   } catch {
@@ -16,6 +16,14 @@ export function isRegistrationUrlAllowed(url: string) {
     return isHttpsUrl(url);
   }
   return isAllowedRegistrationUrl(url, extraDomains);
+}
+
+/** Used for QR scans that intentionally bypass the domain whitelist. */
+export function isOpenableRegistrationUrl(url: string, allowAnyDomain: boolean) {
+  if (allowAnyDomain) {
+    return isHttpsUrl(url);
+  }
+  return isRegistrationUrlAllowed(url);
 }
 
 export async function refreshAllowedDomains(apiBase: string) {

@@ -23,6 +23,9 @@ async function main() {
       givingVisitorEmailSubject: "How to give",
       givingVisitorEmailBody:
         "Thank you for your interest in giving. We will follow up with information about how to give.",
+      qrScanEnabled: false,
+      qrScanTitle: "Scan QR",
+      qrScanBody: "Hold a QR code up to the scanner to open the link.",
     },
   });
 

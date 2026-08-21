@@ -2,9 +2,17 @@ import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("kioskShell", {
   isElectron: true,
-  openRegistration: (url: string) => ipcRenderer.send("open-registration", url),
+  openRegistration: (url: string, options?: { allowAnyDomain?: boolean }) =>
+    ipcRenderer.send("open-registration", url, options),
   closeRegistration: () => ipcRenderer.send("close-registration"),
   notifyActivity: () => ipcRenderer.send("kiosk-display-activity"),
+  onRegistrationClosed: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on("registration-closed", handler);
+    return () => {
+      ipcRenderer.removeListener("registration-closed", handler);
+    };
+  },
 });
 
 contextBridge.exposeInMainWorld("__kioskInput", {

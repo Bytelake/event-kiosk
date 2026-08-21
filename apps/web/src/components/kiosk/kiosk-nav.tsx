@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Mail, Heart, type LucideIcon } from "lucide-react";
+import { Calendar, Mail, Heart, QrCode, type LucideIcon } from "lucide-react";
 import {
   getKioskDestinations,
   type KioskDestination,
@@ -16,6 +16,7 @@ const destinationIcons: Record<KioskDestinationId, LucideIcon> = {
   events: Calendar,
   newsletter: Mail,
   give: Heart,
+  scan: QrCode,
 };
 
 function isDestinationActive(pathname: string, destination: KioskDestination): boolean {

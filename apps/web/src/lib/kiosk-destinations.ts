@@ -1,6 +1,6 @@
 import type { KioskSettings } from "@/lib/kiosk-api";
 
-export type KioskDestinationId = "events" | "newsletter" | "give";
+export type KioskDestinationId = "events" | "newsletter" | "give" | "scan";
 
 export interface KioskDestination {
   id: KioskDestinationId;
@@ -32,6 +32,12 @@ export function getKioskDestinations(settings: KioskSettings): KioskDestination[
       href: "/kiosk/give",
       label: settings.givingTitle,
       enabled: settings.givingEnabled,
+    },
+    {
+      id: "scan",
+      href: "/kiosk/scan",
+      label: settings.qrScanTitle,
+      enabled: settings.qrScanEnabled,
     },
   ];
 
