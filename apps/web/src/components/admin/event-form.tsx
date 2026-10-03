@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { format } from "date-fns";
+import { WEEKDAYS } from "@/lib/display-schedule";
+import {
+  normalizeRecurrenceFrequency,
+  parseRecurrenceDays,
+  type RecurrenceFrequency,
+} from "@/lib/recurrence";
 import { eventIsAllDay, toDateLocalValue, toDatetimeLocalValue } from "@/lib/utils";
 import { uploadImageFile } from "@/lib/upload-client";
 import {
@@ -26,6 +32,14 @@ interface EventFormProps {
   saving: boolean;
 }
 
+function weekdayFromStart(startAt: string): number {
+  if (!startAt) return 0;
+  const day = startAt.slice(0, 10);
+  const [y, m, d] = day.split("-").map(Number);
+  if (!y || !m || !d) return 0;
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
 export function EventForm({ initial, onSave, saving }: EventFormProps) {
   const [form, setForm] = useState({
     title: "",
@@ -41,6 +55,10 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     status: "draft",
     sortOrder: 0,
     allDay: false,
+    recurrenceFrequency: "none" as RecurrenceFrequency,
+    recurrenceInterval: 1,
+    recurrenceDays: [] as number[],
+    recurrenceUntil: "",
   });
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -77,6 +95,8 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     if (!initial) return;
     const startAt = initial.startAt ? toDatetimeLocalValue(String(initial.startAt)) : "";
     const endAt = initial.endAt ? toDatetimeLocalValue(String(initial.endAt)) : "";
+    const frequency = normalizeRecurrenceFrequency(initial.recurrenceFrequency);
+    const days = parseRecurrenceDays(initial.recurrenceDays);
     setForm({
       title: String(initial.title ?? ""),
       startAt,
@@ -95,6 +115,17 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
         startAt || String(initial.startAt ?? ""),
         endAt || (initial.endAt ? String(initial.endAt) : null),
       ),
+      recurrenceFrequency: frequency,
+      recurrenceInterval: Number(initial.recurrenceInterval ?? 1) || 1,
+      recurrenceDays:
+        frequency === "weekly"
+          ? days.length > 0
+            ? days
+            : [weekdayFromStart(startAt)]
+          : [],
+      recurrenceUntil: initial.recurrenceUntil
+        ? toDateLocalValue(String(initial.recurrenceUntil))
+        : "",
     });
     setPendingImageFile(null);
     setImagePreviewUrl((prev) => {
@@ -131,6 +162,7 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
     }
 
     try {
+      const recurring = form.recurrenceFrequency !== "none";
       await onSave({
         ...form,
         imageUrl,
@@ -139,6 +171,15 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
           ? normalizeRegistrationUrl(form.registrationUrl)
           : null,
         kioskVisible: form.status === "published",
+        recurrenceFrequency: form.recurrenceFrequency,
+        recurrenceInterval: recurring ? form.recurrenceInterval : 1,
+        recurrenceDays:
+          form.recurrenceFrequency === "weekly"
+            ? form.recurrenceDays.length > 0
+              ? form.recurrenceDays
+              : [weekdayFromStart(form.startAt)]
+            : [],
+        recurrenceUntil: recurring && form.recurrenceUntil ? form.recurrenceUntil : null,
       });
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Could not save event");
@@ -223,10 +264,14 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
   }
 
   function handleStartChange(value: string) {
-    setForm((f) => ({
-      ...f,
-      startAt: f.allDay ? `${value}T00:00` : value,
-    }));
+    setForm((f) => {
+      const startAt = f.allDay ? `${value}T00:00` : value;
+      const next = { ...f, startAt };
+      if (f.recurrenceFrequency === "weekly" && f.recurrenceDays.length === 0) {
+        next.recurrenceDays = [weekdayFromStart(startAt)];
+      }
+      return next;
+    });
   }
 
   function handleEndChange(value: string) {
@@ -235,6 +280,45 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
       endAt: f.allDay ? `${value}T00:00` : value,
     }));
   }
+
+  function handleFrequencyChange(value: string) {
+    const frequency = normalizeRecurrenceFrequency(value);
+    setForm((f) => ({
+      ...f,
+      recurrenceFrequency: frequency,
+      recurrenceInterval: frequency === "none" ? 1 : f.recurrenceInterval || 1,
+      recurrenceDays:
+        frequency === "weekly"
+          ? f.recurrenceDays.length > 0
+            ? f.recurrenceDays
+            : [weekdayFromStart(f.startAt)]
+          : [],
+      recurrenceUntil: frequency === "none" ? "" : f.recurrenceUntil,
+    }));
+  }
+
+  function toggleRecurrenceDay(day: number) {
+    setForm((f) => {
+      const exists = f.recurrenceDays.includes(day);
+      const recurrenceDays = exists
+        ? f.recurrenceDays.filter((item) => item !== day)
+        : [...f.recurrenceDays, day].sort((a, b) => a - b);
+      return { ...f, recurrenceDays };
+    });
+  }
+
+  const intervalUnit =
+    form.recurrenceFrequency === "daily"
+      ? form.recurrenceInterval === 1
+        ? "day"
+        : "days"
+      : form.recurrenceFrequency === "weekly"
+        ? form.recurrenceInterval === 1
+          ? "week"
+          : "weeks"
+        : form.recurrenceInterval === 1
+          ? "month"
+          : "months";
 
   return (
     <form onSubmit={handleSubmit}>
@@ -262,7 +346,9 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">Start</label>
+              <label className="mb-1 block text-sm font-medium">
+                {form.recurrenceFrequency === "none" ? "Start" : "First occurrence start"}
+              </label>
               <Input
                 type={form.allDay ? "date" : "datetime-local"}
                 value={form.allDay ? toDateLocalValue(form.startAt) : form.startAt}
@@ -270,13 +356,98 @@ export function EventForm({ initial, onSave, saving }: EventFormProps) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">End</label>
+              <label className="mb-1 block text-sm font-medium">
+                {form.recurrenceFrequency === "none" ? "End" : "First occurrence end"}
+              </label>
               <Input
                 type={form.allDay ? "date" : "datetime-local"}
                 value={form.allDay ? toDateLocalValue(form.endAt) : form.endAt}
                 onChange={(e) => handleEndChange(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Repeat</label>
+              <select
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                value={form.recurrenceFrequency}
+                onChange={(e) => handleFrequencyChange(e.target.value)}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Recurring events stay on the kiosk and show the next upcoming occurrence.
+              </p>
+            </div>
+
+            {form.recurrenceFrequency !== "none" && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Every</label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={366}
+                        value={form.recurrenceInterval}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            recurrenceInterval: Math.max(1, Number(e.target.value) || 1),
+                          })
+                        }
+                      />
+                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                        {intervalUnit}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">
+                      Ends <span className="font-normal text-slate-500">(optional)</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={form.recurrenceUntil}
+                      min={toDateLocalValue(form.startAt)}
+                      onChange={(e) => setForm({ ...form, recurrenceUntil: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {form.recurrenceFrequency === "weekly" && (
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">On days</label>
+                    <div className="flex flex-wrap gap-2">
+                      {WEEKDAYS.map((day) => {
+                        const selected = form.recurrenceDays.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleRecurrenceDay(day.value)}
+                            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                              selected
+                                ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
+                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+                            }`}
+                            aria-pressed={selected}
+                          >
+                            {day.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div>

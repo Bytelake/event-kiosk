@@ -16,6 +16,7 @@ interface EventRow {
   startAt: string;
   status: string;
   syncStatus: string;
+  recurrenceSummary?: string | null;
 }
 
 const tabs = [
@@ -80,9 +81,13 @@ export default function AdminEventsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold text-slate-900 dark:text-slate-100">{event.title}</h3>
                       {event.syncStatus === "stale" && <Badge variant="warning">Stale</Badge>}
+                      {event.recurrenceSummary ? (
+                        <Badge variant="default">Repeats</Badge>
+                      ) : null}
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {formatWallClockDateTime(event.startAt)}
+                      {event.recurrenceSummary ? ` · ${event.recurrenceSummary}` : ""}
                     </p>
                   </div>
                   <Badge
