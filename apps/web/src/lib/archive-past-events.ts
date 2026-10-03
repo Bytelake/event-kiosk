@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { isDatabaseMaintenanceMode } from "@/lib/database-maintenance";
-import { eventHasEnded, wallClockNow } from "@/lib/utils";
+import { eventSeriesHasEnded } from "@/lib/recurrence";
+import { wallClockNow } from "@/lib/utils";
 
 const ARCHIVE_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -25,11 +26,20 @@ export async function archivePastEvents(): Promise<number> {
         status: "published",
         startAt: { lt: now },
       },
-      select: { id: true, startAt: true, endAt: true, allDay: true },
+      select: {
+        id: true,
+        startAt: true,
+        endAt: true,
+        allDay: true,
+        recurrenceFrequency: true,
+        recurrenceInterval: true,
+        recurrenceDays: true,
+        recurrenceUntil: true,
+      },
     });
 
     const ids = candidates
-      .filter((event) => eventHasEnded(event.startAt, event.endAt, event.allDay, now))
+      .filter((event) => eventSeriesHasEnded(event, now))
       .map((event) => event.id);
 
     if (ids.length === 0) {

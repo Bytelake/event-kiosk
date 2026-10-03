@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
-import { serializeEvent } from "@/lib/event-serialize";
-import { eventIsActive, wallClockNow } from "@/lib/utils";
+import { serializeEvent, serializeKioskEvent } from "@/lib/event-serialize";
+import { wallClockNow } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,
@@ -17,16 +17,16 @@ export async function GET(
   }
 
   if (kiosk) {
-    const now = wallClockNow();
-    if (
-      event.status !== "published" ||
-      !event.kioskVisible ||
-      !eventIsActive(event.startAt, event.endAt, event.allDay, now)
-    ) {
+    if (event.status !== "published" || !event.kioskVisible) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(serializeEvent(event));
+    const payload = serializeKioskEvent(event, wallClockNow());
+    if (!payload) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(payload);
   }
 
   const authed = await isAuthenticated();

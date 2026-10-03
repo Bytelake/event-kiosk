@@ -244,7 +244,9 @@ function EventCard({ event, featured = false }: { event: KioskEvent; featured?: 
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <span className="inline-flex items-center gap-1.5 text-[13px] text-white/70">
               <Calendar className="h-3.5 w-3.5" />
-              {formatKioskEventCardDisplay(event.startAt, event.endAt, event.allDay)}
+              {event.recurrenceSummary
+                ? `${event.recurrenceSummary} · Next ${formatKioskEventCardDisplay(event.startAt, event.endAt, event.allDay)}`
+                : formatKioskEventCardDisplay(event.startAt, event.endAt, event.allDay)}
             </span>
             {event.location && (
               <span className="inline-flex items-center gap-1.5 text-[13px] text-white/70">

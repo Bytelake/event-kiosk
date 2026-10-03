@@ -16,6 +16,7 @@ Runs on **Debian/Ubuntu** (including Raspberry Pi OS). Also runs locally for dev
 
 - Home hub with Events, Newsletter, Give, and optional Scan QR (hide unused destinations in Admin → Pages)
 - Touch-friendly events list and detail; visitors sign up through any registration site you allow
+- Recurring events (daily, weekly, monthly) that stay on the kiosk and show the next upcoming occurrence
 - Newsletter opens your existing sign-up URL in the same overlay as event registration
 - Giving contact form (name, email, optional phone) — **no card payments on the kiosk**; staff follow up from Admin → Inquiries
 - Scan QR for USB keyboard HID barcode readers (e.g. Elo EdgeConnect); opens scanned HTTPS links in the registration overlay

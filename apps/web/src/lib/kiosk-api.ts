@@ -18,6 +18,8 @@ export interface KioskEvent {
   registrationUrl: string | null;
   urlLabel?: string | null;
   featured: boolean;
+  recurrenceFrequency?: string | null;
+  recurrenceSummary?: string | null;
 }
 
 export type KioskSettings = KioskColorScheme &

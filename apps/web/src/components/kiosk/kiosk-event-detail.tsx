@@ -75,7 +75,14 @@ export function KioskEventDetail() {
       <div className="mb-6 flex flex-wrap gap-x-6 gap-y-3">
         <div className="kiosk-on-bg flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-surface-text)_75%,transparent)]">
           <Calendar className="h-5 w-5 text-[var(--brand)]" />
-          {schedule}
+          <span>
+            {schedule}
+            {event.recurrenceSummary ? (
+              <span className="mt-1 block text-base text-[color-mix(in_srgb,var(--kiosk-surface-text)_65%,transparent)]">
+                {event.recurrenceSummary}
+              </span>
+            ) : null}
+          </span>
         </div>
         {event.location && (
           <div className="kiosk-on-bg flex items-center gap-2 text-lg text-[color-mix(in_srgb,var(--kiosk-surface-text)_75%,transparent)]">

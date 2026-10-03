@@ -1,27 +1,55 @@
 import { z } from "zod";
 import { KIOSK_BACKGROUND_STYLES } from "@/lib/kiosk-background";
+import { RECURRENCE_FREQUENCIES } from "@/lib/recurrence";
 import { normalizeRegistrationUrl } from "@/lib/registration-domains";
 
 export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const manualEventSchema = z.object({
-  title: z.string().min(1),
-  startAt: z.string().min(1),
-  endAt: z.string().optional().nullable(),
-  allDay: z.boolean().optional(),
-  shortDescription: z.string().optional().nullable(),
-  fullDescription: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
-  imageUrl: z.string().optional().nullable(),
-  registrationUrl: z.string().url().optional().nullable().or(z.literal("")),
-  urlLabel: z.enum(["register", "learn_more"]).optional(),
-  featured: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  kioskVisible: z.boolean().optional(),
-  status: z.enum(["draft", "published", "archived"]).optional(),
-});
+export const manualEventSchema = z
+  .object({
+    title: z.string().min(1),
+    startAt: z.string().min(1),
+    endAt: z.string().optional().nullable(),
+    allDay: z.boolean().optional(),
+    shortDescription: z.string().optional().nullable(),
+    fullDescription: z.string().optional().nullable(),
+    location: z.string().optional().nullable(),
+    imageUrl: z.string().optional().nullable(),
+    registrationUrl: z.string().url().optional().nullable().or(z.literal("")),
+    urlLabel: z.enum(["register", "learn_more"]).optional(),
+    featured: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+    kioskVisible: z.boolean().optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
+    recurrenceFrequency: z.enum(RECURRENCE_FREQUENCIES).optional(),
+    recurrenceInterval: z.number().int().min(1).max(366).optional(),
+    recurrenceDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+    recurrenceUntil: z.string().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    const frequency = data.recurrenceFrequency ?? "none";
+    if (frequency === "weekly" && data.recurrenceDays && data.recurrenceDays.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select at least one weekday for weekly events",
+        path: ["recurrenceDays"],
+      });
+    }
+    if (frequency === "none") return;
+    if (data.recurrenceUntil) {
+      const startDay = data.startAt.slice(0, 10);
+      const untilDay = data.recurrenceUntil.slice(0, 10);
+      if (untilDay < startDay) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Repeat until date must be on or after the start date",
+          path: ["recurrenceUntil"],
+        });
+      }
+    }
+  });
 
 export function formatValidationError(error: z.ZodError): string {
   const { formErrors, fieldErrors } = error.flatten();

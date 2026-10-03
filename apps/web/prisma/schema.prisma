@@ -28,6 +28,13 @@ model Event {
   urlLabel         String   @default("register")
   breezeDescription String?
 
+  // none | daily | weekly | monthly
+  recurrenceFrequency String  @default("none")
+  recurrenceInterval  Int     @default(1)
+  // JSON array of weekdays 0=Sun..6=Sat (weekly only)
+  recurrenceDays      String  @default("[]")
+  recurrenceUntil     DateTime?
+
   featured         Boolean  @default(false)
   sortOrder        Int      @default(0)
   kioskVisible     Boolean  @default(true)

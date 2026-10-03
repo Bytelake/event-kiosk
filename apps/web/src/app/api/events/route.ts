@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
-import { serializeEvent } from "@/lib/event-serialize";
+import { serializeEvent, serializeKioskEvent } from "@/lib/event-serialize";
 import { deleteUploadIfUnreferenced } from "@/lib/upload-cleanup";
 import { archivePastEventsIfDue } from "@/lib/archive-past-events";
-import {
-  eventIsActive,
-  parseWallClockDatetime,
-  wallClockNow,
-  wallClockStartOfDay,
-} from "@/lib/utils";
+import { recurrenceCreateData } from "@/lib/recurrence";
+import { parseWallClockDatetime, wallClockNow } from "@/lib/utils";
 import { DEFAULT_EVENT_URL_LABEL } from "@/lib/event-url-label";
 import { formatValidationError, manualEventSchema } from "@/lib/validators";
 
@@ -17,6 +13,7 @@ function saveErrorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Could not save event";
   const schemaDrift =
     message.includes("urlLabel") ||
+    message.includes("recurrenceFrequency") ||
     (typeof error === "object" &&
       error !== null &&
       "code" in error &&
@@ -43,17 +40,20 @@ export async function GET(request: NextRequest) {
       where: {
         status: "published",
         kioskVisible: true,
-        OR: [
-          { endAt: { gte: now } },
-          { endAt: null, startAt: { gte: wallClockStartOfDay(now) } },
-        ],
       },
       orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { startAt: "asc" }],
     });
-    const events = candidates.filter((event) =>
-      eventIsActive(event.startAt, event.endAt, event.allDay, now),
-    );
-    return NextResponse.json(events.map(serializeEvent));
+
+    const events = candidates
+      .map((event) => serializeKioskEvent(event, now))
+      .filter((event): event is NonNullable<typeof event> => event !== null)
+      .sort((a, b) => {
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.startAt.localeCompare(b.startAt);
+      });
+
+    return NextResponse.json(events);
   }
 
   const authed = await isAuthenticated();
@@ -85,6 +85,14 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
+  const recurrence = recurrenceCreateData({
+    recurrenceFrequency: data.recurrenceFrequency,
+    recurrenceInterval: data.recurrenceInterval,
+    recurrenceDays: data.recurrenceDays,
+    recurrenceUntil: data.recurrenceUntil,
+    startAt: data.startAt,
+  });
+
   try {
     const event = await prisma.event.create({
       data: {
@@ -104,6 +112,7 @@ export async function POST(request: Request) {
         sortOrder: data.sortOrder ?? 0,
         kioskVisible: data.kioskVisible ?? true,
         status: data.status ?? "draft",
+        ...recurrence,
       },
     });
 
@@ -138,6 +147,14 @@ export async function PATCH(request: NextRequest) {
 
     const previousImageUrl = existing.imageUrl;
     const data = parsed.data;
+    const recurrence = recurrenceCreateData({
+      recurrenceFrequency: data.recurrenceFrequency,
+      recurrenceInterval: data.recurrenceInterval,
+      recurrenceDays: data.recurrenceDays,
+      recurrenceUntil: data.recurrenceUntil,
+      startAt: data.startAt,
+    });
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -155,6 +172,7 @@ export async function PATCH(request: NextRequest) {
         kioskVisible: data.kioskVisible,
         allDay: data.allDay,
         status: data.status,
+        ...recurrence,
       },
     });
 
